@@ -1,6 +1,6 @@
 param(
     [ValidateSet('macos', 'linux', 'windows', 'docker')]
-    [string]$Platform = $(if ($IsWindows) { 'windows' } elseif ($IsLinux) { 'linux' } else { 'macos' }),
+    [string]$Platform = $(if ($env:OS -eq 'Windows_NT' -or [System.Environment]::OSVersion.Platform -eq [System.PlatformID]::Win32NT) { 'windows' } elseif ($IsLinux) { 'linux' } else { 'macos' }),
 
     [ValidateSet('a', 'b', 'c', 'd', 'A', 'B', 'C', 'D')]
     [string]$Profile = 'b',
@@ -51,7 +51,7 @@ function Set-EnvValueInFile {
         [void]$newLines.Add("$Key=$Value")
     }
 
-    Set-Content -Path $FilePath -Value $newLines
+    Set-Content -Path $FilePath -Value $newLines -Encoding utf8
 }
 
 function Dedupe-EnvKeys {
@@ -187,11 +187,11 @@ if (-not (Test-Path $overrideEnv)) {
 }
 
 Copy-Item -Path $baseEnv -Destination $Target -Force
-Add-Content -Path $Target -Value ""
-Add-Content -Path $Target -Value "# -----------------------------------------------------------------------------"
-Add-Content -Path $Target -Value "# Appended profile overrides ($Platform/profile-$profileLower)"
-Add-Content -Path $Target -Value "# -----------------------------------------------------------------------------"
-Get-Content -Path $overrideEnv | Add-Content -Path $Target
+Add-Content -Path $Target -Value "" -Encoding utf8
+Add-Content -Path $Target -Value "# -----------------------------------------------------------------------------" -Encoding utf8
+Add-Content -Path $Target -Value "# Appended profile overrides ($Platform/profile-$profileLower)" -Encoding utf8
+Add-Content -Path $Target -Value "# -----------------------------------------------------------------------------" -Encoding utf8
+Get-Content -Path $overrideEnv | Add-Content -Path $Target -Encoding utf8
 
 if ($Platform -in @('macos', 'linux')) {
     $placeholder = if ($Platform -eq 'linux') {

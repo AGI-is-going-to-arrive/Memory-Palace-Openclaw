@@ -219,7 +219,17 @@ async function runVisualEnrichmentProvider(
   const splitArgs = [...(commandConfig.args ?? [])];
 
   const safeEnv: Record<string, string> = {};
-  const ALLOWED_ENV_KEYS = ["PATH", "HOME", "TMPDIR", "LANG", "NODE_ENV"];
+  const ALLOWED_ENV_KEYS = [
+    "PATH",
+    "HOME",
+    "USERPROFILE",
+    "TMPDIR",
+    "TMP",
+    "TEMP",
+    "LANG",
+    "NODE_ENV",
+    "SystemRoot",
+  ];
   for (const key of ALLOWED_ENV_KEYS) {
     if (process.env[key]) safeEnv[key] = process.env[key]!;
   }

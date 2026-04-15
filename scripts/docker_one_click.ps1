@@ -260,7 +260,7 @@ function Set-EnvValueInFile {
         $newLines += "$Key=$Value"
     }
 
-    Set-Content -Path $FilePath -Value $newLines
+    Set-Content -Path $FilePath -Value $newLines -Encoding utf8
 }
 
 function Save-ExistingEnvFileSnapshot {

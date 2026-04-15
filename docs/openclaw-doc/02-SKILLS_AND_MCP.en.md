@@ -178,6 +178,7 @@ A note on installation, to avoid thinking skills need a separate installation:
   - The plugin is automatically connected
   - MCP runtime config is automatically written
   - The plugin-bundled OpenClaw skill is included with the plugin / package
+  - On Windows, do not treat `openclaw skills list` as the definitive install check for that bundled skill; prefer `openclaw plugins inspect memory-palace --json`, then confirm with `verify / doctor` if needed
 
 ---
 
@@ -242,6 +243,8 @@ What gets automatically handled:
 - OpenClaw plugin itself
 - MCP runtime / transport configuration
 - Plugin-bundled OpenClaw skill
+
+That bundled skill should be verified through plugin load plus `verify / doctor`, not through `openclaw skills list` alone.
 
 What does **not** get automatically registered:
 
@@ -390,6 +393,7 @@ A practical note:
     - Whether the plugin-bundled skill is in place
     - Current `profileMemory` configuration
     - Whether a profile block has been detected
+  - On Windows, this is the safer proof path than depending on `openclaw skills list`
 
 ---
 

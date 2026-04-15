@@ -63,7 +63,8 @@
 - 这组 doc-chat 测试还覆盖了代表性的 corner case，例如 provider probe 失败、session 文件被占用、responses 边界提示
 - 对 LLM provider 输入来说，`/responses` 只算 accepted input alias / 可接受输入别名；当前主 LLM 路径仍然走 `/chat/completions`
 - 如果只根据这页回答，也要直接说：**`/responses` 不是最终 runtime path，当前真正主路径就是 `/chat/completions`。**
-- `openclaw plugins info memory-palace` 可以确认 plugin 已加载
+- `openclaw plugins inspect memory-palace --json` 可以确认 plugin 已加载；有些宿主也接受 `openclaw plugins info memory-palace`
+- `openclaw skills list` 不是 bundled onboarding skill 的安装判断条件
 - 详细命令、次数和补充说明统一看 [../EVALUATION.md](../EVALUATION.md)
 
 ### 这页对 `/responses` 的直接答法
@@ -138,8 +139,17 @@ flowchart TD
 
 这里再把公开验证边界说清楚：
 
+- 起点是“当前机器上已有本地 checkout 路径”或“已经能指向本地文档路径”
 - 当前验证覆盖的是把当前仓库里的页面或本地文档路径交给 OpenClaw
 - 这页**不把**“任意公开 GitHub URL 都能直接抓取并走通”写成默认承诺
+
+所以 OpenClaw 还应该把 repo 位置这条分支先说清：
+
+1. **如果仓库已经 clone 到本地，优先走本地 checkout 文档路径**
+2. **如果仓库还没 clone，先告诉用户 clone，再继续从本地文档页往下走**
+3. **只有本地 repo / 本地文档路径已经存在后，再进入 plugin 已装 / 未装这条分支**
+
+如果用户当前已经把这页的本地 checkout 文档路径直接交给 OpenClaw，就说明本地 repo 已经存在。这种情况下，**不要**再让用户重复 clone。
 
 但必须先说清一个边界：
 
@@ -148,9 +158,10 @@ flowchart TD
 
 正确顺序必须是：
 
-1. **先判断 plugin 是否已经安装 / 加载**
-2. **如果还没安装，先引导完成安装**
-3. **安装完成后，再继续这条对话式 onboarding**
+1. **先判断本地 repo / 本地文档路径是否已经存在**
+2. **再判断 plugin 是否已经安装 / 加载**
+3. **如果还没安装，先引导完成安装**
+4. **安装完成后，再继续这条对话式 onboarding**
 
 这也意味着：
 
@@ -166,6 +177,8 @@ OpenClaw 应该先判断用户当前属于哪一类：
 1. **还没装 plugin / bundled skills**
 2. **plugin 已装，但第一次基础配置还没完成**
 3. **plugin 已装，基础配置也完成了，现在只是要继续 provider probe / apply / verify**
+
+在 Windows 上，不要把 `openclaw skills list` 当成 bundled onboarding skill 的 definitive check。更稳的顺序是先看 `openclaw plugins inspect memory-palace --json`，再结合 `verify / doctor` 判断。
 
 只有第 2 / 3 类，才应该直接进入 `memory_onboarding_status / probe / apply`。
 
@@ -187,7 +200,7 @@ OpenClaw 应该先判断用户当前属于哪一类：
 如果你想让 OpenClaw 直接按这页规则开始做，可以直接贴这句：
 
 ```text
-请先判断 memory-palace plugin 是否已经安装并加载；如果还没装，先给我最短安装链路；如果已经装好，就继续按 memory_onboarding_status -> memory_onboarding_probe -> memory_onboarding_apply 帮我往下走。先检查宿主里是否已有可复用的 provider 配置或线索，不要默认把我推去 dashboard；apply 之后再提醒我跑 openclaw memory-palace verify / doctor / smoke。
+请先判断这台机器上是否已经有这个仓库的本地 checkout，并且优先走本地文档路径；如果我现在已经把这页的本地 checkout 文档路径交给你，就不要再让我重复 clone。只有在仓库还没 clone 时，才先告诉我 clone，再继续从本地文档页往下走。然后判断 memory-palace plugin 是否已经安装并加载；如果还没装，先给我最短安装链路。对于已经 checkout 到本地的源码仓，这条最短终端 fallback 就是 `python3 scripts/openclaw_memory_palace.py setup --mode basic --profile b --transport stdio --json`；如果是在 Windows PowerShell 里，就直接改成 `py -3 scripts/openclaw_memory_palace.py setup --mode basic --profile b --transport stdio --json`；然后再跑 `openclaw memory-palace verify / doctor / smoke`。如果已经装好，就继续按 memory_onboarding_status -> memory_onboarding_probe -> memory_onboarding_apply 帮我往下走。先检查宿主里是否已有可复用的 provider 配置或线索，不要默认把我推去 dashboard；如果当前没有完整 provider 栈，就先按 Profile B 起步；如果 embedding + reranker + LLM 都已经就绪，就强烈建议直接走 Profile D；apply 之后再提醒我跑 openclaw memory-palace verify / doctor / smoke。
 ```
 
 如果你想明确要求它按“当前公开验证口径”说话，再补一句：
@@ -224,6 +237,15 @@ python3 scripts/openclaw_memory_palace.py onboarding --profile c --json
 python3 scripts/openclaw_memory_palace.py onboarding --profile b --json
 ```
 
+如果你在 Windows PowerShell 里跑，对应 fallback 直接写成：
+
+```powershell
+py -3 scripts/openclaw_memory_palace.py onboarding --profile c --json
+py -3 scripts/openclaw_memory_palace.py onboarding --profile b --json
+```
+
+这页后面再出现的 repo CLI fallback，例如 `provider-probe`、`onboarding --apply --validate`、`setup`，在 Windows PowerShell 里也统一改成 `py -3`。
+
 这里仍然只是**只读 readiness 报告**。它不会替你安装 plugin，不会真正 apply 配置，也不能替代真正的 `setup`。
 
 这条命令会返回一份**对话友好**的结构化 readiness 报告，包含：
@@ -241,6 +263,7 @@ python3 scripts/openclaw_memory_palace.py onboarding --profile b --json
 - 它本身不是本地终端里的逐项提问器
 - 真正的逐项交互仍然属于本地 TTY 里的 `setup`
 - 真正会改配置的，仍然只有 `setup ...` 或 `onboarding --apply --validate ...`
+- 在 Windows PowerShell 里，这一节的 repo wrapper 命令统一用 `py -3`
 
 如果你已经把 embedding / reranker / LLM 信息都收齐，并且想直接让 OpenClaw 代你 apply：
 
@@ -283,6 +306,7 @@ python3 scripts/openclaw_memory_palace.py onboarding --profile c --apply --valid
 
 - 不要把这两条当默认安装入口
 - 先走这页的 onboarding
+- 如果仓库还没 clone，先 clone；如果已经 clone，优先走本地 checkout 文档路径
 - 如果 OpenClaw 判断 plugin 还没装，而且用户已经在同一台机器上的源码仓目录里，再把下面这条源码仓路径当成最短终端 fallback
 
 ```bash
@@ -291,6 +315,8 @@ openclaw memory-palace verify --json
 openclaw memory-palace doctor --json
 openclaw memory-palace smoke --json
 ```
+
+如果你在 Windows PowerShell 里跑，对应 fallback 直接写成 `py -3 scripts/openclaw_memory_palace.py setup --mode basic --profile b --transport stdio --json`。
 
 这条路径会：
 
@@ -389,6 +415,7 @@ OpenClaw 后续应该用人话把下一步说清楚：
 - 这时候不要把 `Profile C / D` 说成 ready
 - 不要在用户没确认的情况下，直接把“继续 apply”当默认动作
 - 先让用户修正失败项，再重跑 `python3 scripts/openclaw_memory_palace.py provider-probe --json` 或 `memory_onboarding_probe`
+- 如果是在 Windows PowerShell 里，这条 repo wrapper retry 写成 `py -3 scripts/openclaw_memory_palace.py provider-probe --json`
 - 只有 probe 通过后，再继续 apply
 
 ---

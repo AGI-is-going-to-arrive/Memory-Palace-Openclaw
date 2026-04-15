@@ -1,3 +1,4 @@
+import path from "node:path";
 import { describe, expect, it } from "bun:test";
 import { createResolveDefaultStdioLaunch } from "./runtime-layout.ts";
 
@@ -49,8 +50,8 @@ describe("runtime-layout stdio launch resolution", () => {
         ),
       ).toEqual({
         command: "/custom/runtime/bin/python",
-        args: ["/repo/backend/mcp_wrapper.py"],
-        cwd: "/repo/backend",
+        args: [path.resolve("/repo", "backend", "mcp_wrapper.py")],
+        cwd: path.resolve("/repo", "backend"),
       });
     } finally {
       if (previousShell === undefined) {
@@ -78,8 +79,8 @@ describe("runtime-layout stdio launch resolution", () => {
 
       expect(resolveDefaultStdioLaunch(undefined, "posix")).toEqual({
         command: "/process/runtime/bin/python",
-        args: ["/repo/backend/mcp_wrapper.py"],
-        cwd: "/repo/backend",
+        args: [path.resolve("/repo", "backend", "mcp_wrapper.py")],
+        cwd: path.resolve("/repo", "backend"),
       });
     } finally {
       if (previousShell === undefined) {

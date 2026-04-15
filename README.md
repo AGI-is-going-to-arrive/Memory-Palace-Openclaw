@@ -49,8 +49,8 @@ Official host install guide: `https://docs.openclaw.ai/install`
 
 Recommended install flow:
 
-1. Clone this repo.
-2. In OpenClaw CLI or WebUI chat, hand `docs/openclaw-doc/18-CONVERSATIONAL_ONBOARDING.en.md` to OpenClaw first.
+1. If this repo is not cloned on this machine yet, clone it first. If it is already cloned, keep the local checkout.
+2. In OpenClaw CLI or WebUI chat, hand the local `docs/openclaw-doc/18-CONVERSATIONAL_ONBOARDING.en.md` path to OpenClaw first.
 3. If OpenClaw says the plugin is not installed yet, follow the shortest terminal install chain below.
 4. After apply or setup, use `verify / doctor / smoke` as the final sign-off.
 
@@ -76,7 +76,16 @@ openclaw memory-palace doctor --json
 openclaw memory-palace smoke --json
 ```
 
-On Windows PowerShell, replace `python3` with `py -3`.
+On Windows PowerShell, the same fallback is:
+
+```powershell
+py -3 scripts/openclaw_memory_palace.py setup --mode basic --profile b --transport stdio --json
+openclaw memory-palace verify --json
+openclaw memory-palace doctor --json
+openclaw memory-palace smoke --json
+```
+
+If you only want to confirm that the plugin is already wired into the current host, prefer `openclaw plugins inspect memory-palace --json`. Some hosts also accept `openclaw plugins info memory-palace`, but `inspect` is the explicit command surface. Do not use `openclaw skills list` as the install gate for this plugin; the onboarding skill is bundled with the plugin package rather than installed as a separate host skill.
 
 ## Recommended User Path
 
@@ -86,7 +95,7 @@ On Windows PowerShell, replace `python3` with `py -3`.
 
 Two boundaries matter here:
 
-- the **repository wrapper** commands live under `python3 scripts/openclaw_memory_palace.py ...`
+- the **repository wrapper** commands live under `python3 scripts/openclaw_memory_palace.py ...` (on Windows PowerShell: `py -3 scripts/openclaw_memory_palace.py ...`)
 - the **stable OpenClaw user commands** live under `openclaw memory-palace ...`
 
 Do not mix them. In particular:
@@ -131,6 +140,8 @@ python3 scripts/openclaw_memory_palace.py setup --mode basic --profile d --trans
 # or: python3 scripts/openclaw_memory_palace.py onboarding --profile d --apply --validate --json
 ```
 
+On Windows PowerShell, run the same repo-wrapper fallback with `py -3`.
+
 <details>
 <summary><strong>Profile C/D provider configuration example</strong></summary>
 
@@ -145,7 +156,7 @@ Use the following environment variables, or let the repo wrapper generate a
 chat-friendly readiness report first:
 
 - chat tools inside OpenClaw: `memory_onboarding_status -> memory_onboarding_probe -> memory_onboarding_apply`
-- repo wrapper chain: `python3 scripts/openclaw_memory_palace.py bootstrap-status -> provider-probe -> onboarding/setup`
+- repo wrapper chain: `python3 scripts/openclaw_memory_palace.py bootstrap-status -> provider-probe -> onboarding/setup` (on Windows PowerShell: `py -3 scripts/openclaw_memory_palace.py ...`)
 
 ```bash
 # Embedding (required for Profile C/D)
@@ -243,7 +254,8 @@ Use this section as a boundary, not as a marketing claim.
 - the repo wrapper remains useful for readiness reports and guided setup, but it is not the stable user CLI surface
 - the current public chat-first claim covers handing the checked-out local document page or local doc path to OpenClaw; it does not claim that every host can fetch arbitrary public GitHub URLs on its own
 - the recorded repo checks already confirm that:
-  - `openclaw plugins info memory-palace` reports the plugin as loaded
+  - `openclaw plugins inspect memory-palace --json` reports the plugin as loaded on the real host; some hosts also accept `openclaw plugins info memory-palace`
+  - `openclaw skills list` is not the install gate for the bundled onboarding skill
   - the same onboarding document can drive correct next-step guidance in CLI and WebUI, in installed and uninstalled states, in both Chinese and English
   - the latest profile-matrix run reproduced the current experimental `A / B / C / D + ACL` behavior in isolated scenarios
 - exact commands, counts, and caveats live in `docs/EVALUATION.en.md`

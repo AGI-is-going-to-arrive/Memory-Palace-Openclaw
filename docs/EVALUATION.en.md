@@ -4,40 +4,47 @@
 
 This page keeps the public English validation summary short and explicit.
 
-It reflects the latest recorded reruns on a macOS validation host. Treat
-everything here as **environment-specific evidence**, not as a universal
-promise for every machine.
+The top summary below now reflects the latest recorded **Windows real-machine**
+reruns dated **April 15, 2026**. Treat everything here as
+**environment-specific evidence**, not as a universal promise for every
+machine.
 
-## Latest Recorded Reruns
+## Latest Recorded Windows Real-Machine Reruns
 
-The commands below were rerun on the current macOS validation host:
+The commands below were rerun on the current Windows validation host:
 
 | Area | Command | Result |
 |---|---|---|
-| host version | `openclaw --version` | `OpenClaw 2026.4.11` |
-| plugin load | `openclaw plugins info memory-palace --json` | plugin loaded |
-| current-host status | `openclaw memory-palace status --json` | reachable |
-| current-host verify | `openclaw memory-palace verify --json` | `ok=true`, `status=warn` |
-| current-host doctor | `openclaw memory-palace doctor --json` | `ok=true`, `status=warn` |
-| current-host smoke | `openclaw memory-palace smoke --json` | `ok=true`, `status=warn` |
-| wrapper bootstrap status | `python3 scripts/openclaw_memory_palace.py bootstrap-status --json` | reachable |
-| wrapper onboarding (`Profile B`) | `python3 scripts/openclaw_memory_palace.py onboarding --profile b --json` | readiness available |
-| provider probe (`Profile C`) | `python3 scripts/openclaw_memory_palace.py provider-probe --profile c ... --json` | pass |
-| provider probe (`Profile D`) | `python3 scripts/openclaw_memory_palace.py provider-probe --profile d ... --json` | pass |
-| onboarding preview (`Profile C`) | `python3 scripts/openclaw_memory_palace.py onboarding --profile c ... --json` | ready |
+| host version | `openclaw --version` | `OpenClaw 2026.4.14` |
+| Profile A setup | `py -3 scripts/openclaw_memory_palace.py setup --mode basic --profile a --transport stdio --json` | pass |
+| Profile A sign-off | `openclaw memory-palace verify / doctor / smoke --json` | pass on isolated target config |
+| Profile B setup | `py -3 scripts/openclaw_memory_palace.py setup --mode basic --profile b --transport stdio --json` | pass |
+| Profile B plugin load | `openclaw plugins inspect memory-palace --json` | plugin loaded |
+| Profile B onboarding tools | `memory_onboarding_status / probe / apply` | registered on the real host |
+| Profile B sign-off | `openclaw memory-palace verify / doctor / smoke --json` | pass |
+| Profile C provider probe | `py -3 scripts/openclaw_memory_palace.py provider-probe --profile c ... --json` | pass |
+| Profile D provider probe | `py -3 scripts/openclaw_memory_palace.py provider-probe --profile d ... --json` | pass |
+| Profile C apply | `py -3 scripts/openclaw_memory_palace.py onboarding --profile c --apply --validate --json` | pass |
+| Profile D apply | `py -3 scripts/openclaw_memory_palace.py onboarding --profile d --apply --validate --json` | pass |
+| Profile C / D sign-off | `openclaw memory-palace verify / doctor / smoke --json` | pass after apply |
+| Windows native validation unittest | `py -3 -m unittest scripts.test_openclaw_memory_palace_windows_native_validation` | pass |
+| installer regression | `py -3 -m unittest scripts.test_openclaw_memory_palace_installer` | pass |
+| extension test suite | `cd extensions/memory-palace && bun test` | `488 pass / 2 skip / 0 fail` |
+| extension typecheck | `cd extensions/memory-palace && npm run typecheck` | pass |
+| latest doc-chat targeted reruns | `cli-uninstalled-zh`, `cli-installed-zh`, `cli-installed-en` | pass |
 
 ## How To Read The Current Results
 
+- The untouched host boundary was also reconfirmed on Windows: before the
+  plugin is installed, `memory_onboarding_status / probe / apply` do not exist
+  yet. Do not collapse the installed and uninstalled branches into one path.
 - `Profile B` remains the safest first-run baseline.
-- The latest recorded provider-probe reruns for `Profile C / D` passed on the
-  tested provider configuration.
-- The latest isolated profile-matrix rerun passed for `A / B / C-default /
-  C-llm / D-default`, and `onboarding --apply --validate` passed for
-  `Profile C / D` on the same macOS validation host.
-- The current-host `verify / doctor / smoke` reruns did **not** fail hard, but
-  they still returned `warn`.
-- In the latest recorded reruns, the main warn reasons were recorded fallback
-  metadata and capture-path diagnostics rather than “plugin not installed”.
+- Once embedding + reranker + LLM are already ready, `Profile D` remains the
+  current strong recommendation.
+- On this Windows host, the real-machine `A / B / C / D` path now has passing
+  setup / probe / apply / sign-off evidence under isolated target configs.
+- The latest wording cleanup was rechecked through targeted doc-chat reruns for
+  `cli-uninstalled-zh`, `cli-installed-zh`, and `cli-installed-en`.
 
 ## Stable Public Boundaries
 
@@ -47,6 +54,10 @@ The commands below were rerun on the current macOS validation host:
   actually change host configuration.
 - The stable user command surface after install remains
   `openclaw memory-palace ...`.
+- The current docs use `openclaw plugins inspect memory-palace --json` as the
+  explicit plugin-load check. Some hosts also accept `plugins info`, but
+  `openclaw skills list` is not the install gate for the bundled onboarding
+  skill.
 - The current public chat-first claim covers handing the checked-out local page
   or local doc path to OpenClaw. It does **not** claim that every host can
   fetch arbitrary public GitHub URLs on its own.

@@ -936,10 +936,16 @@ def _llm_support_payload(current_env: dict[str, str]) -> dict[str, object]:
 
 def _build_apply_preview(args: argparse.Namespace) -> dict[str, object]:
     try:
+        config_path = (
+            resolve_config_path(args.config, openclaw_bin=getattr(args, "openclaw_bin", None))
+            if os.name == "nt"
+            else None
+        )
         env_values, effective_profile, warnings, fallback_applied, missing_fields = installer.apply_setup_defaults(
             profile=args.profile,
             mode=args.mode,
             transport=args.transport,
+            config_path=config_path,
             setup_root_path=(
                 Path(args.setup_root).expanduser().resolve()
                 if args.setup_root
@@ -1281,10 +1287,16 @@ def command_onboarding(args: argparse.Namespace) -> int:
     llm_preview_env = {}
     if isinstance(predicted_apply, dict) and predicted_apply.get("ok"):
         try:
+            config_path = (
+                resolve_config_path(args.config, openclaw_bin=getattr(args, "openclaw_bin", None))
+                if os.name == "nt"
+                else None
+            )
             llm_preview_env, _, _, _, _ = installer.apply_setup_defaults(
                 profile=args.profile,
                 mode=args.mode,
                 transport=args.transport,
+                config_path=config_path,
                 setup_root_path=(
                     Path(args.setup_root).expanduser().resolve()
                     if args.setup_root

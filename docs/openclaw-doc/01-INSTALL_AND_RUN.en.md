@@ -87,7 +87,18 @@ openclaw memory-palace doctor --json
 openclaw memory-palace smoke --json
 ```
 
-If you are running on Windows PowerShell, replace `python3` with `py -3`.
+If you are running on Windows PowerShell, run:
+
+```powershell
+py -3 scripts/openclaw_memory_palace.py setup --mode basic --profile b --transport stdio --json
+openclaw memory-palace verify --json
+openclaw memory-palace doctor --json
+openclaw memory-palace smoke --json
+```
+
+If you only want to confirm that the plugin is already loaded into the current host, prefer `openclaw plugins inspect memory-palace --json`. Some hosts also accept `openclaw plugins info memory-palace`, but `inspect` is the explicit command surface. Do not use `openclaw skills list` as the install gate for the bundled onboarding skill.
+
+The same Windows PowerShell rule applies to the later repo-wrapper examples on this page too, including `--no-activate`, `setup --mode full`, and readiness-only `onboarding` examples.
 
 If you want to manage the slot binding yourself, the wrapper also supports:
 
@@ -184,7 +195,8 @@ Use validation results as environment-specific evidence, not as universal promis
   does not change the active slot as long as `plugins.slots.memory` still points
   at `memory-palace`.
 - This round also reconfirmed that:
-  - `openclaw plugins info memory-palace` reports the plugin as loaded on the real host
+  - `openclaw plugins inspect memory-palace --json` reports the plugin as loaded on the real host; some hosts also accept `openclaw plugins info memory-palace`
+  - `openclaw skills list` is not the install gate for the bundled onboarding skill
   - the same onboarding document can drive the correct next step in CLI / WebUI, in installed / uninstalled states, in both Chinese and English
   - the latest recorded profile-matrix run reproduced the current experimental `A / B / C / D + ACL` behavior
 - Exact recorded host versions, rerun counts, and caveats belong in

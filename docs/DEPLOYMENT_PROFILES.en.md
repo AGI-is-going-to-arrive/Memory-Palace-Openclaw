@@ -51,7 +51,7 @@ One more boundary so the two paths do not get conflated:
 
 - the “asks questions” behavior only applies to **local interactive `setup`**
 - `onboarding --json` itself returns a **structured readiness report**, not a field-by-field questionnaire
-- every `setup / provider-probe / onboarding` mention here refers to `python3 scripts/openclaw_memory_palace.py ...`
+- every `setup / provider-probe / onboarding` mention here refers to `python3 scripts/openclaw_memory_palace.py ...` (on Windows PowerShell: `py -3 scripts/openclaw_memory_palace.py ...`)
 
 ---
 
@@ -387,7 +387,7 @@ cd <project-root>
 >
 > Native Windows / `pwsh` is still recommended to be re-run separately on the target environment; these steps are for deployment verification and should not be mixed with beginner onboarding documentation.
 >
-> The Windows native basic-path currently under maintenance has been unified to `setup -> verify -> doctor -> smoke`, and it is still recommended to run separately on the target environment. The public baseline should also continue to be based on the latest re-run on the target environment.
+> The latest recorded Windows real-machine rerun already reconfirmed the native basic-path `setup -> verify -> doctor -> smoke`, and it is still recommended to rerun it separately on the target environment. The public baseline should continue to be based on the latest target-environment rerun.
 >
 > `docker_one_click.sh/.ps1` generates an independent temporary Docker env file for each run by default, passing it to `docker compose` via `MEMORY_PALACE_DOCKER_ENV_FILE`. It only reuses a specified path when you explicitly set that environment variable, rather than sharing a fixed `.env.docker`.
 >

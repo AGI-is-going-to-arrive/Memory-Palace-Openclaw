@@ -182,6 +182,7 @@ OpenClaw
   - plugin 会自动接好
   - MCP runtime config 会自动写好
   - plugin-bundled OpenClaw skill 也会跟着 plugin / package 一起到位
+  - 在 Windows 上，不要把 `openclaw skills list` 当成这份 bundled skill 的 definitive check；更稳的是先看 `openclaw plugins inspect memory-palace --json`，再结合 `verify / doctor`
 
 ---
 
@@ -246,6 +247,8 @@ OpenClaw
 - OpenClaw plugin 本体
 - MCP runtime / transport 配置
 - plugin-bundled OpenClaw skill
+
+这份 bundled skill 的到位与否，更适合通过 plugin load 加上 `verify / doctor` 判断，而不是只看 `openclaw skills list`。
 
 当前**不会**自动替你注册的是：
 
@@ -395,6 +398,7 @@ OpenClaw 普通用户默认不需要理解这些底层细节：
     - plugin-bundled skill 是否已经到位
     - `profileMemory` 当前配置
     - profile block 当前是否已经探测到
+  - 在 Windows 上，这条链路比单看 `openclaw skills list` 更稳
 
 ---
 

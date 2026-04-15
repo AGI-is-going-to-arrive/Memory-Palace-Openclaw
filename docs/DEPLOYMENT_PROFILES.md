@@ -51,7 +51,7 @@
 
 - 上面说的“会提问”只对应 **本地交互式 `setup`**
 - `onboarding --json` 本身返回的是**结构化 readiness 报告**，不是逐项提问器
-- 这里提到的 `setup / provider-probe / onboarding` 都指 `python3 scripts/openclaw_memory_palace.py ...`
+- 这里提到的 `setup / provider-probe / onboarding` 都指 `python3 scripts/openclaw_memory_palace.py ...`（Windows PowerShell 里统一写成 `py -3 scripts/openclaw_memory_palace.py ...`）
 
 <p align="center">
   <img src="images/profile_ladder_bilingual_4k.png" width="1100" alt="Profile 升级路径双语宣传图" />
@@ -392,7 +392,7 @@ cd <project-root>
 >
 > 原生 Windows / `pwsh` 仍建议在目标环境单独补跑一次；这些步骤面向部署补验，不建议和新手入口文档混在一起读。
 >
-> 当前维护中的 Windows 原生 basic-path 已统一成 `setup -> verify -> doctor -> smoke`，并且仍建议在目标环境单独补跑一次；公开口径也应继续以目标环境最新复跑为准。
+> 最新留档的 Windows 实机复跑已经再次确认原生 basic-path 就是 `setup -> verify -> doctor -> smoke`，并且仍建议在目标环境单独补跑一次；公开口径也应继续以目标环境最新复跑为准。
 >
 > `docker_one_click.sh/.ps1` 默认会为每次运行生成独立的临时 Docker env 文件，并通过 `MEMORY_PALACE_DOCKER_ENV_FILE` 传给 `docker compose`；只有显式设置该环境变量时才会复用指定路径，而不是固定共享 `.env.docker`。
 >

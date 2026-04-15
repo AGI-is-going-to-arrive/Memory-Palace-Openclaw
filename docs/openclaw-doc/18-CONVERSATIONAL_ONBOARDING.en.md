@@ -63,7 +63,8 @@ The public proof set already includes:
 - that doc-chat test set also covers representative corner cases such as provider-probe failure, locked session files, and responses-boundary guidance
 - for LLM provider input, `/responses` is only an accepted input alias; the main runtime path still goes through `/chat/completions`
 - even if OpenClaw answers from this page alone, it should say this directly: **`/responses` is not the final runtime path, and the real main path is `/chat/completions`.**
-- `openclaw plugins info memory-palace` confirms that the plugin can be loaded
+- `openclaw plugins inspect memory-palace --json` confirms that the plugin can be loaded; some hosts also accept `openclaw plugins info memory-palace`
+- `openclaw skills list` is not the install gate for the bundled onboarding skill
 - detailed commands, counts, and caveats live in [../EVALUATION.en.md](../EVALUATION.en.md)
 
 ### Direct answer contract for `/responses`
@@ -138,8 +139,17 @@ If the user pastes this page, or the checked-out local doc path for this page, i
 
 Current public validation for this claim is intentionally narrow:
 
+- it starts from either a checked-out local repo path or the local checkout doc path
 - it covers handing the checked-out local page or local doc path to OpenClaw
 - it does **not** claim that every host can fetch arbitrary public GitHub URLs on its own
+
+So OpenClaw should make the repo-location branch explicit first:
+
+1. **if the repo is already cloned locally, prefer the checked-out local doc path**
+2. **if the repo is not cloned yet, tell the user to clone it first, then continue from the local doc page**
+3. **only after the local repo/doc path exists should it continue the plugin-installed vs plugin-uninstalled branch**
+
+If the user is already handing OpenClaw the checked-out local doc path for this page, that already means the repo exists locally. In that case, do **not** tell the user to clone again.
 
 But one boundary must be explicit first:
 
@@ -148,9 +158,10 @@ But one boundary must be explicit first:
 
 The correct order is:
 
-1. **first determine whether the plugin is already installed / loaded**
-2. **if not installed yet, guide installation first**
-3. **only after installation continue the conversational onboarding flow**
+1. **first determine whether the local repo / local doc path already exists**
+2. **then determine whether the plugin is already installed / loaded**
+3. **if not installed yet, guide installation first**
+4. **only after installation continue the conversational onboarding flow**
 
 That means this page now serves two phases at once:
 
@@ -166,6 +177,8 @@ OpenClaw should first determine which state the user is in:
 1. **plugin / bundled skills are not installed yet**
 2. **plugin is installed, but the first basic setup is not complete yet**
 3. **plugin is installed, the basic setup is complete, and the user only needs provider probe / apply / verify**
+
+Do not use `openclaw skills list` as the definitive install check for the bundled onboarding skill on Windows. Prefer `openclaw plugins inspect memory-palace --json` first, then confirm with `verify / doctor` if needed.
 
 Only states 2 and 3 should go directly into `memory_onboarding_status / probe / apply`.
 
@@ -187,7 +200,7 @@ Before that, OpenClaw should also do one more quick check:
 If you want OpenClaw to start the flow directly from this page, this is the safest first sentence to paste:
 
 ```text
-First determine whether the memory-palace plugin is already installed and loaded. If it is not installed yet, give me the shortest install chain first. If it is already installed, continue with memory_onboarding_status -> memory_onboarding_probe -> memory_onboarding_apply. Reuse any provider settings already present on the host, do not push me to the dashboard by default, and only after apply remind me to run openclaw memory-palace verify / doctor / smoke.
+First determine whether this machine already has a checked-out copy of this repository and prefer the local doc path if it does. If I am already handing you the checked-out local doc path for this page, do not tell me to clone again. If the repo is not cloned yet, tell me to clone it first and then continue from the local doc page. Then determine whether the memory-palace plugin is already installed and loaded. If it is not installed yet, give me the shortest install chain first. For a checked-out repo, that shortest terminal fallback is `python3 scripts/openclaw_memory_palace.py setup --mode basic --profile b --transport stdio --json`; on Windows PowerShell, use `py -3 scripts/openclaw_memory_palace.py setup --mode basic --profile b --transport stdio --json`; then `openclaw memory-palace verify / doctor / smoke`. If it is already installed, continue with memory_onboarding_status -> memory_onboarding_probe -> memory_onboarding_apply. Reuse any provider settings already present on the host, do not push me to the dashboard by default, start with Profile B when no full provider stack is ready yet, and if embedding + reranker + LLM are already ready, strongly recommend Profile D. Only after apply remind me to run openclaw memory-palace verify / doctor / smoke.
 ```
 
 If you also want it to stay aligned with the current public validation language, add this:
@@ -224,6 +237,15 @@ If you only want the safest first-run baseline first:
 python3 scripts/openclaw_memory_palace.py onboarding --profile b --json
 ```
 
+On Windows PowerShell, run the same fallback with `py -3`:
+
+```powershell
+py -3 scripts/openclaw_memory_palace.py onboarding --profile c --json
+py -3 scripts/openclaw_memory_palace.py onboarding --profile b --json
+```
+
+The same Windows PowerShell rule applies to later repo CLI fallback examples on this page, including `provider-probe`, `onboarding --apply --validate`, and `setup`.
+
 This is still **read-only readiness output**. It does not install the plugin,
 does not apply configuration, and does not replace the actual `setup` step.
 
@@ -242,6 +264,7 @@ In other words:
 - it is not itself the local terminal's field-by-field questionnaire
 - the true field-by-field interactive prompt still belongs to local TTY `setup`
 - only `setup ...` or `onboarding --apply --validate ...` actually change the host configuration
+- on Windows PowerShell, use `py -3` for the repo-wrapper commands in this section
 
 If you already collected embedding, reranker, and LLM information and want OpenClaw to apply them directly:
 
@@ -284,6 +307,7 @@ So the safer public reading is:
 
 - do **not** treat either of those as the default install path
 - start with this onboarding page first
+- if the repo is not cloned yet, clone it first; if it is already cloned, prefer the checked-out local doc path
 - if OpenClaw determines that the plugin is not installed yet and the user is already in a repository checkout on the same machine, use the source-checkout path below as the shortest terminal fallback
 
 ```bash
@@ -292,6 +316,8 @@ openclaw memory-palace verify --json
 openclaw memory-palace doctor --json
 openclaw memory-palace smoke --json
 ```
+
+On Windows PowerShell, the same fallback is `py -3 scripts/openclaw_memory_palace.py setup --mode basic --profile b --transport stdio --json`.
 
 This path will:
 
@@ -387,6 +413,7 @@ OpenClaw should explain it in plain language and keep the next action explicit:
 - do **not** describe `Profile C / D` as ready yet
 - do **not** blindly apply unless the user explicitly wants a temporary safe fallback to `Profile B`
 - ask the user to fix the failed item and rerun `python3 scripts/openclaw_memory_palace.py provider-probe --json` or `memory_onboarding_probe`
+- on Windows PowerShell, that repo-wrapper retry is `py -3 scripts/openclaw_memory_palace.py provider-probe --json`
 - only after the probe passes should it continue to apply
 
 ---

@@ -23,15 +23,20 @@ export const docZhRef = path.relative(repoRoot, docZhPath).split(path.sep).join(
 export const docEnRef = path.relative(repoRoot, docEnPath).split(path.sep).join("/");
 export const frontendRoot = path.join(repoRoot, "frontend");
 export const tempRoot = String(process.env.OPENCLAW_ONBOARDING_TEMP_ROOT || '').trim()
-  || path.join(process.env.TMPDIR || "/tmp", "openclaw-onboarding-doc-chat-flow");
+  || path.join(process.env.TMPDIR || process.env.TEMP || process.env.TMP || os.tmpdir(), "openclaw-onboarding-doc-chat-flow");
 
 export const OPENCLAW_BIN = process.env.OPENCLAW_BIN || "openclaw";
+const WINDOWS_POWERSHELL_BIN = process.env.SystemRoot
+  ? path.join(process.env.SystemRoot, "System32", "WindowsPowerShell", "v1.0", "powershell.exe")
+  : "powershell.exe";
 function resolveScenarioPythonBin() {
   const explicit = String(process.env.PYTHON || process.env.PYTHON3 || "").trim();
-  if (explicit && explicit !== "python3" && path.isAbsolute(explicit)) {
+  if (explicit && (process.platform === "win32" || path.isAbsolute(explicit))) {
     return explicit;
   }
   const preferredCandidates = [
+    path.join(repoRoot, ".venv", "Scripts", "python.exe"),
+    path.join(repoRoot, "backend", ".venv", "Scripts", "python.exe"),
     path.join(repoRoot, ".venv", "bin", "python"),
     path.join(repoRoot, "backend", ".venv", "bin", "python"),
     "/opt/homebrew/bin/python3",
@@ -40,6 +45,9 @@ function resolveScenarioPythonBin() {
     if (candidate && existsSync(candidate)) {
       return candidate;
     }
+  }
+  if (process.platform === "win32") {
+    return "py";
   }
   return "python3";
 }
@@ -64,10 +72,11 @@ const SCENARIO_SETUP_TIMEOUT_MS = Number.parseInt(
 const sharedPipCacheDir = path.join(tempRoot, ".pip-cache");
 
 function expandHome(value) {
-  if (!value.startsWith("~/")) {
+  if (!(value.startsWith("~/") || value.startsWith("~\\"))) {
     return value;
   }
-  return path.join(process.env.HOME || "", value.slice(2));
+  const homeDir = process.env.USERPROFILE || process.env.HOME || os.homedir();
+  return path.join(homeDir, value.slice(2));
 }
 
 async function readConfigSnapshot(configPath) {
@@ -130,6 +139,18 @@ export async function runCommand(
     allowFailure = false,
   } = {},
 ) {
+  const quotePowerShellArg = (value) => `'${String(value || "").replaceAll("'", "''")}'`;
+  const normalizeCommandInvocation = (program, argv) => {
+    if (process.platform !== "win32" || program !== OPENCLAW_BIN) {
+      return { program, argv };
+    }
+    const commandLine = ["&", quotePowerShellArg(program), ...argv.map(quotePowerShellArg)].join(" ");
+    return {
+      program: WINDOWS_POWERSHELL_BIN,
+      argv: ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", commandLine],
+    };
+  };
+  const invocation = normalizeCommandInvocation(command, args);
   return await new Promise((resolve, reject) => {
     const killTree = () => {
       if (!child.pid) {
@@ -148,7 +169,7 @@ export async function runCommand(
         child.kill("SIGKILL");
       }
     };
-    const child = spawn(command, args, {
+    const child = spawn(invocation.program, invocation.argv, {
       cwd,
       env,
       stdio: ["ignore", "pipe", "pipe"],
@@ -181,7 +202,7 @@ export async function runCommand(
       if (!allowFailure && result.code !== 0) {
         reject(
           new Error(
-            `${command} ${args.join(" ")} failed with code ${result.code}\nSTDOUT:\n${stdout}\nSTDERR:\n${stderr}`,
+            `${invocation.program} ${invocation.argv.join(" ")} failed with code ${result.code}\nSTDOUT:\n${stdout}\nSTDERR:\n${stderr}`,
           ),
         );
         return;
@@ -959,23 +980,35 @@ export async function getDashboardUrl(scenario) {
 }
 
 export async function startGateway(scenario) {
-  const child = spawn(
-    OPENCLAW_BIN,
-    [
-      "gateway",
-      "run",
-      "--allow-unconfigured",
-      "--force",
-      "--port",
-      String(scenario.port),
-      "--verbose",
-    ],
-    {
-      cwd: repoRoot,
-      env: scenario.env,
-      stdio: ["ignore", "pipe", "pipe"],
-    },
-  );
+  const gatewayArgs = [
+    "gateway",
+    "run",
+    "--allow-unconfigured",
+    "--force",
+    "--port",
+    String(scenario.port),
+    "--verbose",
+  ];
+  const invocation = process.platform === "win32"
+    ? {
+        program: WINDOWS_POWERSHELL_BIN,
+        argv: [
+          "-NoProfile",
+          "-ExecutionPolicy",
+          "Bypass",
+          "-Command",
+          ["&", `'${OPENCLAW_BIN.replaceAll("'", "''")}'`, ...gatewayArgs.map((value) => `'${String(value || "").replaceAll("'", "''")}'`)].join(" "),
+        ],
+      }
+    : {
+        program: OPENCLAW_BIN,
+        argv: gatewayArgs,
+      };
+  const child = spawn(invocation.program, invocation.argv, {
+    cwd: repoRoot,
+    env: scenario.env,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
   let stdout = "";
   let stderr = "";
   child.stdout.on("data", (chunk) => {
@@ -985,28 +1018,46 @@ export async function startGateway(scenario) {
     stderr += chunk.toString();
   });
 
-  const gatewayReady = () => (
-    stdout.includes("[gateway] listening on ws://127.0.0.1:")
-    || stdout.includes("[gateway] ready (")
-    || stdout.includes("[gateway] MCP loopback server listening on http://127.0.0.1:")
-  );
+  const normalizeGatewayLogs = (text) => String(text || "")
+    .replace(/\x1b\[[0-9;?]*[ -/]*[@-~]/gu, "")
+    .replace(/\x1b\][^\u0007]*(?:\u0007|\x1b\\)/gu, "")
+    .replace(/\r/g, "");
 
-  const gatewayHttpReady = async () => {
-    try {
-      const response = await fetch(`http://127.0.0.1:${scenario.port}/`, {
-        signal: AbortSignal.timeout(2_000),
-      });
-      return response.ok || response.status === 304 || response.status === 401 || response.status === 404;
-    } catch {
-      return false;
-    }
+  const gatewayReady = () => {
+    const logs = normalizeGatewayLogs(`${stdout}\n${stderr}`);
+    return (
+      logs.includes("[gateway] listening on ws://127.0.0.1:")
+      || logs.includes("[gateway] ready (")
+      || logs.includes("[gateway] MCP loopback server listening on http://127.0.0.1:")
+    );
   };
 
-  const deadline = Date.now() + 30_000;
+  const gatewayHttpReady = async () => {
+    for (const candidateUrl of [
+      `http://127.0.0.1:${scenario.port}/`,
+      `http://127.0.0.1:${scenario.port}/chat?session=main`,
+    ]) {
+      try {
+        const response = await fetch(candidateUrl, {
+          signal: AbortSignal.timeout(2_000),
+        });
+        if (response.ok || response.status === 304 || response.status === 401 || response.status === 404) {
+          return true;
+        }
+      } catch {
+        // Try the next local endpoint.
+      }
+    }
+    return false;
+  };
+
+  const deadline = Date.now() + 45_000;
   let stableSince = 0;
   const stabilityWindowMs = 2_500;
   while (Date.now() < deadline) {
-    if (gatewayReady() && await gatewayHttpReady()) {
+    const readyByLog = gatewayReady();
+    const readyByHttp = await gatewayHttpReady();
+    if (readyByLog || readyByHttp) {
       if (!stableSince) {
         stableSince = Date.now();
       }
@@ -1023,7 +1074,7 @@ export async function startGateway(scenario) {
     }
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
-  if (!gatewayReady() || !await gatewayHttpReady()) {
+  if (!gatewayReady() && !await gatewayHttpReady()) {
     throw new Error(`Timed out waiting for gateway start\nSTDOUT:\n${stdout}\nSTDERR:\n${stderr}`);
   }
   return {

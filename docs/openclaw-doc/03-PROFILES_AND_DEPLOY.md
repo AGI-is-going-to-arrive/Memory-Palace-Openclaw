@@ -119,6 +119,8 @@
 
 - `python3 scripts/openclaw_memory_palace.py setup --mode basic --profile b --transport stdio --json`
 
+如果你在 Windows PowerShell 里跑，这条 repo wrapper 直接写成 `py -3 scripts/openclaw_memory_palace.py setup --mode basic --profile b --transport stdio --json`。
+
 ### 第二步
 
 确认下面这几条能成功跑完：
@@ -135,6 +137,8 @@
 
 - `python3 scripts/openclaw_memory_palace.py setup --mode basic --profile c --transport stdio --json`
 - `python3 scripts/openclaw_memory_palace.py setup --mode basic --profile d --transport stdio --json`
+
+如果你在 Windows PowerShell 里跑，这两条 repo wrapper 也统一改成 `py -3`。
 
 说人话就是：
 

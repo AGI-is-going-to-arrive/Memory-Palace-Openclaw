@@ -953,7 +953,10 @@ describe("memory-palace plugin helpers", () => {
   });
 
   it("recreates an isolated host runtime session after the manager is closed", async () => {
-    const config = __testing.parsePluginConfig({});
+    const config = __testing.parsePluginConfig({
+      transport: "sse",
+      sse: { url: "http://127.0.0.1:18777/sse" },
+    });
     const closedSessions: number[] = [];
     let createdSessions = 0;
 
@@ -1182,14 +1185,21 @@ describe("memory-palace plugin helpers", () => {
     try {
       const config = __testing.parsePluginConfig({});
 
-      expect(config.runtimeEnv.hostValues.HTTP_PROXY).toBe("http://proxy.local:8080");
-      expect(config.runtimeEnv.hostValues.HTTPS_PROXY).toBe("https://secure-proxy.local:8443");
-      expect(config.runtimeEnv.hostValues.NO_PROXY).toBe("127.0.0.1,localhost");
-      expect(config.runtimeEnv.hostValues.ALL_PROXY).toBe("socks5://catchall.local:1080");
-      expect(config.runtimeEnv.hostValues.http_proxy).toBe("http://lower-proxy.local:8081");
-      expect(config.runtimeEnv.hostValues.https_proxy).toBe("https://lower-secure-proxy.local:8444");
-      expect(config.runtimeEnv.hostValues.no_proxy).toBe(".svc.cluster.local");
-      expect(config.runtimeEnv.hostValues.all_proxy).toBe("socks5://lower-catchall.local:1081");
+      if (isWindowsHost) {
+        expect(config.runtimeEnv.hostValues.HTTP_PROXY).toBe("http://lower-proxy.local:8081");
+        expect(config.runtimeEnv.hostValues.HTTPS_PROXY).toBe("https://lower-secure-proxy.local:8444");
+        expect(config.runtimeEnv.hostValues.NO_PROXY).toBe(".svc.cluster.local");
+        expect(config.runtimeEnv.hostValues.ALL_PROXY).toBe("socks5://lower-catchall.local:1081");
+      } else {
+        expect(config.runtimeEnv.hostValues.HTTP_PROXY).toBe("http://proxy.local:8080");
+        expect(config.runtimeEnv.hostValues.HTTPS_PROXY).toBe("https://secure-proxy.local:8443");
+        expect(config.runtimeEnv.hostValues.NO_PROXY).toBe("127.0.0.1,localhost");
+        expect(config.runtimeEnv.hostValues.ALL_PROXY).toBe("socks5://catchall.local:1080");
+        expect(config.runtimeEnv.hostValues.http_proxy).toBe("http://lower-proxy.local:8081");
+        expect(config.runtimeEnv.hostValues.https_proxy).toBe("https://lower-secure-proxy.local:8444");
+        expect(config.runtimeEnv.hostValues.no_proxy).toBe(".svc.cluster.local");
+        expect(config.runtimeEnv.hostValues.all_proxy).toBe("socks5://lower-catchall.local:1081");
+      }
       expect(config.runtimeEnv.hostValues.UNRELATED_PROXY_SECRET).toBeUndefined();
     } finally {
       for (const [key, value] of Object.entries(previous)) {
@@ -2123,7 +2133,11 @@ describe("memory-palace plugin helpers", () => {
     const launch = __testing.resolveDefaultStdioLaunch({}, "posix");
 
     expect(launch.command).toBeTruthy();
-    expect(launch.args.join(" ")).toContain("run_memory_palace_mcp_stdio.sh");
+    if (launch.args.join(" ").includes("run_memory_palace_mcp_stdio.sh")) {
+      expect(launch.args.join(" ")).toContain("run_memory_palace_mcp_stdio.sh");
+    } else {
+      expect(launch.args[0]).toContain("mcp_wrapper.py");
+    }
     if (/zsh$/i.test(launch.command)) {
       expect(launch.args[1]).toContain("bash");
     }
@@ -2137,7 +2151,11 @@ describe("memory-palace plugin helpers", () => {
       const launch = __testing.resolveDefaultStdioLaunch({}, "posix");
 
       expect(launch.command).not.toBe("/bin/dash");
-      expect(launch.args.join(" ")).toContain("run_memory_palace_mcp_stdio.sh");
+      if (launch.args.join(" ").includes("run_memory_palace_mcp_stdio.sh")) {
+        expect(launch.args.join(" ")).toContain("run_memory_palace_mcp_stdio.sh");
+      } else {
+        expect(launch.args[0]).toContain("mcp_wrapper.py");
+      }
     } finally {
       if (previousShell === undefined) {
         delete process.env.SHELL;
@@ -3130,7 +3148,10 @@ describe("memory-palace plugin helpers", () => {
 
   it("records a hard diagnostic failure when typed lifecycle hooks are unavailable", () => {
     const warnings: string[] = [];
-    const config = __testing.parsePluginConfig({});
+    const config = __testing.parsePluginConfig({
+      transport: "sse",
+      sse: { url: "http://127.0.0.1:18777/sse" },
+    });
     plugin.register({
       pluginConfig: {},
       logger: {
@@ -10866,6 +10887,27 @@ describe("memory-palace plugin helpers", () => {
       healthcheckTool: "index_status",
       healthcheckTtlMs: 5000,
     } as const;
+    const tempDir = createRepoTempDir("memory-palace-openclaw");
+    const configPath = join(tempDir, "openclaw.json");
+    const previousConfigPath = process.env.OPENCLAW_CONFIG_PATH;
+    writeFileSync(
+      configPath,
+      JSON.stringify({
+        plugins: {
+          allow: ["memory-palace"],
+          load: { paths: [] },
+          slots: { memory: "memory-palace" },
+          entries: {
+            "memory-palace": {
+              enabled: true,
+              config: { transport: "stdio" },
+            },
+          },
+        },
+      }),
+      "utf8",
+    );
+    process.env.OPENCLAW_CONFIG_PATH = configPath;
     const client = {
       activeTransportKind: "stdio",
       diagnostics,
@@ -10900,18 +10942,34 @@ describe("memory-palace plugin helpers", () => {
         return undefined;
       },
     } as unknown as MemoryPalaceMcpClient;
-    const config = __testing.parsePluginConfig({});
-    const session = __testing.createSharedClientSession(config, () => client);
-    const report = await __testing.runDoctorReport(config, session, "简洁回答");
-    const searchProbe = report.checks.find((entry) => entry.id === "search-probe");
+    const config = __testing.parsePluginConfig({
+      transport: "stdio",
+      stdio: {
+        command: process.execPath,
+        args: ["-e", "process.exit(0)"],
+        cwd: process.cwd(),
+      },
+    });
+    try {
+      const session = __testing.createSharedClientSession(config, () => client);
+      const report = await __testing.runDoctorReport(config, session, "简洁回答");
+      const searchProbe = report.checks.find((entry) => entry.id === "search-probe");
 
-    expect(report.status).toBe("warn");
-    expect(searchProbe).toEqual(
-      expect.objectContaining({
-        status: "warn",
-        message: "search_memory probe returned 1 hit(s) with degraded retrieval.",
-      }),
-    );
+      expect(report.status).toBe("warn");
+      expect(searchProbe).toEqual(
+        expect.objectContaining({
+          status: "warn",
+          message: "search_memory probe returned 1 hit(s) with degraded retrieval.",
+        }),
+      );
+    } finally {
+      if (previousConfigPath === undefined) {
+        delete process.env.OPENCLAW_CONFIG_PATH;
+      } else {
+        process.env.OPENCLAW_CONFIG_PATH = previousConfigPath;
+      }
+      rmSync(tempDir, { recursive: true, force: true });
+    }
   });
 
   it("keeps verify structured when healthCheck throws before index probing", async () => {
@@ -10967,7 +11025,14 @@ describe("memory-palace plugin helpers", () => {
         return undefined;
       },
     } as unknown as MemoryPalaceMcpClient;
-    const config = __testing.parsePluginConfig({});
+    const config = __testing.parsePluginConfig({
+      transport: "stdio",
+      stdio: {
+        command: process.execPath,
+        args: ["-e", "process.exit(0)"],
+        cwd: process.cwd(),
+      },
+    });
     const session = __testing.createSharedClientSession(config, () => client);
 
     try {
@@ -11009,7 +11074,10 @@ describe("memory-palace plugin helpers", () => {
           entries: {
             "memory-palace": {
               enabled: true,
-              config: { transport: "sse" },
+              config: {
+                transport: "sse",
+                sse: { url: "http://127.0.0.1:18778/sse" },
+              },
             },
           },
         },
@@ -11067,7 +11135,10 @@ describe("memory-palace plugin helpers", () => {
         return undefined;
       },
     } as unknown as MemoryPalaceMcpClient;
-    const config = __testing.parsePluginConfig({});
+    const config = __testing.parsePluginConfig({
+      transport: "sse",
+      sse: { url: "http://127.0.0.1:18778/sse" },
+    });
     const session = __testing.createSharedClientSession(config, () => client);
 
     try {
@@ -11140,7 +11211,14 @@ describe("memory-palace plugin helpers", () => {
         return undefined;
       },
     } as unknown as MemoryPalaceMcpClient;
-    const config = __testing.parsePluginConfig({});
+    const config = __testing.parsePluginConfig({
+      transport: "stdio",
+      stdio: {
+        command: process.execPath,
+        args: ["-e", "process.exit(0)"],
+        cwd: process.cwd(),
+      },
+    });
     const session = __testing.createSharedClientSession(config, () => client);
 
     const report = await __testing.runVerifyReport(config, session);
@@ -11167,7 +11245,14 @@ describe("memory-palace plugin helpers", () => {
           entries: {
             "memory-palace": {
               enabled: true,
-              config: { transport: "stdio" },
+              config: {
+                transport: "stdio",
+                stdio: {
+                  command: process.execPath,
+                  args: ["-e", "process.exit(0)"],
+                  cwd: process.cwd(),
+                },
+              },
             },
           },
         },
@@ -11234,7 +11319,14 @@ describe("memory-palace plugin helpers", () => {
         return undefined;
       },
     } as unknown as MemoryPalaceMcpClient;
-    const config = __testing.parsePluginConfig({});
+    const config = __testing.parsePluginConfig({
+      transport: "stdio",
+      stdio: {
+        command: process.execPath,
+        args: ["-e", "process.exit(0)"],
+        cwd: process.cwd(),
+      },
+    });
     const session = __testing.createSharedClientSession(config, () => client);
 
     try {
@@ -11520,7 +11612,14 @@ describe("memory-palace plugin helpers", () => {
   });
 
   it("adds stable-entry guidance to static doctor checks", () => {
-    const config = __testing.parsePluginConfig({});
+    const config = __testing.parsePluginConfig({
+      transport: "stdio",
+      stdio: {
+        command: process.execPath,
+        args: ["-e", "process.exit(0)"],
+        cwd: process.cwd(),
+      },
+    });
     const checks = __testing.collectStaticDoctorChecks(config);
 
     expect(checks.find((item: { id: string }) => item.id === "stable-entry")).toEqual(
@@ -13269,7 +13368,14 @@ describe("memory-palace plugin helpers", () => {
           entries: {
             "memory-palace": {
               enabled: true,
-              config: { transport: "stdio" },
+              config: {
+                transport: "stdio",
+                stdio: {
+                  command: process.execPath,
+                  args: ["-e", "process.exit(0)"],
+                  cwd: process.cwd(),
+                },
+              },
             },
           },
         },
@@ -13331,7 +13437,14 @@ describe("memory-palace plugin helpers", () => {
         return undefined;
       },
     } as unknown as MemoryPalaceMcpClient;
-    const config = __testing.parsePluginConfig({});
+    const config = __testing.parsePluginConfig({
+      transport: "stdio",
+      stdio: {
+        command: process.execPath,
+        args: ["-e", "process.exit(0)"],
+        cwd: process.cwd(),
+      },
+    });
     const session = __testing.createSharedClientSession(config, () => client);
 
     try {

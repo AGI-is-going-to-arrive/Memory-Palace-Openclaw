@@ -64,6 +64,17 @@ openclaw memory-palace doctor --json
 openclaw memory-palace smoke --json
 ```
 
+Some hosts also accept `openclaw plugins info memory-palace`, but `inspect` is the explicit command surface used here.
+
+If you also want the repo-wrapper dry-run checks, use:
+
+```bash
+python3 scripts/openclaw_memory_palace.py migrate --dry-run --json
+python3 scripts/openclaw_memory_palace.py upgrade --dry-run --json
+```
+
+On Windows PowerShell, use `py -3` for those repo-wrapper dry runs.
+
 For a local `tgz` built from this repository, some host builds may still require
 `--dangerously-force-unsafe-install`.
 Do not generalize that flag to every future installation path.

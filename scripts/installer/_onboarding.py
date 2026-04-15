@@ -184,6 +184,7 @@ def apply_setup_defaults(
     profile: str,
     mode: str,
     transport: str,
+    config_path: Path | None = None,
     setup_root_path: Path,
     existing_env: Mapping[str, str] | None = None,
     database_path: str | None = None,
@@ -221,7 +222,7 @@ def apply_setup_defaults(
     persisted_profile = persisted_requested_profile(existing_env)
     prompted_overrides = runtime_overrides_from_env(prompted_env)
     existing_overrides = runtime_overrides_from_env(existing_env)
-    host_seed_overrides = host_config_runtime_overrides()
+    host_seed_overrides = host_config_runtime_overrides(config_path=config_path)
     env_overrides = current_process_runtime_overrides()
     allow_host_llm_seeds = _allow_host_llm_seeds(
         profile=requested_profile,
@@ -1282,6 +1283,7 @@ def build_onboarding_report(
         profile=normalized_profile,
         mode=normalized_mode,
         transport=normalized_transport,
+        config_path=config_path,
         setup_root_path=setup_root_path,
         existing_env=existing_env,
         database_path=database_path,

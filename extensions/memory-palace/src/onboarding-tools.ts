@@ -89,6 +89,9 @@ async function runLauncherCommand(
     const ALLOWED_ENV_KEYS = [
       "PATH",
       "HOME",
+      "USERPROFILE",
+      "HOMEDRIVE",
+      "HOMEPATH",
       "TMPDIR",
       "TMP",
       "TEMP",
@@ -96,6 +99,7 @@ async function runLauncherCommand(
       "NODE_ENV",
       "PYTHONPATH",
       "VIRTUAL_ENV",
+      "OPENCLAW_BIN",
       "OPENCLAW_CONFIG_PATH",
       "OPENCLAW_CONFIG",
       "OPENCLAW_STATE_DIR",
@@ -131,6 +135,9 @@ async function runLauncherCommand(
       "XDG_CONFIG_HOME",
       "APPDATA",
       "LOCALAPPDATA",
+      "COMSPEC",
+      "ComSpec",
+      "PATHEXT",
       "SystemRoot",
     ];
     for (const key of ALLOWED_ENV_KEYS) {

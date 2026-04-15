@@ -108,6 +108,10 @@ openclaw plugins inspect memory-palace --json
 openclaw memory-palace status --json
 ```
 
+如果你在 Windows PowerShell 里跑，这条 repo wrapper 直接写成 `py -3 scripts/openclaw_memory_palace.py setup --mode basic --profile b --transport stdio --json`。
+
+这页后面再出现的恢复 / 重试 repo wrapper 命令，在 Windows PowerShell 里也统一把 `python3` 改成 `py -3`，包括 `provider-probe` 和 `onboarding --apply --validate`。
+
 如果你装的是当前仓库自己打出来的 local tgz，再确认安装命令是不是：
 
 ```bash
@@ -418,7 +422,7 @@ auth_unavailable
 openclaw plugins inspect memory-palace --json
 ```
 
-如果你只是想确认插件已经装好，`plugins info` 比盯某一个 `Skills` 可见名更稳。
+如果你只是想确认插件已经装好，`plugins inspect memory-palace --json` 是显式检查方式。有些宿主也接受 `plugins info`，但不要依赖某一个 `Skills` 可见名，也不要把 `openclaw skills list` 当成 bundled onboarding skill 的安装判断条件。
 
 再确认：
 

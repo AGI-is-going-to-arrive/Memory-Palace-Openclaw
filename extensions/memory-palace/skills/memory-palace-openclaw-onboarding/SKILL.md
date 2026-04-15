@@ -1,7 +1,7 @@
 ---
 name: memory-palace-openclaw-onboarding
 description: 通过对话引导用户把 Memory Palace 接进 OpenClaw，不依赖 dashboard；for chat-first onboarding, Profile C/D provider collection, probing, fallback explanation, and setup/apply on VPS or terminal-only environments.
-metadata: { "openclaw": { "emoji": "🛠️", "always": true, "requires": { "anyBins": ["memory-palace-openclaw", "python3", "python"] } } }
+metadata: { "openclaw": { "emoji": "🛠️", "always": true, "requires": { "anyBins": ["memory-palace-openclaw", "py", "python3", "python"] } } }
 ---
 
 # Memory Palace OpenClaw Onboarding
@@ -103,6 +103,7 @@ Keep the wording simple:
    - `python3 scripts/openclaw_memory_palace.py onboarding --json`
    - `python3 scripts/openclaw_memory_palace.py provider-probe --profile c|d ... --json`
    - `python3 scripts/openclaw_memory_palace.py setup ... --json`
+   - On Windows PowerShell, replace `python3` with `py -3`
 7. After setup, always verify:
    - `openclaw memory-palace verify --json`
    - `openclaw memory-palace doctor --json`

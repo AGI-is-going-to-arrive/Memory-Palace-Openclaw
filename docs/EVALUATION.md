@@ -13,7 +13,7 @@
 - 不是“所有用户环境天然都一样”
 - 对 OpenClaw 用户来说，这页是验证基线页，不是安装入口页
 - OpenClaw `setup` 会改你本机的 OpenClaw 配置文件，不是改 OpenClaw 源码；如果你没有在自己的目标环境亲自重跑，就不要把历史结果写成“刚刚现跑”
-- 这页里提到的 `provider-probe / onboarding`，都指 **repo wrapper** `python3 scripts/openclaw_memory_palace.py ...`，不是 `openclaw memory-palace` 的稳定子命令
+- 这页里提到的 `provider-probe / onboarding`，都指 **repo wrapper** `python3 scripts/openclaw_memory_palace.py ...`；如果你在 Windows PowerShell 里跑，就把它改成 `py -3 scripts/openclaw_memory_palace.py ...`。它们不是 `openclaw memory-palace` 的稳定子命令
 
 安装入口看：
 
@@ -26,43 +26,43 @@
 
 ### 1.1 当前页面引用的真实复跑
 
+当前页面最上面的公开基线，现在以 **2026-04-15 Windows 实机复跑** 为主；下面 benchmark / ablation 的历史章节，继续按各自标注日期理解。
+
 当前页面引用的结果来自下列已实际重跑并确认的命令：
 
 | 项目 | 命令 | 结果 |
 |---|---|---|
-| 验证主机版本 | `openclaw --version` | `OpenClaw 2026.4.11` |
-| 插件加载状态 | `openclaw plugins info memory-palace --json` | `PASS`，插件已加载 |
-| 验证主机状态 | `openclaw memory-palace status --json` | `PASS`，可达 |
-| 验证主机签收：verify | `openclaw memory-palace verify --json` | `ok=true`，`status=warn` |
-| 验证主机签收：doctor | `openclaw memory-palace doctor --json` | `ok=true`，`status=warn` |
-| 验证主机签收：smoke | `openclaw memory-palace smoke --json` | `ok=true`，`status=warn` |
-| wrapper 安装状态预检 | `python3 scripts/openclaw_memory_palace.py bootstrap-status --json` | `PASS` |
-| wrapper readiness（Profile B） | `python3 scripts/openclaw_memory_palace.py onboarding --profile b --json` | `PASS`，可生成 readiness 报告 |
-| provider probe（Profile C） | `python3 scripts/openclaw_memory_palace.py provider-probe --profile c ... --json` | `PASS` |
-| provider probe（Profile D） | `python3 scripts/openclaw_memory_palace.py provider-probe --profile d ... --json` | `PASS` |
-| onboarding preview（Profile C） | `python3 scripts/openclaw_memory_palace.py onboarding --profile c ... --json` | `PASS`，`predictedApply=ready` |
+| 验证主机版本 | `openclaw --version` | `OpenClaw 2026.4.14` |
+| Profile A setup | `py -3 scripts/openclaw_memory_palace.py setup --mode basic --profile a --transport stdio --json` | `PASS` |
+| Profile A 签收 | `openclaw memory-palace verify / doctor / smoke --json` | `PASS`（隔离 target config） |
+| Profile B setup | `py -3 scripts/openclaw_memory_palace.py setup --mode basic --profile b --transport stdio --json` | `PASS` |
+| 插件加载状态 | `openclaw plugins inspect memory-palace --json` | `PASS`，插件已加载 |
+| Profile B onboarding tool 面 | `memory_onboarding_status / probe / apply` | `PASS`，已注册到真实宿主 |
+| Profile B 签收 | `openclaw memory-palace verify / doctor / smoke --json` | `PASS` |
+| provider probe（Profile C） | `py -3 scripts/openclaw_memory_palace.py provider-probe --profile c ... --json` | `PASS` |
+| provider probe（Profile D） | `py -3 scripts/openclaw_memory_palace.py provider-probe --profile d ... --json` | `PASS` |
+| apply（Profile C） | `py -3 scripts/openclaw_memory_palace.py onboarding --profile c --apply --validate --json` | `PASS` |
+| apply（Profile D） | `py -3 scripts/openclaw_memory_palace.py onboarding --profile d --apply --validate --json` | `PASS` |
+| Profile C / D 签收 | `openclaw memory-palace verify / doctor / smoke --json` | `PASS` |
+| Windows native validation unittest | `py -3 -m unittest scripts.test_openclaw_memory_palace_windows_native_validation` | `PASS` |
+| installer 回归测试 | `py -3 -m unittest scripts.test_openclaw_memory_palace_installer` | `PASS` |
+| 扩展测试套件 | `cd extensions/memory-palace && bun test` | `488 pass / 2 skip / 0 fail` |
+| 扩展 typecheck | `cd extensions/memory-palace && npm run typecheck` | `PASS` |
+| 最新 doc-chat 定向复跑 | `cli-uninstalled-zh`、`cli-installed-zh`、`cli-installed-en` | `PASS` |
 
 这里要按正确口径理解：
 
 - 这页现在只把**当前页面明确列出的真实复跑结果**写成“已验证”。
-- 之前保存在仓库里的长 benchmark、历史复盘、旧运行日志，仍然是历史参考，不应再被读成“当前刚刚现跑”。
-- 当前公开摘要没有把历史上的 frontend / backend / extension 全量 sweep 重新改写成“这次刚验证”，因此旧数字继续按历史记录理解。
+- 上面这张表现在优先代表 **Windows 实机 OpenClaw 验收**；后面的 benchmark / 历史复盘 / 旧运行日志，继续按原始日期理解。
+- 当前公开摘要没有把历史上的 frontend / backend / retrieval benchmark 全量重写成“这次刚验证”，所以旧数字继续按历史记录理解。
 
 ### 1.2 这次结果应该怎么读
 
 - `Profile B` 仍然是最稳的默认起步档。
-- 最新留档的本地 provider 配置复跑里，`Profile C / D provider-probe` 已经通过。
-- 最新一轮隔离 `profile-matrix` 复跑里，`A / B / C-default / C-llm / D-default`
-  全部通过；同一台 macOS 验证主机上的 `onboarding --apply --validate`
-  也已经通过 `Profile C / D`。
-- 但验证主机上的 `verify / doctor / smoke` 三条签收命令**都不是全绿**，而是 `ok=true + status=warn`。
-- 最新留档结果里的 `warn` 主要来自：
-  - 已记录的 `lastFallbackPath`
-  - capture-path 相关诊断
-- 所以这里更稳的公开说法必须是：
-  - **插件已安装、主链已接上**
-  - **provider-probe 可通过**
-  - **验证主机签收命令仍带 warning，不能写成“当前机器已全绿签收”**
+- 如果 embedding + reranker + LLM 都已经 ready，`Profile D` 仍然是当前更强的推荐目标。
+- 这轮 Windows 实机已经再次确认：`A / B / C / D` 的 setup / probe / apply / sign-off 主链都能在隔离 target config 上通过。
+- 这轮也再次确认了未安装边界：在 plugin 真正装进宿主之前，`memory_onboarding_status / probe / apply` 不存在，不能把未安装和已安装流程揉成一条。
+- 最新这轮文案清理后，又定向复跑了 `cli-uninstalled-zh`、`cli-installed-zh`、`cli-installed-en`；所以当前中英文安装 / 已装主分支，已经有和最新版文案对齐的 Windows 证据。
 
 ### 1.3 当前公开口径
 
@@ -71,6 +71,7 @@
 - 真正改配置的是 `setup ...` 或 `onboarding --apply --validate ...`。
 - 安装后稳定给用户长期使用的命令面仍然是：
   - `openclaw memory-palace ...`
+- 当前公开文档里的插件加载检查，以 `openclaw plugins inspect memory-palace --json` 为准；有些宿主也接受 `plugins info`，但 `openclaw skills list` 不是 bundled onboarding skill 的安装判断条件。
 - 当前公开“对话式 onboarding”口径，验证的是：
   - 把本地 checkout 的文档页或文档路径交给 OpenClaw
   - 然后让 OpenClaw 给出正确下一步

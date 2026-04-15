@@ -154,7 +154,8 @@ A simpler way to think about it:
 - The public verification baseline should be understood as local / package / target-environment reproduction, not as hosted CI
 - Complete numbers and reproduction commands are at [../EVALUATION.en.md](../EVALUATION.en.md)
 - This round reconfirmed that:
-  - `openclaw plugins info memory-palace` reports the plugin as loaded
+  - `openclaw plugins inspect memory-palace --json` reports the plugin as loaded; some hosts also accept `openclaw plugins info memory-palace`
+  - `openclaw skills list` is not the install gate for the bundled onboarding skill
   - the same onboarding document can drive the correct next step in CLI / WebUI, in installed / uninstalled states, in both Chinese and English
   - the latest profile-matrix record reproduced the current experimental `A / B / C / D + ACL` behavior
 - Read `15 / 16 / 18 / 23 / 24` as the current public user-evidence pages

@@ -86,6 +86,8 @@ openclaw plugins install --dangerously-force-unsafe-install ./openclaw-memory-pa
 openclaw plugins inspect memory-palace --json
 ```
 
+有些宿主也接受 `openclaw plugins info memory-palace`，但这里统一用显式的 `inspect` 命令面。
+
 如果这里安装的是**你刚从当前仓库打出来的本地 tgz**，`OpenClaw 2026.4.5+` 需要显式带上 `--dangerously-force-unsafe-install`；否则宿主会把插件里的本地 launcher / helper 代码当成危险模式直接拦下。
 
 再补一句边界：
@@ -103,6 +105,8 @@ openclaw memory-palace smoke --json
 python3 scripts/openclaw_memory_palace.py migrate --dry-run --json
 python3 scripts/openclaw_memory_palace.py upgrade --dry-run --json
 ```
+
+如果你在 Windows PowerShell 里跑，这两条 repo wrapper dry-run 也统一写成 `py -3`。
 
 ---
 

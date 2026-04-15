@@ -118,6 +118,8 @@ Start with:
 
 - `python3 scripts/openclaw_memory_palace.py setup --mode basic --profile b --transport stdio --json`
 
+On Windows PowerShell, run the same repo-wrapper command as `py -3 scripts/openclaw_memory_palace.py setup --mode basic --profile b --transport stdio --json`.
+
 ### Step Two
 
 Verify that the following commands complete successfully:
@@ -136,6 +138,8 @@ Only switch to the following when you have your own model services ready:
 
 - `python3 scripts/openclaw_memory_palace.py setup --mode basic --profile c --transport stdio --json`
 - `python3 scripts/openclaw_memory_palace.py setup --mode basic --profile d --transport stdio --json`
+
+On Windows PowerShell, use `py -3` for those repo-wrapper commands too.
 
 In user terms:
 

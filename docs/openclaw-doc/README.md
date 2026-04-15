@@ -157,7 +157,8 @@ flowchart TD
 - 公开验证口径按本机 / package / 目标环境复跑理解，不按 hosted CI 理解
 - 完整数字和复跑命令统一看 [../EVALUATION.md](../EVALUATION.md)
 - 这轮已经再次确认：
-  - `openclaw plugins info memory-palace` 能看到 plugin 已加载
+  - `openclaw plugins inspect memory-palace --json` 已能确认 plugin 已加载；有些宿主也接受 `openclaw plugins info memory-palace`
+  - `openclaw skills list` 不是 bundled onboarding skill 的安装判断条件
   - 同一份 onboarding 文档已经验证过可以在 CLI / WebUI、未安装 / 已安装、中英文这些主分支里给出正确下一步
   - 最新一轮 profile-matrix 记录里，已经复现当前实验性 `A / B / C / D + ACL` 行为
 - `15 / 16 / 18 / 23 / 24` 这些用户页，现在统一按“当前公开用户证据页”理解

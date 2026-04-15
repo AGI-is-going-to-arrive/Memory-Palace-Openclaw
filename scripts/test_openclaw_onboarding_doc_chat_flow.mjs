@@ -32,6 +32,15 @@ const useCurrentInstalledHost =
 const sessionRunNonce =
   String(process.env.OPENCLAW_ONBOARDING_CHAT_FLOW_RUN_ID || "").trim()
   || Date.now().toString(36);
+const expectedProfileBSetupCommand = process.platform === "win32"
+  ? "py -3 scripts/openclaw_memory_palace.py setup --mode basic --profile b --transport stdio --json"
+  : "python3 scripts/openclaw_memory_palace.py setup --mode basic --profile b --transport stdio --json";
+const selectedCases = new Set(
+  String(process.env.OPENCLAW_ONBOARDING_CASES || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean),
+);
 
 function okCase(name, details) {
   return { name, ok: true, ...details };
@@ -65,6 +74,10 @@ function assertUninstalledOnboardingBoundary(text, context) {
   throw new Error(
     `${context}: expected output to explain that onboarding tools cannot be assumed before plugin install\n\n${rendered}`,
   );
+}
+
+function shouldRunCase(name) {
+  return selectedCases.size === 0 || selectedCases.has(name);
 }
 
 function isTransientRateLimitFailure(error) {
@@ -163,21 +176,38 @@ async function main() {
     cases: [],
   };
 
-  const uninstalled = await prepareScenario({
-    name: "uninstalled",
-    port: 18891,
-    installPlugin: false,
-  });
-  const installed = useCurrentInstalledHost
-    ? {
-        root: "current-openclaw-host",
-        env: process.env,
-      }
-    : await prepareScenario({
-        name: "installed",
-        port: 18892,
-        installPlugin: true,
-      });
+  const needsUninstalledScenario = [
+    "cli-uninstalled-zh",
+    "web-uninstalled-zh",
+  ].some(shouldRunCase);
+  const needsInstalledScenario = [
+    "cli-installed-zh",
+    "cli-installed-en",
+    "corner-provider-probe-fail-zh",
+    "corner-session-file-locked-zh",
+    "corner-responses-boundary-en",
+    "web-installed-zh",
+  ].some(shouldRunCase);
+
+  const uninstalled = needsUninstalledScenario
+    ? await prepareScenario({
+        name: "uninstalled",
+        port: 18891,
+        installPlugin: false,
+      })
+    : null;
+  const installed = !needsInstalledScenario
+    ? null
+    : useCurrentInstalledHost
+      ? {
+          root: "current-openclaw-host",
+          env: process.env,
+        }
+      : await prepareScenario({
+          name: "installed",
+          port: 18892,
+          installPlugin: true,
+        });
 
   const uninstalledPromptZh =
     `请阅读 ${docZhPath} ，并按文档规则回答：如果当前宿主还没安装 memory-palace plugin，你会先检查什么，然后给我最短安装链路。不要假设 memory_onboarding_status 已经存在。`;
@@ -186,139 +216,159 @@ async function main() {
   const installedPromptEn =
     `Read ${docEnPath} and answer by the updated rules only: what must you check first, what do you do if the plugin is not installed yet, and what chain do you follow if it is already installed? Do not push me to the dashboard.`;
 
-  const uninstalledGateway = await startGateway(uninstalled);
-  try {
-    console.log("[test] cli-uninstalled-zh");
-    const uninstalledCli = await withTransientRetry("cli-uninstalled-zh", async (attempt) =>
-      await runGatewayAgent({
-        scenario: uninstalled,
-        sessionId: withAttemptSessionId("doc-link-uninstalled-cli", attempt),
-        message: uninstalledPromptZh,
-      }),
-    );
-    assertIncludesAny(uninstalledCli.text, ["先检查", "先查", "先确认"], "uninstalled cli");
-    assertIncludes(
-      uninstalledCli.text,
-      "python3 scripts/openclaw_memory_palace.py setup --mode basic --profile b --transport stdio --json",
-      "uninstalled cli install chain",
-    );
-    assertUninstalledOnboardingBoundary(uninstalledCli.text, "uninstalled cli tool warning");
-    await appendCase(report,
-      okCase("cli-uninstalled-zh", {
-        excerpt: uninstalledCli.text,
-        scenarioRoot: uninstalled.root,
-      }),
-    );
+  if (uninstalled) {
+    const uninstalledGateway = await startGateway(uninstalled);
+    try {
+      if (shouldRunCase("cli-uninstalled-zh")) {
+        console.log("[test] cli-uninstalled-zh");
+        const uninstalledCli = await withTransientRetry("cli-uninstalled-zh", async (attempt) =>
+          await runGatewayAgent({
+            scenario: uninstalled,
+            sessionId: withAttemptSessionId("doc-link-uninstalled-cli", attempt),
+            message: uninstalledPromptZh,
+          }),
+        );
+        assertIncludesAny(uninstalledCli.text, ["先检查", "先查", "先确认"], "uninstalled cli");
+        assertIncludes(
+          uninstalledCli.text,
+          expectedProfileBSetupCommand,
+          "uninstalled cli install chain",
+        );
+        assertUninstalledOnboardingBoundary(uninstalledCli.text, "uninstalled cli tool warning");
+        await appendCase(report,
+          okCase("cli-uninstalled-zh", {
+            excerpt: uninstalledCli.text,
+            scenarioRoot: uninstalled.root,
+          }),
+        );
+      }
 
-    console.log("[test] web-uninstalled-zh");
-    const uninstalledWeb = await withTransientRetry("web-uninstalled-zh", async () =>
-      await runWebPrompt({
-        scenario: uninstalled,
-        prompt: uninstalledPromptZh,
-        expectedText: "最短安装链路",
-      }),
-    );
-    await appendCase(report, okCase("web-uninstalled-zh", uninstalledWeb));
-  } finally {
-    await stopGateway(uninstalledGateway);
+      if (shouldRunCase("web-uninstalled-zh")) {
+        console.log("[test] web-uninstalled-zh");
+        const uninstalledWeb = await withTransientRetry("web-uninstalled-zh", async () =>
+          await runWebPrompt({
+            scenario: uninstalled,
+            prompt: uninstalledPromptZh,
+            expectedText: "最短安装链路",
+          }),
+        );
+        await appendCase(report, okCase("web-uninstalled-zh", uninstalledWeb));
+      }
+    } finally {
+      await stopGateway(uninstalledGateway);
+    }
   }
 
-  const installedGateway = useCurrentInstalledHost ? null : await startGateway(installed);
-  try {
-    console.log("[test] cli-installed-zh");
-    const installedCliZh = await withTransientRetry("cli-installed-zh", async (attempt) =>
-      await runGatewayAgent({
-        scenario: installed,
-        sessionId: installedSessionId("doc-link-installed-cli-zh", attempt),
-        message: installedPromptZh,
-      }),
-    );
-    assertIncludesAny(installedCliZh.text, ["先检查", "先查", "先确认"], "installed cli zh");
-    assertIncludes(installedCliZh.text, "plugin", "installed cli zh plugin state");
-    assertIncludes(installedCliZh.text, "probe", "installed cli zh probe");
-    assertIncludes(installedCliZh.text, "apply", "installed cli zh apply");
-    await appendCase(report,
-      okCase("cli-installed-zh", {
-        excerpt: installedCliZh.text,
-        scenarioRoot: installed.root,
-      }),
-    );
+  if (installed) {
+    const installedGateway = useCurrentInstalledHost ? null : await startGateway(installed);
+    try {
+      if (shouldRunCase("cli-installed-zh")) {
+        console.log("[test] cli-installed-zh");
+        const installedCliZh = await withTransientRetry("cli-installed-zh", async (attempt) =>
+          await runGatewayAgent({
+            scenario: installed,
+            sessionId: installedSessionId("doc-link-installed-cli-zh", attempt),
+            message: installedPromptZh,
+          }),
+        );
+        assertIncludesAny(installedCliZh.text, ["先检查", "先查", "先确认"], "installed cli zh");
+        assertIncludes(installedCliZh.text, "plugin", "installed cli zh plugin state");
+        assertIncludes(installedCliZh.text, "probe", "installed cli zh probe");
+        assertIncludes(installedCliZh.text, "apply", "installed cli zh apply");
+        await appendCase(report,
+          okCase("cli-installed-zh", {
+            excerpt: installedCliZh.text,
+            scenarioRoot: installed.root,
+          }),
+        );
+      }
 
-    console.log("[test] cli-installed-en");
-    const installedCliEn = await withTransientRetry("cli-installed-en", async (attempt) =>
-      await runGatewayAgent({
-        scenario: installed,
-        sessionId: installedSessionId("doc-link-installed-cli-en", attempt),
-        message: installedPromptEn,
-      }),
-    );
-    assertIncludes(installedCliEn.text, "installed", "installed cli en");
-    assertIncludes(installedCliEn.text, "probe", "installed cli en probe");
-    assertIncludes(installedCliEn.text, "apply", "installed cli en apply");
-    await appendCase(report,
-      okCase("cli-installed-en", {
-        excerpt: installedCliEn.text,
-        scenarioRoot: installed.root,
-      }),
-    );
+      if (shouldRunCase("cli-installed-en")) {
+        console.log("[test] cli-installed-en");
+        const installedCliEn = await withTransientRetry("cli-installed-en", async (attempt) =>
+          await runGatewayAgent({
+            scenario: installed,
+            sessionId: installedSessionId("doc-link-installed-cli-en", attempt),
+            message: installedPromptEn,
+          }),
+        );
+        assertIncludes(installedCliEn.text, "installed", "installed cli en");
+        assertIncludes(installedCliEn.text, "probe", "installed cli en probe");
+        assertIncludes(installedCliEn.text, "apply", "installed cli en apply");
+        await appendCase(report,
+          okCase("cli-installed-en", {
+            excerpt: installedCliEn.text,
+            scenarioRoot: installed.root,
+          }),
+        );
+      }
 
-    console.log("[test] corner-provider-probe-fail-zh");
-    const providerFail = await withTransientRetry("corner-provider-probe-fail-zh", async (attempt) =>
-      await runGatewayAgent({
-        scenario: installed,
-        sessionId: installedSessionId("doc-link-provider-fail-zh", attempt),
-        message: `请阅读 ${docZhPath} 。按文档规则回答：如果 provider probe fail，你应该怎么向用户解释？不要说 C/D 已经 ready。`,
-      }),
-    );
-    assertIncludes(providerFail.text, "provider", "provider fail explanation");
-    assertIncludesAny(
-      providerFail.text,
-      ["provider-probe", "重跑 probe", "probe 通过后"],
-      "provider fail recovery",
-    );
-    await appendCase(report, okCase("corner-provider-probe-fail-zh", { excerpt: providerFail.text }));
+      if (shouldRunCase("corner-provider-probe-fail-zh")) {
+        console.log("[test] corner-provider-probe-fail-zh");
+        const providerFail = await withTransientRetry("corner-provider-probe-fail-zh", async (attempt) =>
+          await runGatewayAgent({
+            scenario: installed,
+            sessionId: installedSessionId("doc-link-provider-fail-zh", attempt),
+            message: `请阅读 ${docZhPath} 。按文档规则回答：如果 provider probe fail，你应该怎么向用户解释？不要说 C/D 已经 ready。`,
+          }),
+        );
+        assertIncludes(providerFail.text, "provider", "provider fail explanation");
+        assertIncludesAny(
+          providerFail.text,
+          ["provider-probe", "重跑 probe", "probe 通过后"],
+          "provider fail recovery",
+        );
+        await appendCase(report, okCase("corner-provider-probe-fail-zh", { excerpt: providerFail.text }));
+      }
 
-    const sessionLock = await withTransientRetry("corner-session-file-locked-zh", async (attempt) =>
-      await runGatewayAgent({
-        scenario: installed,
-        sessionId: installedSessionId("doc-link-session-lock-zh", attempt),
-        message: `请阅读 ${docZhPath} 。按文档规则回答：如果用户在 CLI 里遇到 session file locked，最稳的恢复顺序是什么？`,
-      }),
-    );
-    assertIncludesAny(sessionLock.text, ["新的 session", "新会话", "fresh session"], "session lock order");
-    assertIncludesAny(sessionLock.text, ["临时 agent", "temporary agent"], "session lock temp agent");
-    await appendCase(report, okCase("corner-session-file-locked-zh", { excerpt: sessionLock.text }));
+      if (shouldRunCase("corner-session-file-locked-zh")) {
+        const sessionLock = await withTransientRetry("corner-session-file-locked-zh", async (attempt) =>
+          await runGatewayAgent({
+            scenario: installed,
+            sessionId: installedSessionId("doc-link-session-lock-zh", attempt),
+            message: `请阅读 ${docZhPath} 。按文档规则回答：如果用户在 CLI 里遇到 session file locked，最稳的恢复顺序是什么？`,
+          }),
+        );
+        assertIncludesAny(sessionLock.text, ["新的 session", "新会话", "fresh session"], "session lock order");
+        assertIncludesAny(sessionLock.text, ["临时 agent", "temporary agent"], "session lock temp agent");
+        await appendCase(report, okCase("corner-session-file-locked-zh", { excerpt: sessionLock.text }));
+      }
 
-    console.log("[test] corner-responses-boundary-en");
-    const responsesBoundary = await withTransientRetry("corner-responses-boundary-en", async (attempt) =>
-      await runGatewayAgent({
-        scenario: installed,
-        sessionId: installedSessionId("doc-link-responses-en", attempt),
-        message:
-          `Read ${docEnPath} now, using the exact file text rather than previous memory or earlier session context. ` +
-          `Answer by the document only: is /responses the final runtime path for this project, or only an accepted input alias? ` +
-          `State the real main path too.`,
-      }),
-    );
-    assertIncludesAny(
-      responsesBoundary.text,
-      ["accepted input alias", "not presented here as the final runtime path", "not the final runtime path"],
-      "responses alias",
-    );
-    assertIncludes(responsesBoundary.text, "/responses", "responses boundary mention");
-    await appendCase(report, okCase("corner-responses-boundary-en", { excerpt: responsesBoundary.text }));
+      if (shouldRunCase("corner-responses-boundary-en")) {
+        console.log("[test] corner-responses-boundary-en");
+        const responsesBoundary = await withTransientRetry("corner-responses-boundary-en", async (attempt) =>
+          await runGatewayAgent({
+            scenario: installed,
+            sessionId: installedSessionId("doc-link-responses-en", attempt),
+            message:
+              `Read ${docEnPath} now, using the exact file text rather than previous memory or earlier session context. ` +
+              `Answer by the document only: is /responses the final runtime path for this project, or only an accepted input alias? ` +
+              `State the real main path too.`,
+          }),
+        );
+        assertIncludesAny(
+          responsesBoundary.text,
+          ["accepted input alias", "not presented here as the final runtime path", "not the final runtime path"],
+          "responses alias",
+        );
+        assertIncludes(responsesBoundary.text, "/responses", "responses boundary mention");
+        await appendCase(report, okCase("corner-responses-boundary-en", { excerpt: responsesBoundary.text }));
+      }
 
-    console.log("[test] web-installed-zh");
-    const installedWeb = await withTransientRetry("web-installed-zh", async () =>
-      await runWebPrompt({
-        scenario: installed,
-        prompt: installedPromptZh,
-        expectedText: "如果 plugin 已安装",
-      }),
-    );
-    await appendCase(report, okCase("web-installed-zh", installedWeb));
-  } finally {
-    if (installedGateway) await stopGateway(installedGateway);
+      if (shouldRunCase("web-installed-zh")) {
+        console.log("[test] web-installed-zh");
+        const installedWeb = await withTransientRetry("web-installed-zh", async () =>
+          await runWebPrompt({
+            scenario: installed,
+            prompt: installedPromptZh,
+            expectedText: "如果 plugin 已安装",
+          }),
+        );
+        await appendCase(report, okCase("web-installed-zh", installedWeb));
+      }
+    } finally {
+      if (installedGateway) await stopGateway(installedGateway);
+    }
   }
 
   report.ok = true;

@@ -108,6 +108,10 @@ openclaw plugins inspect memory-palace --json
 openclaw memory-palace status --json
 ```
 
+On Windows PowerShell, use `py -3 scripts/openclaw_memory_palace.py setup --mode basic --profile b --transport stdio --json`.
+
+The same `py -3` rule applies to the later recovery / retry repo-wrapper commands on this page too, including `provider-probe` and `onboarding --apply --validate`.
+
 If you installed a local tgz built from this repository, also confirm the install command was:
 
 ```bash
@@ -418,7 +422,7 @@ Check first:
 openclaw plugins inspect memory-palace --json
 ```
 
-If your goal is simply to confirm the plugin is installed, `plugins info` is more reliable than depending on one specific `Skills` display label.
+If your goal is simply to confirm the plugin is installed, `plugins inspect memory-palace --json` is the explicit check. Some hosts also accept `plugins info`, but do not depend on one specific `Skills` display label, and do not use `openclaw skills list` as the install gate for the bundled onboarding skill.
 
 Then confirm:
 

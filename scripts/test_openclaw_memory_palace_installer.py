@@ -1349,6 +1349,27 @@ class InstallerTests(unittest.TestCase):
         self.assertTrue(any("fell back to Profile B" in item for item in warnings))
         self.assertTrue(any("Missing C/D fields:" in item for item in warnings))
 
+    def test_apply_setup_defaults_passes_config_path_to_host_overrides(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir, mock.patch.object(
+            installer,
+            "host_config_runtime_overrides",
+            wraps=installer.host_config_runtime_overrides,
+        ) as host_overrides:
+            setup_root = Path(tmp_dir)
+            config_path = setup_root / "openclaw.json"
+            config_path.write_text("{}", encoding="utf-8")
+            installer.apply_setup_defaults(
+                profile="b",
+                mode="basic",
+                transport="stdio",
+                config_path=config_path,
+                setup_root_path=setup_root,
+                existing_env={},
+                host_platform="windows",
+            )
+
+        host_overrides.assert_called_once_with(config_path=config_path)
+
     def test_bootstrap_status_includes_install_checks(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
             tmp_root = Path(tmp_dir)

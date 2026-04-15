@@ -19,19 +19,19 @@ const openclawBin =
   || (process.platform === 'win32' ? 'openclaw.CMD' : 'openclaw');
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const pluginRoot = path.join(repoRoot, 'extensions', 'memory-palace');
-const quoteShellArg = (value: string) => {
-  if (!/[\s"]/u.test(value)) return value;
-  return `"${value.replaceAll('"', '\\"')}"`;
-};
+const windowsPowerShellBin = process.env.SystemRoot
+  ? path.join(process.env.SystemRoot, 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe')
+  : 'powershell.exe';
+const quotePowerShellArg = (value: string) => `'${value.replaceAll("'", "''")}'`;
 
 const runOpenClawSync = (args: string[], options: Parameters<typeof spawnSync>[2] = {}) => {
   if (process.platform !== 'win32') {
     return spawnSync(openclawBin, args, options);
   }
-  const commandLine = [quoteShellArg(openclawBin), ...args.map(quoteShellArg)].join(' ');
+  const commandLine = ['&', quotePowerShellArg(openclawBin), ...args.map(quotePowerShellArg)].join(' ');
   return spawnSync(
-    process.env.ComSpec || 'C:\\Windows\\System32\\cmd.exe',
-    ['/d', '/s', '/c', commandLine],
+    windowsPowerShellBin,
+    ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', commandLine],
     options
   );
 };

@@ -58,7 +58,7 @@ flowchart TD
 
 这里还有一个经常会混淆的点：
 
-- 仓库 wrapper 命令是 `python3 scripts/openclaw_memory_palace.py ...`
+- 仓库 wrapper 命令是 `python3 scripts/openclaw_memory_palace.py ...`（Windows PowerShell 里写成 `py -3 scripts/openclaw_memory_palace.py ...`）
 - 用户长期使用的稳定命令是 `openclaw memory-palace ...`
 
 不要把它们混成一套。尤其是：
@@ -96,7 +96,18 @@ openclaw memory-palace doctor --json
 openclaw memory-palace smoke --json
 ```
 
-如果你在 Windows PowerShell 里跑，把 `python3` 换成 `py -3` 即可。
+如果你在 Windows PowerShell 里跑，直接执行：
+
+```powershell
+py -3 scripts/openclaw_memory_palace.py setup --mode basic --profile b --transport stdio --json
+openclaw memory-palace verify --json
+openclaw memory-palace doctor --json
+openclaw memory-palace smoke --json
+```
+
+如果你只是想确认 plugin 已经真正加载进当前宿主，优先用 `openclaw plugins inspect memory-palace --json`。有些宿主也接受 `openclaw plugins info memory-palace`，但 `inspect` 是显式命令面。不要把 `openclaw skills list` 当成 bundled onboarding skill 的安装判断条件。
+
+这页后面再出现的 repo wrapper 示例，在 Windows PowerShell 里也统一把 `python3` 改成 `py -3`，包括 `--no-activate`、`setup --mode full` 和只看 readiness 的 `onboarding` 示例。
 
 如果你想自己管理 slot 绑定，wrapper 也支持：
 
@@ -266,7 +277,8 @@ openclaw memory-palace store-visual --help
 
 这轮公开文档只把当前已经确认的事实写出来：
 
-- plugin 已可由 `openclaw plugins info memory-palace` 确认加载
+- plugin 已可由 `openclaw plugins inspect memory-palace --json` 确认加载；有些宿主也接受 `openclaw plugins info memory-palace`
+- `openclaw skills list` 不是 bundled onboarding skill 的安装判断条件
 - 仓库记录里，最新一轮 profile-matrix 已复现当前实验性 `A / B / C / D + ACL` 行为
 - 同一份 onboarding 文档已经验证过可以在 CLI / WebUI、未安装 / 已安装、中英文这些主分支里给出正确下一步
 

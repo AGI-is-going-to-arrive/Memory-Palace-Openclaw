@@ -90,9 +90,12 @@ function Import-DotEnv {
     throw "Model env file not found: $Path"
   }
   Get-Content $Path | ForEach-Object {
-    $line = $_.Trim()
+    $line = ([string]$_).Replace("`uFEFF", "").Trim()
     if (-not $line -or $line.StartsWith("#")) {
       return
+    }
+    if ($line.StartsWith("export ")) {
+      $line = $line.Substring(7).Trim()
     }
     $parts = $line.Split("=", 2)
     if ($parts.Length -ne 2) {
@@ -100,6 +103,9 @@ function Import-DotEnv {
     }
     $key = $parts[0].Trim()
     $value = $parts[1].Trim()
+    if ($value.Length -ge 2 -and (($value.StartsWith('"') -and $value.EndsWith('"')) -or ($value.StartsWith("'") -and $value.EndsWith("'")))) {
+      $value = $value.Substring(1, $value.Length - 2)
+    }
     if ($key) {
       Set-Item -Path "Env:$key" -Value $value
     }

@@ -380,8 +380,8 @@ def build_openclaw_env(
         if not any(key.startswith(prefix) for prefix in ISOLATED_RUNTIME_ENV_PREFIXES)
     }
     env.update(model_env)
-    env["OPENCLAW_CONFIG_PATH"] = str(config_path)
-    env["OPENCLAW_STATE_DIR"] = str(state_dir)
+    env["OPENCLAW_CONFIG_PATH"] = config_path.as_posix()
+    env["OPENCLAW_STATE_DIR"] = state_dir.as_posix()
     return env
 
 

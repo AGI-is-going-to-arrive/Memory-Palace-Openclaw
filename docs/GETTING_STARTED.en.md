@@ -147,9 +147,9 @@ bash scripts/apply_profile.sh linux b
 
 > The apply_profile script copies `.env.example` to `.env` (or your specified target file), then appends the override configuration for the corresponding Profile. Both macOS and Linux platforms automatically detect and fill in `DATABASE_URL`.
 >
-> `apply_profile.sh/.ps1` currently deduplicates repeated env keys after generation. The Windows native basic-path currently under maintenance has also been unified to `setup -> verify -> doctor -> smoke`. However, before publishing, it is still recommended to run native validation separately on the target Windows OpenClaw host, rather than treating `pwsh` proxy validation from other environments as equivalent proof.
+> `apply_profile.sh/.ps1` currently deduplicates repeated env keys after generation. The latest recorded Windows real-machine rerun also reconfirmed the native basic-path `setup -> verify -> doctor -> smoke`. Before publishing to another machine, it is still recommended to rerun native validation separately on that target Windows OpenClaw host, rather than treating `pwsh` proxy validation from other environments as equivalent proof.
 >
-> Whenever this page mentions `provider-probe / onboarding`, it means the **repo wrapper** chain `python3 scripts/openclaw_memory_palace.py ...`, not stable `openclaw memory-palace` subcommands.
+> Whenever this page mentions `provider-probe / onboarding`, it means the **repo wrapper** chain `python3 scripts/openclaw_memory_palace.py ...`; on Windows PowerShell, use `py -3 scripts/openclaw_memory_palace.py ...`. These are not stable `openclaw memory-palace` subcommands.
 >
 > Keep the current boundary explicit:
 > - `apply_profile.*` is best for getting a conservative **Profile B**-style local template first
@@ -221,6 +221,8 @@ openclaw memory-palace doctor --json
 openclaw memory-palace smoke --json
 ```
 
+On Windows PowerShell, run the same repo-wrapper command as `py -3 scripts/openclaw_memory_palace.py setup --mode basic --profile b --transport stdio --json`.
+
 > Note: The current stable path for OpenClaw `setup` / package runtime requires **Python `3.10-3.14`**. If your default Python is outside this range, explicitly use a supported version installed on your machine (e.g., `3.14`).
 >
 > The current public validation baseline is documented in `docs/EVALUATION.en.md`. For this command chain, what matters more is the current behavior: with the current code, `host-config-path` itself should already pass even in a direct shell rerun. If it starts warning again, first check whether `OPENCLAW_CONFIG_PATH` / `OPENCLAW_CONFIG` was pinned to a stale path, or whether the host config file moved or became unreadable, rather than treating that warning as the expected baseline.
@@ -243,7 +245,7 @@ openclaw memory-palace smoke --json
 >
 > Many embedding models support multiple output dimensions. When you run `provider-probe`, it will auto-detect the maximum usable dimension for your specific provider and model. Trust the probe result rather than mechanically keeping the template value, and rebuild the index if you changed dimensions in an existing runtime.
 >
-> If one older host session keeps repeating an earlier dimension after you already re-ran `provider-probe` and `index --wait`, prefer starting a fresh session or directly re-running `python3 scripts/openclaw_memory_palace.py provider-probe --json` to confirm live state. The longer troubleshooting explanation lives in `docs/openclaw-doc/04-TROUBLESHOOTING.en.md`.
+> If one older host session keeps repeating an earlier dimension after you already re-ran `provider-probe` and `index --wait`, prefer starting a fresh session or directly re-running `python3 scripts/openclaw_memory_palace.py provider-probe --json` to confirm live state (on Windows PowerShell: `py -3 scripts/openclaw_memory_palace.py provider-probe --json`). The longer troubleshooting explanation lives in `docs/openclaw-doc/04-TROUBLESHOOTING.en.md`.
 >
 > Conversely, if you normally use the maintainer automation scripts in the repository, these two pipelines now use isolated temporary config / state / db by design. If they accidentally point to the shared `~/.openclaw` runtime, they will now fail-fast immediately rather than silently corrupting the shared database.
 

@@ -147,9 +147,9 @@ bash scripts/apply_profile.sh linux b
 
 > apply_profile 脚本会将 `.env.example` 复制到 `.env`（或你指定的目标文件），然后追加对应 Profile 的覆盖配置。macOS/Linux 平台都会自动检测并填充 `DATABASE_URL`。
 >
-> `apply_profile.sh/.ps1` 当前会在生成后统一去重重复 env key；当前维护中的 Windows 原生 basic-path 也已经统一成 `setup -> verify -> doctor -> smoke`。但发布前仍建议在目标 Windows OpenClaw 主机上单独补跑一次原生验证，不要把其它环境里的 `pwsh` 代理验证当成等价证明。
+> `apply_profile.sh/.ps1` 当前会在生成后统一去重重复 env key；最新留档的 Windows 实机复跑也已经再次确认原生 basic-path 就是 `setup -> verify -> doctor -> smoke`。但发布到另一台机器前，仍建议在目标 Windows OpenClaw 主机上单独补跑一次原生验证，不要把其它环境里的 `pwsh` 代理验证当成等价证明。
 >
-> 下面提到的 `provider-probe / onboarding`，都指 **repo wrapper** `python3 scripts/openclaw_memory_palace.py ...` 这条链路，不属于 `openclaw memory-palace` 的稳定子命令面。
+> 下面提到的 `provider-probe / onboarding`，都指 **repo wrapper** `python3 scripts/openclaw_memory_palace.py ...` 这条链路；如果你在 Windows PowerShell 里跑，就把它统一改成 `py -3 scripts/openclaw_memory_palace.py ...`。它们不属于 `openclaw memory-palace` 的稳定子命令面。
 >
 > 这里也要把边界说清：
 > - `apply_profile.*` 最适合先拿到 **Profile B** 这类保守本地模板
@@ -221,6 +221,8 @@ openclaw memory-palace doctor --json
 openclaw memory-palace smoke --json
 ```
 
+如果你在 Windows PowerShell 里跑，这条 repo-wrapper 命令直接写成 `py -3 scripts/openclaw_memory_palace.py setup --mode basic --profile b --transport stdio --json`。
+
 > 注意：当前 OpenClaw `setup` / package runtime 的稳定路径要求 **Python `3.10-3.14`**。如果你机器上的默认 Python 不在这个范围内，请显式改用本机已安装的受支持版本（例如 `3.14`）。
 >
 > 当前公开验证口径统一看 `docs/EVALUATION.md`。对这条命令链来说，更重要的是理解现象：在当前代码下，从 shell 直接运行时，`host-config-path` 本身正常也应该能 pass；如果这项 warning 又出现，更应先查你是否手动指到了失效的 `OPENCLAW_CONFIG_PATH` / `OPENCLAW_CONFIG`，或宿主配置文件本身已经漂移/不可读，而不是把它当成当前预期行为。
@@ -243,7 +245,7 @@ openclaw memory-palace smoke --json
 >
 > 很多 embedding 模型支持多种输出维度。当前更稳的口径是：如果 `provider-probe` 探测出的维度和模板默认值不同，以 probe 结果为准，并在切换维度后补跑一次 `openclaw memory-palace index --wait --json`。
 >
-> 如果宿主在某条旧会话里继续复读更早的维度值，优先换一个新 session，或直接重新跑一次 `python3 scripts/openclaw_memory_palace.py provider-probe --json` 看实时结果。更完整的解释统一放到 `docs/openclaw-doc/04-TROUBLESHOOTING.md`。
+> 如果宿主在某条旧会话里继续复读更早的维度值，优先换一个新 session，或直接重新跑一次 `python3 scripts/openclaw_memory_palace.py provider-probe --json` 看实时结果；如果你在 Windows PowerShell 里跑，对应命令写成 `py -3 scripts/openclaw_memory_palace.py provider-probe --json`。更完整的解释统一放到 `docs/openclaw-doc/04-TROUBLESHOOTING.md`。
 >
 > 反过来说，如果你平时走的是仓库里的维护者自动化脚本，这两条链路现在本身就会使用隔离临时 config / state / db；如果它们误指向共享 `~/.openclaw` runtime，当前会直接 fail-fast，而不是悄悄把共享库跑脏。
 
