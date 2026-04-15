@@ -1,0 +1,3 @@
+{"session_group":"m1_boost","fixture_id":"__session_anchor__","uri":"personal://session-anchor","content":"刚才在讨论饮食习惯和碳水控制的话题，周末允许自由餐","priority":0}
+{"session_group":"m2_override","fixture_id":"mnc_research_002","uri":"research://product-x-analysis","content":"User was comparing Product X with Transformer-based memory architectures and attention mechanisms","priority":0}
+{"session_group":"m_smoke","fixture_id":"mnc_project_001","uri":"project://auth-decisions","content":"刚才讨论了认证服务的架构决策，从 JWT 切换到 session cookies","priority":0}

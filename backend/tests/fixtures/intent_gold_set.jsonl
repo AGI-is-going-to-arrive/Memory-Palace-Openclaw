@@ -1,0 +1,200 @@
+{"id": "intent-001", "query": "最近智能提取的变更记录", "expected_intent": "temporal"}
+{"id": "intent-002", "query": "当前profile 记忆的配置是什么", "expected_intent": "factual"}
+{"id": "intent-003", "query": "当前视觉记忆的配置是什么", "expected_intent": "factual"}
+{"id": "intent-004", "query": "how does intent classifier work", "expected_intent": "factual"}
+{"id": "intent-005", "query": "different strategies for test", "expected_intent": "exploratory"}
+{"id": "intent-006", "query": "pros and cons of Profile D", "expected_intent": "exploratory"}
+{"id": "intent-007", "query": "关键词搜索和语义搜索的优缺点", "expected_intent": "exploratory"}
+{"id": "intent-008", "query": "协调管道文档", "expected_intent": "factual"}
+{"id": "intent-009", "query": "profile memory crashed because of what", "expected_intent": "causal"}
+{"id": "intent-010", "query": "我们什么时候部署了压缩上下文", "expected_intent": "temporal"}
+{"id": "intent-011", "query": "有什么替代意图分类器的方案", "expected_intent": "exploratory"}
+{"id": "intent-012", "query": "explain why search index is failing", "expected_intent": "causal"}
+{"id": "intent-013", "query": "failure analysis for compact context", "expected_intent": "causal"}
+{"id": "intent-014", "query": "what are the tradeoffs between delete mode and hybrid search", "expected_intent": "exploratory"}
+{"id": "intent-015", "query": "when did we migrate the smart extraction", "expected_intent": "temporal"}
+{"id": "intent-016", "query": "vitality decay crashed because of what", "expected_intent": "causal"}
+{"id": "intent-017", "query": "当前profile 记忆的配置是什么", "expected_intent": "factual"}
+{"id": "intent-018", "query": "show history of intent classifier changes", "expected_intent": "temporal"}
+{"id": "intent-019", "query": "what is auto recall", "expected_intent": "factual"}
+{"id": "intent-020", "query": "intent classifier crashed because of what", "expected_intent": "causal"}
+{"id": "intent-021", "query": "分析WAL 模式阻塞的原因", "expected_intent": "causal"}
+{"id": "intent-022", "query": "what is onboarding flow", "expected_intent": "factual"}
+{"id": "intent-023", "query": "how could we approach migrate differently", "expected_intent": "exploratory"}
+{"id": "intent-024", "query": "before the failure everything was fine", "expected_intent": "temporal"}
+{"id": "intent-025", "query": "explore different approaches for refactor", "expected_intent": "exploratory"}
+{"id": "intent-026", "query": "failure analysis for profile memory", "expected_intent": "causal"}
+{"id": "intent-027", "query": "brainstorm ideas for improving smart extraction", "expected_intent": "exploratory"}
+{"id": "intent-028", "query": "昨天做了什么工作", "expected_intent": "temporal"}
+{"id": "intent-029", "query": "profile 记忆失败的原因是什么", "expected_intent": "causal"}
+{"id": "intent-030", "query": "latest changes to write guard", "expected_intent": "temporal"}
+{"id": "intent-031", "query": "explore different approaches for debug", "expected_intent": "exploratory"}
+{"id": "intent-032", "query": "探索调试的不同方法", "expected_intent": "exploratory"}
+{"id": "intent-033", "query": "评估WAL 模式的不同选择", "expected_intent": "exploratory"}
+{"id": "intent-034", "query": "how to configure write guard", "expected_intent": "factual"}
+{"id": "intent-035", "query": "this morning I was working on smart extraction", "expected_intent": "temporal"}
+{"id": "intent-036", "query": "智能提取有什么可以优化的", "expected_intent": "exploratory"}
+{"id": "intent-037", "query": "suggest alternatives to visual memory", "expected_intent": "exploratory"}
+{"id": "intent-038", "query": "what went wrong with embedding provider", "expected_intent": "causal"}
+{"id": "intent-039", "query": "压缩上下文有什么可以优化的", "expected_intent": "exploratory"}
+{"id": "intent-040", "query": "之前部署视觉记忆后发生了什么", "expected_intent": "temporal"}
+{"id": "intent-041", "query": "chunk 大小的当前值", "expected_intent": "factual"}
+{"id": "intent-042", "query": "what is the current profile memory configuration", "expected_intent": "factual"}
+{"id": "intent-043", "query": "how long ago did we benchmark", "expected_intent": "temporal"}
+{"id": "intent-044", "query": "列出所有embedding 缓存", "expected_intent": "factual"}
+{"id": "intent-045", "query": "because the sqlite database failure we lost data", "expected_intent": "causal"}
+{"id": "intent-046", "query": "root cause of the memory palace outage", "expected_intent": "causal"}
+{"id": "intent-047", "query": "what went wrong with auto capture", "expected_intent": "causal"}
+{"id": "intent-048", "query": "review options for update", "expected_intent": "exploratory"}
+{"id": "intent-049", "query": "since last Tuesday what changed in circuit breaker", "expected_intent": "temporal"}
+{"id": "intent-050", "query": "活性衰减出了什么问题", "expected_intent": "causal"}
+{"id": "intent-051", "query": "为什么记忆宫殿崩溃了", "expected_intent": "causal"}
+{"id": "intent-052", "query": "what happened yesterday with the write guard", "expected_intent": "temporal"}
+{"id": "intent-053", "query": "how to configure reconcile pipeline", "expected_intent": "factual"}
+{"id": "intent-054", "query": "what are the tradeoffs between keyword search and Profile D", "expected_intent": "exploratory"}
+{"id": "intent-055", "query": "show me the auto capture status", "expected_intent": "factual"}
+{"id": "intent-056", "query": "show me the memory palace history", "expected_intent": "temporal"}
+{"id": "intent-057", "query": "current value of SEARCH_DEFAULT_MODE", "expected_intent": "factual"}
+{"id": "intent-058", "query": "最近自动召回的变更记录", "expected_intent": "temporal"}
+{"id": "intent-059", "query": "problems with intent classifier since debug", "expected_intent": "causal"}
+{"id": "intent-060", "query": "最近自动捕获有什么变化", "expected_intent": "temporal"}
+{"id": "intent-061", "query": "how does WAL mode work", "expected_intent": "factual"}
+{"id": "intent-062", "query": "debug: visual memory broken after refactor", "expected_intent": "causal"}
+{"id": "intent-063", "query": "how could we approach refactor differently", "expected_intent": "exploratory"}
+{"id": "intent-064", "query": "意图分类器是怎么工作的", "expected_intent": "factual"}
+{"id": "intent-065", "query": "how long ago did we test", "expected_intent": "temporal"}
+{"id": "intent-066", "query": "what caused the failure", "expected_intent": "causal"}
+{"id": "intent-067", "query": "evaluate visual memory vs search index", "expected_intent": "exploratory"}
+{"id": "intent-068", "query": "review options for test", "expected_intent": "exploratory"}
+{"id": "intent-069", "query": "为什么宿主桥回归了", "expected_intent": "causal"}
+{"id": "intent-070", "query": "debug: host bridge failing after test", "expected_intent": "causal"}
+{"id": "intent-071", "query": "what is host bridge", "expected_intent": "factual"}
+{"id": "intent-072", "query": "reason for the low recall on WAL mode", "expected_intent": "causal"}
+{"id": "intent-073", "query": "search index documentation", "expected_intent": "factual"}
+{"id": "intent-074", "query": "昨天做了什么工作", "expected_intent": "temporal"}
+{"id": "intent-075", "query": "show history of reconcile pipeline changes", "expected_intent": "temporal"}
+{"id": "intent-076", "query": "brainstorm ideas for improving host bridge", "expected_intent": "exploratory"}
+{"id": "intent-077", "query": "suggest alternatives to vitality decay", "expected_intent": "exploratory"}
+{"id": "intent-078", "query": "昨天做了什么工作", "expected_intent": "temporal"}
+{"id": "intent-079", "query": "为什么更新之后自动捕获不正常了", "expected_intent": "causal"}
+{"id": "intent-080", "query": "show history of memory palace changes", "expected_intent": "temporal"}
+{"id": "intent-081", "query": "上周二的自动捕获状态", "expected_intent": "temporal"}
+{"id": "intent-082", "query": "timeline of search index modifications", "expected_intent": "temporal"}
+{"id": "intent-083", "query": "how does WAL mode work", "expected_intent": "factual"}
+{"id": "intent-084", "query": "latest changes to auto capture", "expected_intent": "temporal"}
+{"id": "intent-085", "query": "why is reconcile pipeline not working as expected", "expected_intent": "causal"}
+{"id": "intent-086", "query": "评估宿主桥的不同选择", "expected_intent": "exploratory"}
+{"id": "intent-087", "query": "evaluate WAL mode vs write guard", "expected_intent": "exploratory"}
+{"id": "intent-088", "query": "total number of embeddings", "expected_intent": "factual"}
+{"id": "intent-089", "query": "latest changes to auto capture", "expected_intent": "temporal"}
+{"id": "intent-090", "query": "compare visual memory with profile memory", "expected_intent": "exploratory"}
+{"id": "intent-091", "query": "when did we configure the search index", "expected_intent": "temporal"}
+{"id": "intent-092", "query": "review options for debug", "expected_intent": "exploratory"}
+{"id": "intent-093", "query": "evaluate reconcile pipeline vs auto recall", "expected_intent": "exploratory"}
+{"id": "intent-094", "query": "最近WAL 模式的变更记录", "expected_intent": "temporal"}
+{"id": "intent-095", "query": "write guard documentation", "expected_intent": "factual"}
+{"id": "intent-096", "query": "之前测试断路器后发生了什么", "expected_intent": "temporal"}
+{"id": "intent-097", "query": "评估活性衰减的不同选择", "expected_intent": "exploratory"}
+{"id": "intent-098", "query": "如何配置记忆宫殿", "expected_intent": "factual"}
+{"id": "intent-099", "query": "after benchmark the search index, what happened", "expected_intent": "temporal"}
+{"id": "intent-100", "query": "brainstorm ideas for improving host bridge", "expected_intent": "exploratory"}
+{"id": "intent-101", "query": "evaluate intent classifier vs auto capture", "expected_intent": "exploratory"}
+{"id": "intent-102", "query": "自动召回的状态", "expected_intent": "factual"}
+{"id": "intent-103", "query": "what caused the regression", "expected_intent": "causal"}
+{"id": "intent-104", "query": "有什么替代MCP 服务器的方案", "expected_intent": "exploratory"}
+{"id": "intent-105", "query": "WAL 模式和混合搜索的优缺点", "expected_intent": "exploratory"}
+{"id": "intent-106", "query": "current value of RETRIEVAL_RERANKER_WEIGHT", "expected_intent": "factual"}
+{"id": "intent-107", "query": "show history of write guard changes", "expected_intent": "temporal"}
+{"id": "intent-108", "query": "why did the host bridge fail", "expected_intent": "causal"}
+{"id": "intent-109", "query": "为什么意图分类器回归了", "expected_intent": "causal"}
+{"id": "intent-110", "query": "evaluate intent classifier vs circuit breaker", "expected_intent": "exploratory"}
+{"id": "intent-111", "query": "why did the memory palace fail", "expected_intent": "causal"}
+{"id": "intent-112", "query": "what caused the regression", "expected_intent": "causal"}
+{"id": "intent-113", "query": "分析记忆宫殿坏了的原因", "expected_intent": "causal"}
+{"id": "intent-114", "query": "current value of chunk size", "expected_intent": "factual"}
+{"id": "intent-115", "query": "evaluate circuit breaker vs embedding provider", "expected_intent": "exploratory"}
+{"id": "intent-116", "query": "how does memory palace work", "expected_intent": "factual"}
+{"id": "intent-117", "query": "recent host bridge activity", "expected_intent": "temporal"}
+{"id": "intent-118", "query": "how to configure sqlite database", "expected_intent": "factual"}
+{"id": "intent-119", "query": "导致锁竞争的根本原因", "expected_intent": "causal"}
+{"id": "intent-120", "query": "评估onboarding 流程的不同选择", "expected_intent": "exploratory"}
+{"id": "intent-121", "query": "最近宿主桥的变更记录", "expected_intent": "temporal"}
+{"id": "intent-122", "query": "how to configure circuit breaker", "expected_intent": "factual"}
+{"id": "intent-123", "query": "after debug the search index, what happened", "expected_intent": "temporal"}
+{"id": "intent-124", "query": "how could we approach configure differently", "expected_intent": "exploratory"}
+{"id": "intent-125", "query": "what caused the spike", "expected_intent": "causal"}
+{"id": "intent-126", "query": "为什么优化之后视觉记忆不正常了", "expected_intent": "causal"}
+{"id": "intent-127", "query": "比较不同的自动召回策略", "expected_intent": "exploratory"}
+{"id": "intent-128", "query": "what is profile memory", "expected_intent": "factual"}
+{"id": "intent-129", "query": "what is the current auto recall configuration", "expected_intent": "factual"}
+{"id": "intent-130", "query": "show me the host bridge status", "expected_intent": "factual"}
+{"id": "intent-131", "query": "explore different approaches for refactor", "expected_intent": "exploratory"}
+{"id": "intent-132", "query": "compare write guard with reranker", "expected_intent": "exploratory"}
+{"id": "intent-133", "query": "如何配置智能提取", "expected_intent": "factual"}
+{"id": "intent-134", "query": "我们什么时候部署了意图分类器", "expected_intent": "temporal"}
+{"id": "intent-135", "query": "探索部署的不同方法", "expected_intent": "exploratory"}
+{"id": "intent-136", "query": "debug: smart extraction degraded after refactor", "expected_intent": "causal"}
+{"id": "intent-137", "query": "为什么reranker中断了", "expected_intent": "causal"}
+{"id": "intent-138", "query": "embedding 服务是怎么工作的", "expected_intent": "factual"}
+{"id": "intent-139", "query": "recommend a WAL mode configuration", "expected_intent": "exploratory"}
+{"id": "intent-140", "query": "embedding 服务出了什么问题", "expected_intent": "causal"}
+{"id": "intent-141", "query": "when did we update the WAL mode", "expected_intent": "temporal"}
+{"id": "intent-142", "query": "MCP 服务器故障排查", "expected_intent": "causal"}
+{"id": "intent-143", "query": "default RETRIEVAL_RERANKER_WEIGHT for auto recall", "expected_intent": "factual"}
+{"id": "intent-144", "query": "how long ago did we refactor", "expected_intent": "temporal"}
+{"id": "intent-145", "query": "current value of chunk size", "expected_intent": "factual"}
+{"id": "intent-146", "query": "上周协调管道有什么变化", "expected_intent": "temporal"}
+{"id": "intent-147", "query": "onboarding flow documentation", "expected_intent": "factual"}
+{"id": "intent-148", "query": "how long ago did we test", "expected_intent": "temporal"}
+{"id": "intent-149", "query": "什么导致了崩溃", "expected_intent": "causal"}
+{"id": "intent-150", "query": "当前压缩上下文的配置是什么", "expected_intent": "factual"}
+{"id": "intent-151", "query": "什么导致了失败", "expected_intent": "causal"}
+{"id": "intent-152", "query": "意图分类器的历史改动", "expected_intent": "temporal"}
+{"id": "intent-153", "query": "problems with search index since test", "expected_intent": "causal"}
+{"id": "intent-154", "query": "为什么重构之后压缩上下文不正常了", "expected_intent": "causal"}
+{"id": "intent-155", "query": "after update the search index, what happened", "expected_intent": "temporal"}
+{"id": "intent-156", "query": "what are the alternatives for visual memory", "expected_intent": "exploratory"}
+{"id": "intent-157", "query": "Profile C和关键词搜索的优缺点", "expected_intent": "exploratory"}
+{"id": "intent-158", "query": "recently I was working on memory palace", "expected_intent": "temporal"}
+{"id": "intent-159", "query": "MCP 服务器文档", "expected_intent": "factual"}
+{"id": "intent-160", "query": "total number of chunks", "expected_intent": "factual"}
+{"id": "intent-161", "query": "数据库里有多少embedding 缓存", "expected_intent": "factual"}
+{"id": "intent-162", "query": "当前意图分类器的配置是什么", "expected_intent": "factual"}
+{"id": "intent-163", "query": "show me the search index history", "expected_intent": "temporal"}
+{"id": "intent-164", "query": "recent embedding provider activity", "expected_intent": "temporal"}
+{"id": "intent-165", "query": "review options for migrate", "expected_intent": "exploratory"}
+{"id": "intent-166", "query": "当前reranker的配置是什么", "expected_intent": "factual"}
+{"id": "intent-167", "query": "root cause of the onboarding flow outage", "expected_intent": "causal"}
+{"id": "intent-168", "query": "比较不同的协调管道策略", "expected_intent": "exploratory"}
+{"id": "intent-169", "query": "how could we approach configure differently", "expected_intent": "exploratory"}
+{"id": "intent-170", "query": "上次重构是什么时候", "expected_intent": "temporal"}
+{"id": "intent-171", "query": "list all auto recall in the system", "expected_intent": "factual"}
+{"id": "intent-172", "query": "我们什么时候部署了onboarding 流程", "expected_intent": "temporal"}
+{"id": "intent-173", "query": "探索测试的不同方法", "expected_intent": "exploratory"}
+{"id": "intent-174", "query": "MCP 服务器有什么可以优化的", "expected_intent": "exploratory"}
+{"id": "intent-175", "query": "列出所有agent", "expected_intent": "factual"}
+{"id": "intent-176", "query": "recently I was working on onboarding flow", "expected_intent": "temporal"}
+{"id": "intent-177", "query": "搜索索引是怎么工作的", "expected_intent": "factual"}
+{"id": "intent-178", "query": "分析搜索索引坏了的原因", "expected_intent": "causal"}
+{"id": "intent-179", "query": "show me the vitality decay status", "expected_intent": "factual"}
+{"id": "intent-180", "query": "embedding 服务失败的原因是什么", "expected_intent": "causal"}
+{"id": "intent-181", "query": "list all write guard in the system", "expected_intent": "factual"}
+{"id": "intent-182", "query": "failure analysis for MCP server", "expected_intent": "causal"}
+{"id": "intent-183", "query": "今天早上意图分类器有什么变化", "expected_intent": "temporal"}
+{"id": "intent-184", "query": "我们什么时候部署了智能提取", "expected_intent": "temporal"}
+{"id": "intent-185", "query": "导致超时的根本原因", "expected_intent": "causal"}
+{"id": "intent-186", "query": "为什么优化之后智能提取不正常了", "expected_intent": "causal"}
+{"id": "intent-187", "query": "评估MCP 服务器的不同选择", "expected_intent": "exploratory"}
+{"id": "intent-188", "query": "debug: WAL mode timing out after update", "expected_intent": "causal"}
+{"id": "intent-189", "query": "recent smart extraction activity", "expected_intent": "temporal"}
+{"id": "intent-190", "query": "当前智能提取的配置是什么", "expected_intent": "factual"}
+{"id": "intent-191", "query": "评估自动捕获的不同选择", "expected_intent": "exploratory"}
+{"id": "intent-192", "query": "debug: memory palace slow after update", "expected_intent": "causal"}
+{"id": "intent-193", "query": "problems with smart extraction since benchmark", "expected_intent": "causal"}
+{"id": "intent-194", "query": "total number of agents", "expected_intent": "factual"}
+{"id": "intent-195", "query": "because the auto capture crash we lost progress", "expected_intent": "causal"}
+{"id": "intent-196", "query": "before the outage everything was fine", "expected_intent": "temporal"}
+{"id": "intent-197", "query": "昨天做了什么工作", "expected_intent": "temporal"}
+{"id": "intent-198", "query": "debug: search index degraded after refactor", "expected_intent": "causal"}
+{"id": "intent-199", "query": "Profile D和delete 模式的优缺点", "expected_intent": "exploratory"}
+{"id": "intent-200", "query": "write guard文档", "expected_intent": "factual"}

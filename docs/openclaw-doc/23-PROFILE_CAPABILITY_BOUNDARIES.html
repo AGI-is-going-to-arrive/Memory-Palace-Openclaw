@@ -1,0 +1,580 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>23 · OpenClaw WebUI 中的 memory-palace 能力边界</title>
+    <style>
+      :root {
+        --bg: #f5efe5;
+        --paper: rgba(255, 250, 243, 0.9);
+        --paper-strong: #fffaf3;
+        --line: rgba(136, 108, 77, 0.2);
+        --ink: #2e241c;
+        --muted: #6f5f52;
+        --accent: #9f6c32;
+        --accent-soft: rgba(159, 108, 50, 0.1);
+        --shadow: 0 28px 64px rgba(74, 49, 24, 0.12);
+      }
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        margin: 0;
+        font-family: "Avenir Next", "PingFang SC", "Hiragino Sans GB", sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at top left, rgba(185, 136, 84, 0.14), transparent 30%),
+          radial-gradient(circle at 88% 8%, rgba(209, 188, 158, 0.18), transparent 22%),
+          linear-gradient(180deg, #fffcf8 0%, var(--bg) 100%);
+      }
+      a { color: inherit; }
+      img, video { display: block; width: 100%; height: auto; }
+      .shell {
+        width: min(1380px, calc(100vw - 32px));
+        margin: 0 auto;
+        padding: 28px 0 72px;
+      }
+      .masthead, .section, .foot {
+        border: 1px solid var(--line);
+        background: var(--paper);
+        border-radius: 30px;
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(18px);
+      }
+      .masthead { padding: 28px; }
+      .section, .foot { margin-top: 22px; padding: 24px; }
+      .eyebrow, .chip, .jump a, .lang a {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 14px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.75);
+        text-decoration: none;
+        font-size: 13px;
+        letter-spacing: 0.04em;
+      }
+      .eyebrow { color: var(--accent); text-transform: uppercase; }
+      .mast-grid, .proof-grid, .surface-grid, .profile-grid {
+        display: grid;
+        gap: 18px;
+      }
+      .mast-grid {
+        grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.7fr);
+        margin-top: 18px;
+        align-items: start;
+      }
+      .proof-grid, .surface-grid, .profile-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      h1, h2, h3 {
+        margin: 0;
+        font-family: "Iowan Old Style", "Source Han Serif SC", "Songti SC", serif;
+        font-weight: 600;
+      }
+      h1 {
+        margin-top: 16px;
+        font-size: clamp(42px, 6vw, 74px);
+        line-height: 0.98;
+      }
+      h2 {
+        font-size: clamp(30px, 4vw, 42px);
+        line-height: 1.05;
+      }
+      h3 { font-size: 22px; line-height: 1.2; }
+      p, li, td, th { color: var(--muted); line-height: 1.7; }
+      .lead { max-width: 860px; margin: 18px 0 0; font-size: 18px; }
+      .chip-row, .lang, .jump { display: flex; flex-wrap: wrap; gap: 10px; }
+      .chip-row { margin-top: 18px; }
+      .lang { margin-top: 16px; }
+      .note, .stack, .profile-card, .video-meta {
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.76);
+        border-radius: 22px;
+        padding: 18px;
+      }
+      .note strong, .video-meta strong, figcaption strong { color: var(--ink); }
+      .note ul, .video-meta ul { margin: 12px 0 0; padding-left: 18px; }
+      .section-head {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(220px, 340px);
+        gap: 18px;
+        align-items: end;
+        margin-bottom: 18px;
+      }
+      .section-kicker {
+        color: var(--accent);
+        font-size: 13px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+      }
+      .section-copy { margin: 10px 0 0; max-width: 760px; }
+      .video-frame, figure {
+        border: 1px solid var(--line);
+        border-radius: 26px;
+        overflow: hidden;
+        background: var(--paper-strong);
+      }
+      .video-frame {
+        background:
+          linear-gradient(180deg, rgba(255, 252, 247, 0.35), rgba(255, 252, 247, 0)),
+          #090c11;
+      }
+      figcaption { padding: 16px 18px 18px; }
+      figcaption strong { display: block; font-size: 17px; }
+      figcaption span { display: block; margin-top: 8px; }
+      .stack { display: grid; gap: 14px; }
+      .stack p { margin: 0; }
+      .surface-card { display: grid; gap: 14px; }
+      .surface-card figure { height: 100%; }
+      .profile-card { display: grid; gap: 10px; }
+      .profile-card .chip {
+        justify-self: start;
+        color: var(--accent);
+        background: var(--accent-soft);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 14px;
+        border-radius: 18px;
+        overflow: hidden;
+      }
+      th, td {
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--line);
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        color: var(--ink);
+        background: rgba(255, 255, 255, 0.72);
+        font-size: 13px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+      .foot p { margin: 12px 0 0; }
+      @media (max-width: 1120px) {
+        .mast-grid, .section-head, .proof-grid, .surface-grid, .profile-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      @media (max-width: 720px) {
+        .shell { width: min(100vw - 16px, 100%); padding: 16px 0 48px; }
+        .masthead, .section, .foot { padding: 18px; border-radius: 24px; }
+        h1 { font-size: 38px; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <section class="masthead">
+        <div class="eyebrow">OpenClaw WebUI Dossier</div>
+        <h1>memory-palace plugin + skill 在 OpenClaw WebUI 里到底长什么样</h1>
+        <p class="lead">
+          这页只回答 WebUI 用户真正会看到的东西：Memory Palace 相关条目
+          （具体显示名会随宿主构建变化，不应死写成一个固定 slug）
+          在 `Skills` 页怎么出现，默认 recall 和 `memory_get / media_ref`
+          在聊天里怎么落成 recall block、tool card、answer block，以及 ACL 和
+          Profile B / C / D 在 OpenClaw WebUI 用户视角里到底体现为什么。
+        </p>
+        <div class="chip-row">
+          <span class="chip">只讲 OpenClaw WebUI，不讲 Dashboard 主叙事</span>
+          <span class="chip">截图优先放大，保证能看清细节</span>
+          <span class="chip">ACL 边界主要靠视频讲清楚</span>
+        </div>
+        <div class="lang">
+          <a href="./23-PROFILE_CAPABILITY_BOUNDARIES.html">中文</a>
+          <a href="./23-PROFILE_CAPABILITY_BOUNDARIES.en.html">English</a>
+        </div>
+        <div class="mast-grid">
+          <div class="stack">
+            <p>
+              这页遵循两个公开交付原则：
+              <strong>直接展示当前 OpenClaw WebUI 的真实用户证据。</strong>
+              <strong>视频统一使用烧录字幕 MP4，避免字幕层和页面逻辑分离。</strong>
+            </p>
+            <p>
+              因此页面里只放仓库内可追踪的截图与成片，HTML 本身不再承担字幕同步逻辑，也不再用拼贴或占位卡片替代真实 WebUI 证据。
+            </p>
+          </div>
+          <aside class="note">
+            <strong>这页的判断标准</strong>
+            <ul>
+              <li>`Skills` 页能否直接看到 Memory Palace 相关条目，而不是要求固定显示名。</li>
+              <li>`Chat` 页里 recall 是否以可见 block 形式出现，而不是藏在后台。</li>
+              <li>`memory_get / media_ref` 是否以 tool card 和回答内容落到同一线程里。</li>
+              <li>ACL 是否能用视频直接讲明 `beta -> UNKNOWN` 的边界。</li>
+              <li>Profile B / C / D 是否按用户视角说明“界面看到什么”和“差异其实发生在背后链路哪里”。</li>
+            </ul>
+          </aside>
+        </div>
+      </section>
+
+      <section class="section" id="capability-tour">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">Capability Walkthrough</div>
+            <h2>先看成片：plugin + skill 在 WebUI 里的完整走法</h2>
+            <p class="section-copy">
+              这支视频现在不只是“介绍有个 skill”，而是把
+              `Skills 列表 -> Skills 详情 -> Chat 里的 recall block -> visual memory tool card -> 最终 answer block`
+              串成一条因果链，而且字幕已经直接烧录进 MP4。
+            </p>
+          </div>
+          <div class="video-meta">
+            <strong>视频里你会直接看到</strong>
+            <ul>
+              <li>`Skills` 页里出现 Memory Palace 相关条目；不要把显示名硬编码成唯一 slug。</li>
+              <li>点开 `Skills` 详情层，直接看到这条 skill 负责在何时提示显式介入。</li>
+              <li>`memory-palace-profile / memory-palace-recall` 作为 plugin 默认 recall block 出现在对话里。</li>
+              <li>`memory_get / media_ref` 作为显式工具升级路径里的 tool card 和 answer block 被用户直接看到。</li>
+              <li>最后回到整条会话，解释 plugin 默认链路如何把同一线程变成“有记忆的对话”。</li>
+            </ul>
+          </div>
+        </div>
+        <div class="video-frame">
+          <video controls preload="metadata" poster="./assets/real-openclaw-run/openclaw-control-ui-skills-memory-palace.png">
+            <source src="./assets/real-openclaw-run/openclaw-control-ui-capability-tour.zh.mp4" type="video/mp4" />
+          </video>
+        </div>
+      </section>
+
+      <section class="section" id="surfaces">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">WebUI Surfaces</div>
+            <h2>把视频拆开看：用户能看到的五个关键界面</h2>
+            <p class="section-copy">
+              这里不讲内部原理图，只讲用户在 OpenClaw WebUI 里真的能看见什么。每张图都放大到足以直接读出关键信息。
+            </p>
+          </div>
+          <div class="note">
+            <strong>真正重要的是“可见形态”</strong>
+            <ul>
+              <li>`skill entry` 证明这不是纯文档概念。</li>
+              <li>`skill detail sheet` 证明用户能在 WebUI 里直接读到它负责什么任务。</li>
+              <li>`recall block` 证明默认 durable recall 已进入聊天面。</li>
+              <li>`tool card + answer block` 证明 visual memory 不只是后台数据结构。</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="surface-grid">
+          <div class="surface-card">
+            <figure>
+              <img src="./assets/real-openclaw-run/openclaw-control-ui-skills-memory-palace.png" alt="OpenClaw Skills 页里展示的 Memory Palace 相关条目" />
+              <figcaption>
+                <strong>`Skills` 页：Memory Palace 相关条目是用户可见入口</strong>
+                <span>
+                  这里的意义不是“能搜到一个固定名字”，而是 Memory Palace 相关入口已经成为宿主可见、可装配、可切换的 WebUI 条目；截图里出现的可见标签只代表这一次本地宿主构建。
+                </span>
+              </figcaption>
+            </figure>
+          </div>
+          <div class="surface-card">
+            <figure>
+              <img src="./assets/real-openclaw-run/openclaw-control-ui-skills-memory-palace-detail.zh.png" alt="OpenClaw Skills 页里点开 Memory Palace 相关条目后的详情面板" />
+              <figcaption>
+                <strong>`Skills` 详情层：这条 skill 在 WebUI 里到底负责什么</strong>
+                <span>
+                  用户点开条目后，能直接看到它负责提示哪些场景应显式升级到 durable memory recall、memory verification、visual memory storage，以及 plugin health / index maintenance。
+                </span>
+              </figcaption>
+            </figure>
+          </div>
+          <div class="surface-card">
+            <figure>
+              <img src="./assets/real-openclaw-run/07-openclaw-control-ui-memory-chat.png" alt="OpenClaw chat page with plugin-managed conversation" />
+              <figcaption>
+                <strong>`Chat` 页：plugin 的入口仍然是原生对话线程</strong>
+                <span>
+                  用户不是先去碰一排底层 MCP 工具。真正默认在工作的，是 memory-palace plugin 作为 active memory slot 和宿主 hooks；`Skills` 详情层只是在解释何时需要显式升级到工具调用。
+                </span>
+              </figcaption>
+            </figure>
+          </div>
+          <div class="surface-card">
+            <figure>
+              <img src="./assets/real-openclaw-run/openclaw-control-ui-chat-recall-confirmed.png" alt="OpenClaw current-host acceptance chat showing visible tool output, confirmation text, and recall marker" />
+              <figcaption>
+                <strong>聊天证据一：当前宿主 strict acceptance 里，确认文案和 recall marker 同时可见</strong>
+                <span>
+                  这轮不再继续引用那张已经被空聊天页覆盖的旧 recall 图。现在公开页直接引用 current-host strict acceptance 的实拍截图：tool output、确认文案和 recall marker 都在同一条线程里可见。
+                </span>
+              </figcaption>
+            </figure>
+          </div>
+          <div class="surface-card">
+            <figure>
+              <img src="./assets/real-openclaw-run/openclaw-control-ui-chat-force-confirm.png" alt="OpenClaw current-host acceptance chat showing guarded write confirmation inside the native chat thread" />
+              <figcaption>
+                <strong>聊天证据二：guarded write 也是在原生聊天页里完成的</strong>
+                <span>
+                  这里拍到的是受控复跑里的“先拦截、再确认、再写入”链路。不要把单张图直接当成“所有 current-host strict 高级档位都已稳定成功”的总承诺。visual memory 这轮不再硬从聊天静态图里过度解读，而是切到下面这组真实 Dashboard 截图来承担独立静态证据。
+                </span>
+              </figcaption>
+            </figure>
+          </div>
+          <div class="surface-card">
+            <figure>
+              <img src="./assets/real-openclaw-run/dashboard-visual-memory-root.zh.png" alt="Dashboard Memory Hall showing the visual branch under the root node" />
+              <figcaption>
+                <strong>`Dashboard / Memory` 证据一：`Memory Hall` 里真的能看到 `visual` 分支</strong>
+                <span>
+                  这张图先证明 visual memory 不是文档里凭空说出来的词。当前真实 Dashboard 的 `Memory Hall` 根节点下面，已经能直接看到 `visual` 这条分支。
+                </span>
+              </figcaption>
+            </figure>
+          </div>
+          <div class="surface-card">
+            <figure>
+              <img src="./assets/real-openclaw-run/dashboard-visual-memory.zh.png" alt="Dashboard visual memory node showing Visual Memory summary OCR and entities" />
+              <figcaption>
+                <strong>`Dashboard / Memory` 证据二：`core://visual/...` 节点页直接展示 Visual Memory 内容</strong>
+                <span>
+                  现在公开静态图里的 visual memory 独立证据来自这张节点详情页：画面里能直接看到 `Visual Memory`、`Summary`、`OCR`、`Entities`，不再继续使用那对已经失真的旧 `plugin-*` 聊天图。
+                </span>
+              </figcaption>
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="acl">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">ACL Scenario</div>
+            <h2>ACL 当前属于实验性的多 Agent 记忆隔离，这支视频直接把当前结果拍给你看</h2>
+            <p class="section-copy">
+              这里的 ACL 指的是 `Access Control List`，但你可以直接把它理解成：
+              **实验性的多 Agent 记忆隔离**。开了之后，当前已验证的 plugin 主路径里，每个 agent 默认会收紧到自己那一块长期记忆。
+              但它现在还不能按“已经完全硬化的后端安全边界”来理解。
+              所以这支成片会先展示有哪些 agent，再展示 `alpha` 如何在对话里把记忆写进去，
+              最后再切到 `beta` 证明它读不到那条记忆。
+            </p>
+          </div>
+          <div class="video-meta">
+            <strong>这支视频现在讲清四步</strong>
+            <ul>
+              <li>先在 `Agents` 页确认 `main / alpha / beta` 这三个 scope。</li>
+              <li>进入 `alpha` 对话，明确看到“已为 alpha 记住”。</li>
+              <li>再切到 `beta` 对话，看它只能读取 `beta` 范围。</li>
+              <li>最后问 `What is alpha's default workflow?`，答案直接是 `UNKNOWN`。</li>
+            </ul>
+            <p style="margin:12px 0 0; color:#5d6472;">
+              如果你想知道<strong>怎么开</strong>，直接看
+              <a href="./24-AGENT_ACL_ISOLATION.md">24 号文档</a>。真正要改的是
+              <code>plugins.entries.memory-palace.config.acl</code>。
+            </p>
+          </div>
+        </div>
+        <div class="video-frame">
+          <video controls preload="metadata" poster="./assets/real-openclaw-run/24-acl-agents-page.png">
+            <source src="./assets/real-openclaw-run/openclaw-control-ui-acl-scenario.zh.mp4" type="video/mp4" />
+          </video>
+        </div>
+        <div class="proof-grid" style="margin-top: 18px;">
+          <figure>
+            <img src="./assets/real-openclaw-run/24-acl-agents-page.png" alt="OpenClaw Agents page showing main alpha beta" />
+            <figcaption>
+              <strong>第 1 步：先在 `Agents` 页认清三个 agent</strong>
+              <span>
+                这一步不是背景板，而是 ACL 叙事的起点。只有先确认 WebUI 里真的有 `main / alpha / beta`
+                三个 agent scope，后面的隔离证明才有意义。
+              </span>
+            </figcaption>
+          </figure>
+          <figure>
+            <img src="./assets/real-openclaw-run/24-acl-alpha-memory-confirmed.png" alt="OpenClaw alpha chat confirming memory was stored" />
+            <figcaption>
+              <strong>第 2 步：在 `alpha` 对话里先把记忆写进去</strong>
+              <span>
+                这里直接展示 WebUI 对话本身已经完成“写入记忆”动作，回复是“已为 alpha 记住”。
+                所以后面 `beta` 读不到时，不能再解释成“系统根本没记住”。
+              </span>
+            </figcaption>
+          </figure>
+          <figure>
+            <img src="./assets/real-openclaw-run/24-acl-beta-chat-isolated.png" alt="OpenClaw beta chat showing isolated recall and UNKNOWN answer" />
+            <figcaption>
+              <strong>第 3 步：切到 `beta` 后，最终只能回答 `UNKNOWN`</strong>
+              <span>
+                用户在同一条线程里能同时看到三件事：`beta` 自己的 recall scope、跨 agent 的问题、
+                以及 `UNKNOWN` 结果。这一段当前更准确的含义是：在这条已验证的实验链路里，`beta`
+                仍然没有读到 `alpha` 那条 durable memory。
+              </span>
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="section" id="profiles">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">Profiles In WebUI</div>
+            <h2>Profile B / C / D 在 OpenClaw WebUI 用户视角里分别体现为什么</h2>
+            <p class="section-copy">
+              这里刻意不假装 B / C / D 各自有一套独立页面。更准确的说法是：用户看到的主要还是同一组
+              `Skills / Chat / tool card / recall block`，差异更多发生在背后链路和结果质量上。
+            </p>
+          </div>
+          <div class="note">
+            <strong>这页明确拒绝两种误导</strong>
+            <ul>
+              <li>不把 Dashboard setup form 当成 B / C / D 的主叙事。</li>
+              <li>不把背后链路差异伪装成 WebUI 里不存在的“独立页面”。</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="profile-grid">
+          <article class="profile-card">
+            <span class="chip">Profile A</span>
+            <h3>用户看到的仍然是同一套 WebUI，只是检索边界收缩到最低配验证档</h3>
+            <p>
+              A 档不是“另开一个简化页面”，而是同样的聊天、技能和 agent 表面继续可见，只是背后的 retrieval
+              退回纯关键词、无 embedding、无 reranker 的最低配验证路径。
+            </p>
+            <table>
+              <thead>
+                <tr><th>用户视角</th><th>不要写过头</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>同样能看到 plugin 条目、聊天写入和基础 recall 证据。</td><td>不要把它写成长期推荐档；它更像最低配验证基线。</td></tr>
+              </tbody>
+            </table>
+          </article>
+
+          <article class="profile-card">
+            <span class="chip">Profile B</span>
+            <h3>用户先看到的是“链路已经通了”，不是“高级 provider 面板”</h3>
+            <p>
+              在 OpenClaw WebUI 里，B 档最核心的感受是：聊天、默认 recall、tool card、answer block
+              都已经工作，用户已经能看到 durable memory 进入聊天线程。
+            </p>
+            <table>
+              <thead>
+                <tr><th>用户视角</th><th>不要写过头</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>能看到 recall block，能做基础 visual memory 读写闭环。</td><td>不要写成“真实模型质量档”或“最终生产档”。</td></tr>
+              </tbody>
+            </table>
+          </article>
+
+          <article class="profile-card">
+            <span class="chip">Profile C</span>
+            <h3>WebUI 形态基本不变，变化主要发生在 recall / extraction 的质量层</h3>
+            <p>
+              对用户来说，C 档不是多出一个新页面，而是同样的聊天面已经切到真实 embedding /
+              reranker / model 链路。界面看上去仍然是同一条线程，但 recall、抽取和 visual retrieval
+              的质量与深度更像长期使用态。
+            </p>
+            <p>
+              当前公开默认值也要写清楚：`Profile C` 默认只保证 `embedding + reranker`；
+              `write_guard / compact_gist / intent_llm` 仍然是可选启用，不应被写成默认全开。
+            </p>
+            <p>
+              当前公开叙事只保留仍被公开页面直接嵌入的截图。旧的 `profile-matrix/*`
+              库存图更适合按维护者侧证据库存理解，不再属于这页默认给最终用户看的主证明集。
+            </p>
+            <table>
+              <thead>
+                <tr><th>用户视角</th><th>不要写过头</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>同样的 tool card / answer block，会因为真实模型链路而更稳定、更深。</td><td>不要把“已经配了 env”写成“已经真正生效”；provider probe 还是要绿。</td></tr>
+              </tbody>
+            </table>
+          </article>
+
+          <article class="profile-card">
+            <span class="chip">Profile D</span>
+            <h3>用户几乎还是看到 C 那套 WebUI，只是默认目标变成完整高级能力面</h3>
+            <p>
+              D 档在 WebUI 里通常不会长出一套新的形态。更准确的理解是：用户看到的还是同一组聊天和工具表面，
+              但默认目标已经变成 `embedding + reranker + write_guard / compact_gist / intent_llm` 一起到位。
+            </p>
+            <p>
+              provider 位置可以是本地、内网或远程；真正拉开边界的不是“是不是远程”，而是 provider 健康、网络条件和时延预算。
+            </p>
+            <p>
+              当前公开默认值是：`Profile D` 默认包含 `write_guard / compact_gist / intent_llm`，
+              但这不改变 `plugins.slots.memory=memory-palace`；`memory-core` 只作为 facade-compat shim 被启用。
+            </p>
+            <table>
+              <thead>
+                <tr><th>用户视角</th><th>不要写过头</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>表面仍然像 C，但默认目标已经是完整高级能力面。</td><td>不要把它写成“只能远程用”，也不要把它写成“天然低时延”。</td></tr>
+              </tbody>
+            </table>
+          </article>
+
+          <article class="profile-card">
+            <span class="chip">一句总括</span>
+            <h3>A / B / C / D 的区别，更多是“同一 WebUI 表面背后的能力深度”</h3>
+            <p>
+              所以这页的叙事顺序才会先放 WebUI 用户真正能看到的证据，再解释哪一层差异发生在链路内部。对用户来说，
+              先看到的不是 Profile 名字，而是 `skill entry / recall block / tool card / answer block`
+              是否已经进入自己每天会用的聊天线程。
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" id="validation">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">Validation Anchors</div>
+            <h2>把 Profile 边界和质量门禁一起看，才不会把“能打开页面”误解成“高级链路已经全绿”</h2>
+            <p class="section-copy">
+              用户在 WebUI 里主要看到的还是同一组表面；真正拉开 B / C / D 边界的，往往是 provider probe、retrieval 质量、write guard 与 intent routing 的后台能力是否真的已经就绪。
+            </p>
+          </div>
+          <div class="note">
+            <strong>这组锚点只说已成立事实</strong>
+            <ul>
+              <li>`intent 200 case`：accuracy=`1.000`</li>
+              <li>`write guard 200 case`：B EM=`0.975`，C/D EM=`0.845`（score normalization 已默认开启）</li>
+              <li>`live LLM contradiction`：accuracy=`0.950`</li>
+              <li>`live LLM benchmark 400 case`：intent=`0.97`，write guard recall=`0.96`</li>
+            </ul>
+          </div>
+        </div>
+        <div class="proof-grid">
+          <figure>
+            <img src="./assets/real-openclaw-run/profile-matrix/d-default/chat.png" alt="Profile D 默认档在 OpenClaw WebUI 里的聊天界面实测截图" />
+            <figcaption>
+              <strong>Profile D 聊天实测：高级档也不是“填完 env 就算完成”</strong>
+              <span>
+                这张图故意换成真实 WebUI 证据，而不是 onboarding 主视觉。要点只有一个：`Profile C/D`
+                的门槛不是“填了 provider env”，而是 `provider probe / verify / doctor / smoke`
+                真正跑绿之后，聊天里的 recall、tool card 和 answer block 才算进入当前高级档叙事。
+              </span>
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="foot">
+        <div class="section-kicker">Next Reads</div>
+        <h2>继续看哪里</h2>
+        <div class="jump" style="margin-top: 16px;">
+          <a href="./15-END_USER_INSTALL_AND_USAGE.md">15 · 最终用户安装与使用实录</a>
+          <a href="../EVALUATION.md">docs/EVALUATION.md</a>
+          <a href="./24-AGENT_ACL_ISOLATION.md">24 · 多 Agent 记忆隔离（ACL）快速指南</a>
+          <a href="./01-INSTALL_AND_RUN.md">01 · 安装与运行</a>
+        </div>
+        <p>
+          本页只放 OpenClaw WebUI 用户真正会看到的证据，而且只用烧录字幕 MP4。
+          当前公开仓库只继续保留仍被公开文档直接引用的截图和视频；未被公开文档使用的旧库存图、重复截图和测试底稿，已经不再继续算作公开主链素材。
+          当前宿主版本与这轮复跑边界，统一看 `EVALUATION.md`。
+        </p>
+      </section>
+    </main>
+  </body>
+</html>

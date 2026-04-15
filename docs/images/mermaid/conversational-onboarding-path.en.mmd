@@ -1,0 +1,9 @@
+flowchart TD
+    A["The user hands this page to OpenClaw"] --> B{"Is the plugin installed and loaded?"}
+    B -- "No" --> C["Give the shortest install chain first"]
+    C --> D["verify / doctor / smoke"]
+    D --> E["Return to the current chat thread and continue onboarding"]
+    B -- "Yes" --> F["memory_onboarding_status"]
+    F --> G["memory_onboarding_probe"]
+    G --> H["memory_onboarding_apply"]
+    H --> I["verify / doctor / smoke"]

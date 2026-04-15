@@ -1,0 +1,200 @@
+{"id": "wg-001", "content": "identical content: token cost analysis summary", "semantic_vector_score": 0.96, "keyword_text_score": 0.74, "expected_action": "NOOP"}
+{"id": "wg-002", "content": "amended documentation refresh timeline", "semantic_vector_score": 0.71, "keyword_text_score": 0.21, "expected_action": "UPDATE"}
+{"id": "wg-003", "content": "fresh topic: API rate limiting setup and configuration", "semantic_vector_score": 0.28, "keyword_text_score": 0.23, "expected_action": "ADD"}
+{"id": "wg-004", "content": "visual memory pipeline status changed to done", "semantic_vector_score": 0.84, "keyword_text_score": 0.2, "expected_action": "UPDATE"}
+{"id": "wg-005", "content": "rewritten token cost analysis analysis with latest data", "semantic_vector_score": 0.71, "keyword_text_score": 0.59, "expected_action": "UPDATE"}
+{"id": "wg-006", "content": "exact copy of existing dependency audit note", "semantic_vector_score": 0.99, "keyword_text_score": 0.88, "expected_action": "NOOP"}
+{"id": "wg-007", "content": "same database schema change content pasted again", "semantic_vector_score": 0.96, "keyword_text_score": 0.88, "expected_action": "NOOP"}
+{"id": "wg-008", "content": "exact copy of existing API rate limiting note", "semantic_vector_score": 0.95, "keyword_text_score": 0.92, "expected_action": "NOOP"}
+{"id": "wg-009", "content": "revised test coverage improvement with new findings", "semantic_vector_score": 0.88, "keyword_text_score": 0.21, "expected_action": "UPDATE"}
+{"id": "wg-010", "content": "fresh topic: API rate limiting setup and configuration", "semantic_vector_score": 0.27, "keyword_text_score": 0.25, "expected_action": "ADD"}
+{"id": "wg-011", "content": "exact copy of existing test coverage improvement note", "semantic_vector_score": 0.92, "keyword_text_score": 0.86, "expected_action": "NOOP"}
+{"id": "wg-012", "content": "new note about profile c setup", "semantic_vector_score": 0.17, "keyword_text_score": 0.03, "expected_action": "ADD"}
+{"id": "wg-013", "content": "personal reminder: dentist Thursday 3pm", "semantic_vector_score": 0.0, "keyword_text_score": 0.03, "expected_action": "ADD"}
+{"id": "wg-014", "content": "carbon copy of profile c setup checklist", "semantic_vector_score": 0.96, "keyword_text_score": 0.75, "expected_action": "NOOP"}
+{"id": "wg-015", "content": "new insight about embedding migration", "semantic_vector_score": 0.34, "keyword_text_score": 0.06, "expected_action": "ADD"}
+{"id": "wg-016", "content": "same onboarding flow content pasted again", "semantic_vector_score": 0.93, "keyword_text_score": 0.84, "expected_action": "NOOP"}
+{"id": "wg-017", "content": "new insight about circuit breaker config", "semantic_vector_score": 0.21, "keyword_text_score": 0.01, "expected_action": "ADD"}
+{"id": "wg-018", "content": "verbatim repeat of documentation refresh action items", "semantic_vector_score": 0.95, "keyword_text_score": 0.65, "expected_action": "NOOP"}
+{"id": "wg-019", "content": "brainstorm session notes about documentation refresh", "semantic_vector_score": 0.0, "keyword_text_score": 0.3, "expected_action": "ADD"}
+{"id": "wg-020", "content": "MCP protocol upgrade: added performance improved", "semantic_vector_score": 0.61, "keyword_text_score": 0.72, "expected_action": "UPDATE"}
+{"id": "wg-021", "content": "token cost analysis: added risk assessment updated", "semantic_vector_score": 0.69, "keyword_text_score": 0.72, "expected_action": "UPDATE"}
+{"id": "wg-022", "content": "visual memory pipeline status changed to pending review", "semantic_vector_score": 0.83, "keyword_text_score": 0.25, "expected_action": "UPDATE"}
+{"id": "wg-023", "content": "database schema change note unchanged from last version", "semantic_vector_score": 0.96, "keyword_text_score": 0.76, "expected_action": "NOOP"}
+{"id": "wg-024", "content": "identical content: deployment pipeline summary", "semantic_vector_score": 0.95, "keyword_text_score": 0.96, "expected_action": "NOOP"}
+{"id": "wg-025", "content": "customer feedback on latency optimization", "semantic_vector_score": 0.05, "keyword_text_score": 0.01, "expected_action": "ADD"}
+{"id": "wg-026", "content": "research paper summary on dependency audit", "semantic_vector_score": 0.15, "keyword_text_score": 0.27, "expected_action": "ADD"}
+{"id": "wg-027", "content": "profile c setup: added timeline extended", "semantic_vector_score": 0.65, "keyword_text_score": 0.36, "expected_action": "UPDATE"}
+{"id": "wg-028", "content": "rewritten embedding migration analysis with latest data", "semantic_vector_score": 0.59, "keyword_text_score": 0.15, "expected_action": "UPDATE"}
+{"id": "wg-029", "content": "rephrased version of deployment pipeline with no new info", "semantic_vector_score": 0.96, "keyword_text_score": 0.75, "expected_action": "NOOP"}
+{"id": "wg-030", "content": "new note about visual memory pipeline", "semantic_vector_score": 0.16, "keyword_text_score": 0.29, "expected_action": "ADD"}
+{"id": "wg-031", "content": "test coverage improvement update: root cause confirmed", "semantic_vector_score": 0.79, "keyword_text_score": 0.72, "expected_action": "UPDATE"}
+{"id": "wg-032", "content": "minor correction to API rate limiting notes", "semantic_vector_score": 0.57, "keyword_text_score": 0.71, "expected_action": "UPDATE"}
+{"id": "wg-033", "content": "follow-up on visual memory pipeline: fix verified in staging", "semantic_vector_score": 0.75, "keyword_text_score": 0.51, "expected_action": "UPDATE"}
+{"id": "wg-034", "content": "same release checklist but with different formatting only", "semantic_vector_score": 0.97, "keyword_text_score": 0.76, "expected_action": "NOOP"}
+{"id": "wg-035", "content": "duplicate of token cost analysis postmortem", "semantic_vector_score": 0.96, "keyword_text_score": 0.89, "expected_action": "NOOP"}
+{"id": "wg-036", "content": "fresh topic: release checklist setup and configuration", "semantic_vector_score": 0.14, "keyword_text_score": 0.23, "expected_action": "ADD"}
+{"id": "wg-037", "content": "database schema change status changed to resolved", "semantic_vector_score": 0.59, "keyword_text_score": 0.38, "expected_action": "UPDATE"}
+{"id": "wg-038", "content": "circuit breaker config: added blocked by dependency", "semantic_vector_score": 0.78, "keyword_text_score": 0.41, "expected_action": "UPDATE"}
+{"id": "wg-039", "content": "follow-up on deployment pipeline: fix verified in staging", "semantic_vector_score": 0.79, "keyword_text_score": 0.42, "expected_action": "UPDATE"}
+{"id": "wg-040", "content": "deployment pipeline status changed to resolved", "semantic_vector_score": 0.63, "keyword_text_score": 0.28, "expected_action": "UPDATE"}
+{"id": "wg-041", "content": "slightly reformatted reranker tuning log", "semantic_vector_score": 0.97, "keyword_text_score": 0.87, "expected_action": "NOOP"}
+{"id": "wg-042", "content": "personal reminder: call customer support", "semantic_vector_score": 0.15, "keyword_text_score": 0.16, "expected_action": "ADD"}
+{"id": "wg-043", "content": "new insight about MCP protocol upgrade", "semantic_vector_score": 0.17, "keyword_text_score": 0.08, "expected_action": "ADD"}
+{"id": "wg-044", "content": "carbon copy of embedding migration checklist", "semantic_vector_score": 0.97, "keyword_text_score": 0.66, "expected_action": "NOOP"}
+{"id": "wg-045", "content": "rewritten deployment pipeline analysis with latest data", "semantic_vector_score": 0.89, "keyword_text_score": 0.58, "expected_action": "UPDATE"}
+{"id": "wg-046", "content": "duplicate of visual memory pipeline postmortem", "semantic_vector_score": 0.96, "keyword_text_score": 0.6, "expected_action": "NOOP"}
+{"id": "wg-047", "content": "new insight about API rate limiting", "semantic_vector_score": 0.22, "keyword_text_score": 0.12, "expected_action": "ADD"}
+{"id": "wg-048", "content": "architecture decision record for circuit breaker config", "semantic_vector_score": 0.28, "keyword_text_score": 0.19, "expected_action": "ADD"}
+{"id": "wg-049", "content": "API rate limiting v2 with additional sections", "semantic_vector_score": 0.6, "keyword_text_score": 0.59, "expected_action": "UPDATE"}
+{"id": "wg-050", "content": "fresh topic: database schema change setup and configuration", "semantic_vector_score": 0.06, "keyword_text_score": 0.17, "expected_action": "ADD"}
+{"id": "wg-051", "content": "revised documentation refresh with new findings", "semantic_vector_score": 0.75, "keyword_text_score": 0.54, "expected_action": "UPDATE"}
+{"id": "wg-052", "content": "rewritten MCP protocol upgrade analysis with latest data", "semantic_vector_score": 0.89, "keyword_text_score": 0.52, "expected_action": "UPDATE"}
+{"id": "wg-053", "content": "WAL mode rollout note unchanged from last version", "semantic_vector_score": 0.94, "keyword_text_score": 0.6, "expected_action": "NOOP"}
+{"id": "wg-054", "content": "same latency optimization content pasted again", "semantic_vector_score": 0.92, "keyword_text_score": 0.89, "expected_action": "NOOP"}
+{"id": "wg-055", "content": "personal reminder: call customer support", "semantic_vector_score": 0.14, "keyword_text_score": 0.28, "expected_action": "ADD"}
+{"id": "wg-056", "content": "new note about test coverage improvement", "semantic_vector_score": 0.13, "keyword_text_score": 0.2, "expected_action": "ADD"}
+{"id": "wg-057", "content": "architecture decision record for embedding migration", "semantic_vector_score": 0.01, "keyword_text_score": 0.0, "expected_action": "ADD"}
+{"id": "wg-058", "content": "brainstorm session notes about embedding migration", "semantic_vector_score": 0.32, "keyword_text_score": 0.19, "expected_action": "ADD"}
+{"id": "wg-059", "content": "new note about latency optimization", "semantic_vector_score": 0.22, "keyword_text_score": 0.18, "expected_action": "ADD"}
+{"id": "wg-060", "content": "architecture decision record for embedding migration", "semantic_vector_score": 0.1, "keyword_text_score": 0.15, "expected_action": "ADD"}
+{"id": "wg-061", "content": "extended security patch with customer impact assessment", "semantic_vector_score": 0.77, "keyword_text_score": 0.68, "expected_action": "UPDATE"}
+{"id": "wg-062", "content": "embedding migration: added owner reassigned", "semantic_vector_score": 0.9, "keyword_text_score": 0.33, "expected_action": "UPDATE"}
+{"id": "wg-063", "content": "rewritten MCP protocol upgrade analysis with latest data", "semantic_vector_score": 0.66, "keyword_text_score": 0.62, "expected_action": "UPDATE"}
+{"id": "wg-064", "content": "rewritten profile c setup analysis with latest data", "semantic_vector_score": 0.61, "keyword_text_score": 0.28, "expected_action": "UPDATE"}
+{"id": "wg-065", "content": "rephrased version of visual memory pipeline with no new info", "semantic_vector_score": 0.97, "keyword_text_score": 0.93, "expected_action": "NOOP"}
+{"id": "wg-066", "content": "onboarding flow note unchanged from last version", "semantic_vector_score": 0.96, "keyword_text_score": 0.69, "expected_action": "NOOP"}
+{"id": "wg-067", "content": "MCP protocol upgrade kickoff meeting notes", "semantic_vector_score": 0.12, "keyword_text_score": 0.22, "expected_action": "ADD"}
+{"id": "wg-068", "content": "customer feedback on embedding migration", "semantic_vector_score": 0.28, "keyword_text_score": 0.09, "expected_action": "ADD"}
+{"id": "wg-069", "content": "rewritten embedding migration analysis with latest data", "semantic_vector_score": 0.76, "keyword_text_score": 0.49, "expected_action": "UPDATE"}
+{"id": "wg-070", "content": "deployment pipeline status changed to resolved", "semantic_vector_score": 0.79, "keyword_text_score": 0.61, "expected_action": "UPDATE"}
+{"id": "wg-071", "content": "follow-up on embedding migration: root cause confirmed", "semantic_vector_score": 0.56, "keyword_text_score": 0.48, "expected_action": "UPDATE"}
+{"id": "wg-072", "content": "new insight about release checklist", "semantic_vector_score": 0.35, "keyword_text_score": 0.19, "expected_action": "ADD"}
+{"id": "wg-073", "content": "research paper summary on WAL mode rollout", "semantic_vector_score": 0.33, "keyword_text_score": 0.14, "expected_action": "ADD"}
+{"id": "wg-074", "content": "same documentation refresh but with different formatting only", "semantic_vector_score": 0.93, "keyword_text_score": 0.87, "expected_action": "NOOP"}
+{"id": "wg-075", "content": "personal reminder: call customer support", "semantic_vector_score": 0.1, "keyword_text_score": 0.02, "expected_action": "ADD"}
+{"id": "wg-076", "content": "research paper summary on token cost analysis", "semantic_vector_score": 0.31, "keyword_text_score": 0.01, "expected_action": "ADD"}
+{"id": "wg-077", "content": "fresh topic: visual memory pipeline setup and configuration", "semantic_vector_score": 0.16, "keyword_text_score": 0.25, "expected_action": "ADD"}
+{"id": "wg-078", "content": "new note about database schema change", "semantic_vector_score": 0.18, "keyword_text_score": 0.19, "expected_action": "ADD"}
+{"id": "wg-079", "content": "same visual memory pipeline but with different formatting only", "semantic_vector_score": 0.98, "keyword_text_score": 0.93, "expected_action": "NOOP"}
+{"id": "wg-080", "content": "minor correction to release checklist notes", "semantic_vector_score": 0.67, "keyword_text_score": 0.32, "expected_action": "UPDATE"}
+{"id": "wg-081", "content": "new insight about latency optimization", "semantic_vector_score": 0.0, "keyword_text_score": 0.16, "expected_action": "ADD"}
+{"id": "wg-082", "content": "customer feedback on circuit breaker config", "semantic_vector_score": 0.14, "keyword_text_score": 0.12, "expected_action": "ADD"}
+{"id": "wg-083", "content": "identical content: release checklist summary", "semantic_vector_score": 0.92, "keyword_text_score": 0.83, "expected_action": "NOOP"}
+{"id": "wg-084", "content": "personal reminder: team lunch Friday", "semantic_vector_score": 0.01, "keyword_text_score": 0.15, "expected_action": "ADD"}
+{"id": "wg-085", "content": "fresh topic: onboarding flow setup and configuration", "semantic_vector_score": 0.35, "keyword_text_score": 0.09, "expected_action": "ADD"}
+{"id": "wg-086", "content": "research paper summary on dependency audit", "semantic_vector_score": 0.2, "keyword_text_score": 0.14, "expected_action": "ADD"}
+{"id": "wg-087", "content": "duplicate of circuit breaker config postmortem", "semantic_vector_score": 0.99, "keyword_text_score": 0.93, "expected_action": "NOOP"}
+{"id": "wg-088", "content": "first draft of database schema change documentation", "semantic_vector_score": 0.14, "keyword_text_score": 0.01, "expected_action": "ADD"}
+{"id": "wg-089", "content": "personal reminder: dentist Thursday 3pm", "semantic_vector_score": 0.16, "keyword_text_score": 0.28, "expected_action": "ADD"}
+{"id": "wg-090", "content": "exact copy of existing profile c setup note", "semantic_vector_score": 0.95, "keyword_text_score": 0.66, "expected_action": "NOOP"}
+{"id": "wg-091", "content": "amended API rate limiting timeline", "semantic_vector_score": 0.76, "keyword_text_score": 0.59, "expected_action": "UPDATE"}
+{"id": "wg-092", "content": "same latency optimization content pasted again", "semantic_vector_score": 0.98, "keyword_text_score": 0.88, "expected_action": "NOOP"}
+{"id": "wg-093", "content": "slightly reformatted API rate limiting log", "semantic_vector_score": 0.96, "keyword_text_score": 0.66, "expected_action": "NOOP"}
+{"id": "wg-094", "content": "minor correction to API rate limiting notes", "semantic_vector_score": 0.71, "keyword_text_score": 0.19, "expected_action": "UPDATE"}
+{"id": "wg-095", "content": "same embedding migration content pasted again", "semantic_vector_score": 0.97, "keyword_text_score": 0.9, "expected_action": "NOOP"}
+{"id": "wg-096", "content": "amended queue overflow incident timeline", "semantic_vector_score": 0.86, "keyword_text_score": 0.66, "expected_action": "UPDATE"}
+{"id": "wg-097", "content": "search quality status changed to resolved", "semantic_vector_score": 0.73, "keyword_text_score": 0.64, "expected_action": "UPDATE"}
+{"id": "wg-098", "content": "minor correction to queue overflow incident notes", "semantic_vector_score": 0.56, "keyword_text_score": 0.64, "expected_action": "UPDATE"}
+{"id": "wg-099", "content": "research paper summary on latency optimization", "semantic_vector_score": 0.24, "keyword_text_score": 0.12, "expected_action": "ADD"}
+{"id": "wg-100", "content": "brainstorm session notes about documentation refresh", "semantic_vector_score": 0.31, "keyword_text_score": 0.3, "expected_action": "ADD"}
+{"id": "wg-101", "content": "onboarding flow: added risk assessment updated", "semantic_vector_score": 0.87, "keyword_text_score": 0.34, "expected_action": "UPDATE"}
+{"id": "wg-102", "content": "verbatim repeat of latency optimization action items", "semantic_vector_score": 0.93, "keyword_text_score": 0.8, "expected_action": "NOOP"}
+{"id": "wg-103", "content": "identical content: token cost analysis summary", "semantic_vector_score": 0.94, "keyword_text_score": 0.82, "expected_action": "NOOP"}
+{"id": "wg-104", "content": "revised latency optimization with new findings", "semantic_vector_score": 0.65, "keyword_text_score": 0.7, "expected_action": "UPDATE"}
+{"id": "wg-105", "content": "extended documentation refresh with customer impact assessment", "semantic_vector_score": 0.69, "keyword_text_score": 0.64, "expected_action": "UPDATE"}
+{"id": "wg-106", "content": "database schema change: added customer reported", "semantic_vector_score": 0.58, "keyword_text_score": 0.73, "expected_action": "UPDATE"}
+{"id": "wg-107", "content": "slightly reformatted latency optimization log", "semantic_vector_score": 0.92, "keyword_text_score": 0.86, "expected_action": "NOOP"}
+{"id": "wg-108", "content": "circuit breaker config note unchanged from last version", "semantic_vector_score": 0.94, "keyword_text_score": 0.69, "expected_action": "NOOP"}
+{"id": "wg-109", "content": "fresh topic: API rate limiting setup and configuration", "semantic_vector_score": 0.33, "keyword_text_score": 0.02, "expected_action": "ADD"}
+{"id": "wg-110", "content": "same visual memory pipeline but with different formatting only", "semantic_vector_score": 0.94, "keyword_text_score": 0.66, "expected_action": "NOOP"}
+{"id": "wg-111", "content": "new note about onboarding flow", "semantic_vector_score": 0.24, "keyword_text_score": 0.13, "expected_action": "ADD"}
+{"id": "wg-112", "content": "follow-up on MCP protocol upgrade: rollback needed", "semantic_vector_score": 0.76, "keyword_text_score": 0.49, "expected_action": "UPDATE"}
+{"id": "wg-113", "content": "amended latency optimization timeline", "semantic_vector_score": 0.66, "keyword_text_score": 0.6, "expected_action": "UPDATE"}
+{"id": "wg-114", "content": "security patch status changed to pending review", "semantic_vector_score": 0.65, "keyword_text_score": 0.19, "expected_action": "UPDATE"}
+{"id": "wg-115", "content": "same API rate limiting content pasted again", "semantic_vector_score": 0.95, "keyword_text_score": 0.96, "expected_action": "NOOP"}
+{"id": "wg-116", "content": "embedding migration note unchanged from last version", "semantic_vector_score": 0.95, "keyword_text_score": 0.73, "expected_action": "NOOP"}
+{"id": "wg-117", "content": "rewritten deployment pipeline analysis with latest data", "semantic_vector_score": 0.64, "keyword_text_score": 0.52, "expected_action": "UPDATE"}
+{"id": "wg-118", "content": "personal reminder: update resume", "semantic_vector_score": 0.07, "keyword_text_score": 0.2, "expected_action": "ADD"}
+{"id": "wg-119", "content": "new note about token cost analysis", "semantic_vector_score": 0.24, "keyword_text_score": 0.19, "expected_action": "ADD"}
+{"id": "wg-120", "content": "new insight about API rate limiting", "semantic_vector_score": 0.18, "keyword_text_score": 0.05, "expected_action": "ADD"}
+{"id": "wg-121", "content": "verbatim repeat of visual memory pipeline action items", "semantic_vector_score": 0.96, "keyword_text_score": 0.83, "expected_action": "NOOP"}
+{"id": "wg-122", "content": "brainstorm session notes about dependency audit", "semantic_vector_score": 0.05, "keyword_text_score": 0.18, "expected_action": "ADD"}
+{"id": "wg-123", "content": "follow-up on security patch: owner reassigned", "semantic_vector_score": 0.75, "keyword_text_score": 0.26, "expected_action": "UPDATE"}
+{"id": "wg-124", "content": "first draft of test coverage improvement documentation", "semantic_vector_score": 0.03, "keyword_text_score": 0.27, "expected_action": "ADD"}
+{"id": "wg-125", "content": "minor correction to documentation refresh notes", "semantic_vector_score": 0.56, "keyword_text_score": 0.56, "expected_action": "UPDATE"}
+{"id": "wg-126", "content": "reranker tuning update: owner reassigned", "semantic_vector_score": 0.83, "keyword_text_score": 0.53, "expected_action": "UPDATE"}
+{"id": "wg-127", "content": "same latency optimization but with different formatting only", "semantic_vector_score": 0.97, "keyword_text_score": 0.96, "expected_action": "NOOP"}
+{"id": "wg-128", "content": "fresh topic: test coverage improvement setup and configuration", "semantic_vector_score": 0.33, "keyword_text_score": 0.23, "expected_action": "ADD"}
+{"id": "wg-129", "content": "follow-up on search quality: fix verified in staging", "semantic_vector_score": 0.85, "keyword_text_score": 0.49, "expected_action": "UPDATE"}
+{"id": "wg-130", "content": "latency optimization update: fix verified in staging", "semantic_vector_score": 0.55, "keyword_text_score": 0.58, "expected_action": "UPDATE"}
+{"id": "wg-131", "content": "queue overflow incident note unchanged from last version", "semantic_vector_score": 0.92, "keyword_text_score": 0.94, "expected_action": "NOOP"}
+{"id": "wg-132", "content": "research paper summary on profile c setup", "semantic_vector_score": 0.31, "keyword_text_score": 0.24, "expected_action": "ADD"}
+{"id": "wg-133", "content": "same queue overflow incident content pasted again", "semantic_vector_score": 0.93, "keyword_text_score": 0.97, "expected_action": "NOOP"}
+{"id": "wg-134", "content": "same search quality but with different formatting only", "semantic_vector_score": 0.94, "keyword_text_score": 0.92, "expected_action": "NOOP"}
+{"id": "wg-135", "content": "first draft of reranker tuning documentation", "semantic_vector_score": 0.17, "keyword_text_score": 0.19, "expected_action": "ADD"}
+{"id": "wg-136", "content": "dependency audit note unchanged from last version", "semantic_vector_score": 0.94, "keyword_text_score": 0.63, "expected_action": "NOOP"}
+{"id": "wg-137", "content": "release checklist v2 with additional sections", "semantic_vector_score": 0.72, "keyword_text_score": 0.35, "expected_action": "UPDATE"}
+{"id": "wg-138", "content": "architecture decision record for token cost analysis", "semantic_vector_score": 0.31, "keyword_text_score": 0.05, "expected_action": "ADD"}
+{"id": "wg-139", "content": "customer feedback on profile c setup", "semantic_vector_score": 0.19, "keyword_text_score": 0.24, "expected_action": "ADD"}
+{"id": "wg-140", "content": "personal reminder: team lunch Friday", "semantic_vector_score": 0.04, "keyword_text_score": 0.15, "expected_action": "ADD"}
+{"id": "wg-141", "content": "same release checklist content pasted again", "semantic_vector_score": 1.0, "keyword_text_score": 0.92, "expected_action": "NOOP"}
+{"id": "wg-142", "content": "extended API rate limiting with customer impact assessment", "semantic_vector_score": 0.58, "keyword_text_score": 0.57, "expected_action": "UPDATE"}
+{"id": "wg-143", "content": "carbon copy of test coverage improvement checklist", "semantic_vector_score": 0.94, "keyword_text_score": 0.96, "expected_action": "NOOP"}
+{"id": "wg-144", "content": "identical content: WAL mode rollout summary", "semantic_vector_score": 0.92, "keyword_text_score": 0.91, "expected_action": "NOOP"}
+{"id": "wg-145", "content": "architecture decision record for MCP protocol upgrade", "semantic_vector_score": 0.14, "keyword_text_score": 0.14, "expected_action": "ADD"}
+{"id": "wg-146", "content": "rephrased version of deployment pipeline with no new info", "semantic_vector_score": 0.97, "keyword_text_score": 1.0, "expected_action": "NOOP"}
+{"id": "wg-147", "content": "new insight about onboarding flow", "semantic_vector_score": 0.25, "keyword_text_score": 0.06, "expected_action": "ADD"}
+{"id": "wg-148", "content": "first draft of release checklist documentation", "semantic_vector_score": 0.11, "keyword_text_score": 0.08, "expected_action": "ADD"}
+{"id": "wg-149", "content": "same security patch but with different formatting only", "semantic_vector_score": 1.0, "keyword_text_score": 0.86, "expected_action": "NOOP"}
+{"id": "wg-150", "content": "MCP protocol upgrade kickoff meeting notes", "semantic_vector_score": 0.16, "keyword_text_score": 0.06, "expected_action": "ADD"}
+{"id": "wg-151", "content": "amended documentation refresh timeline", "semantic_vector_score": 0.87, "keyword_text_score": 0.38, "expected_action": "UPDATE"}
+{"id": "wg-152", "content": "minor correction to onboarding flow notes", "semantic_vector_score": 0.84, "keyword_text_score": 0.56, "expected_action": "UPDATE"}
+{"id": "wg-153", "content": "revised documentation refresh with new findings", "semantic_vector_score": 0.82, "keyword_text_score": 0.49, "expected_action": "UPDATE"}
+{"id": "wg-154", "content": "rephrased version of release checklist with no new info", "semantic_vector_score": 1.0, "keyword_text_score": 0.95, "expected_action": "NOOP"}
+{"id": "wg-155", "content": "database schema change status changed to blocked", "semantic_vector_score": 0.82, "keyword_text_score": 0.48, "expected_action": "UPDATE"}
+{"id": "wg-156", "content": "onboarding flow status changed to resolved", "semantic_vector_score": 0.65, "keyword_text_score": 0.31, "expected_action": "UPDATE"}
+{"id": "wg-157", "content": "exact copy of existing latency optimization note", "semantic_vector_score": 0.96, "keyword_text_score": 0.88, "expected_action": "NOOP"}
+{"id": "wg-158", "content": "rephrased version of WAL mode rollout with no new info", "semantic_vector_score": 0.98, "keyword_text_score": 0.69, "expected_action": "NOOP"}
+{"id": "wg-159", "content": "API rate limiting update: new metrics added", "semantic_vector_score": 0.6, "keyword_text_score": 0.38, "expected_action": "UPDATE"}
+{"id": "wg-160", "content": "carbon copy of visual memory pipeline checklist", "semantic_vector_score": 0.97, "keyword_text_score": 0.9, "expected_action": "NOOP"}
+{"id": "wg-161", "content": "dependency audit v2 with additional sections", "semantic_vector_score": 0.69, "keyword_text_score": 0.36, "expected_action": "UPDATE"}
+{"id": "wg-162", "content": "onboarding flow v2 with additional sections", "semantic_vector_score": 0.62, "keyword_text_score": 0.71, "expected_action": "UPDATE"}
+{"id": "wg-163", "content": "identical content: database schema change summary", "semantic_vector_score": 0.94, "keyword_text_score": 0.6, "expected_action": "NOOP"}
+{"id": "wg-164", "content": "onboarding flow v2 with additional sections", "semantic_vector_score": 0.87, "keyword_text_score": 0.59, "expected_action": "UPDATE"}
+{"id": "wg-165", "content": "MCP protocol upgrade kickoff meeting notes", "semantic_vector_score": 0.09, "keyword_text_score": 0.22, "expected_action": "ADD"}
+{"id": "wg-166", "content": "dependency audit kickoff meeting notes", "semantic_vector_score": 0.22, "keyword_text_score": 0.08, "expected_action": "ADD"}
+{"id": "wg-167", "content": "architecture decision record for dependency audit", "semantic_vector_score": 0.0, "keyword_text_score": 0.04, "expected_action": "ADD"}
+{"id": "wg-168", "content": "release checklist note unchanged from last version", "semantic_vector_score": 0.94, "keyword_text_score": 0.89, "expected_action": "NOOP"}
+{"id": "wg-169", "content": "test coverage improvement kickoff meeting notes", "semantic_vector_score": 0.05, "keyword_text_score": 0.13, "expected_action": "ADD"}
+{"id": "wg-170", "content": "first draft of queue overflow incident documentation", "semantic_vector_score": 0.3, "keyword_text_score": 0.11, "expected_action": "ADD"}
+{"id": "wg-171", "content": "identical content: API rate limiting summary", "semantic_vector_score": 0.94, "keyword_text_score": 0.66, "expected_action": "NOOP"}
+{"id": "wg-172", "content": "minor correction to onboarding flow notes", "semantic_vector_score": 0.87, "keyword_text_score": 0.45, "expected_action": "UPDATE"}
+{"id": "wg-173", "content": "follow-up on MCP protocol upgrade: owner reassigned", "semantic_vector_score": 0.85, "keyword_text_score": 0.35, "expected_action": "UPDATE"}
+{"id": "wg-174", "content": "first draft of test coverage improvement documentation", "semantic_vector_score": 0.06, "keyword_text_score": 0.27, "expected_action": "ADD"}
+{"id": "wg-175", "content": "rephrased version of search quality with no new info", "semantic_vector_score": 0.94, "keyword_text_score": 0.96, "expected_action": "NOOP"}
+{"id": "wg-176", "content": "minor correction to WAL mode rollout notes", "semantic_vector_score": 0.78, "keyword_text_score": 0.58, "expected_action": "UPDATE"}
+{"id": "wg-177", "content": "architecture decision record for API rate limiting", "semantic_vector_score": 0.33, "keyword_text_score": 0.28, "expected_action": "ADD"}
+{"id": "wg-178", "content": "slightly reformatted dependency audit log", "semantic_vector_score": 0.95, "keyword_text_score": 0.83, "expected_action": "NOOP"}
+{"id": "wg-179", "content": "research paper summary on visual memory pipeline", "semantic_vector_score": 0.05, "keyword_text_score": 0.21, "expected_action": "ADD"}
+{"id": "wg-180", "content": "architecture decision record for latency optimization", "semantic_vector_score": 0.02, "keyword_text_score": 0.13, "expected_action": "ADD"}
+{"id": "wg-181", "content": "same onboarding flow but with different formatting only", "semantic_vector_score": 1.0, "keyword_text_score": 0.64, "expected_action": "NOOP"}
+{"id": "wg-182", "content": "follow-up on test coverage improvement: customer reported", "semantic_vector_score": 0.71, "keyword_text_score": 0.22, "expected_action": "UPDATE"}
+{"id": "wg-183", "content": "same test coverage improvement content pasted again", "semantic_vector_score": 0.94, "keyword_text_score": 0.99, "expected_action": "NOOP"}
+{"id": "wg-184", "content": "extended profile c setup with customer impact assessment", "semantic_vector_score": 0.84, "keyword_text_score": 0.66, "expected_action": "UPDATE"}
+{"id": "wg-185", "content": "same latency optimization but with different formatting only", "semantic_vector_score": 0.99, "keyword_text_score": 0.79, "expected_action": "NOOP"}
+{"id": "wg-186", "content": "research paper summary on dependency audit", "semantic_vector_score": 0.09, "keyword_text_score": 0.14, "expected_action": "ADD"}
+{"id": "wg-187", "content": "rewritten token cost analysis analysis with latest data", "semantic_vector_score": 0.57, "keyword_text_score": 0.69, "expected_action": "UPDATE"}
+{"id": "wg-188", "content": "reranker tuning kickoff meeting notes", "semantic_vector_score": 0.35, "keyword_text_score": 0.27, "expected_action": "ADD"}
+{"id": "wg-189", "content": "same API rate limiting content pasted again", "semantic_vector_score": 0.95, "keyword_text_score": 0.88, "expected_action": "NOOP"}
+{"id": "wg-190", "content": "queue overflow incident update: timeline extended", "semantic_vector_score": 0.9, "keyword_text_score": 0.56, "expected_action": "UPDATE"}
+{"id": "wg-191", "content": "profile c setup v2 with additional sections", "semantic_vector_score": 0.67, "keyword_text_score": 0.6, "expected_action": "UPDATE"}
+{"id": "wg-192", "content": "database schema change status changed to in progress", "semantic_vector_score": 0.79, "keyword_text_score": 0.7, "expected_action": "UPDATE"}
+{"id": "wg-193", "content": "fresh topic: security patch setup and configuration", "semantic_vector_score": 0.28, "keyword_text_score": 0.04, "expected_action": "ADD"}
+{"id": "wg-194", "content": "circuit breaker config v2 with additional sections", "semantic_vector_score": 0.81, "keyword_text_score": 0.68, "expected_action": "UPDATE"}
+{"id": "wg-195", "content": "revised release checklist with new findings", "semantic_vector_score": 0.75, "keyword_text_score": 0.49, "expected_action": "UPDATE"}
+{"id": "wg-196", "content": "minor correction to test coverage improvement notes", "semantic_vector_score": 0.72, "keyword_text_score": 0.71, "expected_action": "UPDATE"}
+{"id": "wg-197", "content": "revised profile c setup with new findings", "semantic_vector_score": 0.68, "keyword_text_score": 0.55, "expected_action": "UPDATE"}
+{"id": "wg-198", "content": "fresh topic: onboarding flow setup and configuration", "semantic_vector_score": 0.3, "keyword_text_score": 0.26, "expected_action": "ADD"}
+{"id": "wg-199", "content": "architecture decision record for deployment pipeline", "semantic_vector_score": 0.1, "keyword_text_score": 0.21, "expected_action": "ADD"}
+{"id": "wg-200", "content": "same API rate limiting but with different formatting only", "semantic_vector_score": 0.98, "keyword_text_score": 0.69, "expected_action": "NOOP"}

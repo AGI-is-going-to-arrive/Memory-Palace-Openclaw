@@ -1,0 +1,562 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>23 · memory-palace Capability Boundaries in OpenClaw WebUI</title>
+    <style>
+      :root {
+        --bg: #f5efe5;
+        --paper: rgba(255, 250, 243, 0.9);
+        --paper-strong: #fffaf3;
+        --line: rgba(136, 108, 77, 0.2);
+        --ink: #2e241c;
+        --muted: #6f5f52;
+        --accent: #9f6c32;
+        --accent-soft: rgba(159, 108, 50, 0.1);
+        --shadow: 0 28px 64px rgba(74, 49, 24, 0.12);
+      }
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        margin: 0;
+        font-family: "Avenir Next", "Segoe UI", sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at top left, rgba(185, 136, 84, 0.14), transparent 30%),
+          radial-gradient(circle at 88% 8%, rgba(209, 188, 158, 0.18), transparent 22%),
+          linear-gradient(180deg, #fffcf8 0%, var(--bg) 100%);
+      }
+      a { color: inherit; }
+      img, video { display: block; width: 100%; height: auto; }
+      .shell {
+        width: min(1380px, calc(100vw - 32px));
+        margin: 0 auto;
+        padding: 28px 0 72px;
+      }
+      .masthead, .section, .foot {
+        border: 1px solid var(--line);
+        background: var(--paper);
+        border-radius: 30px;
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(18px);
+      }
+      .masthead { padding: 28px; }
+      .section, .foot { margin-top: 22px; padding: 24px; }
+      .eyebrow, .chip, .jump a, .lang a {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 14px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.75);
+        text-decoration: none;
+        font-size: 13px;
+        letter-spacing: 0.04em;
+      }
+      .eyebrow { color: var(--accent); text-transform: uppercase; }
+      .mast-grid, .proof-grid, .surface-grid, .profile-grid {
+        display: grid;
+        gap: 18px;
+      }
+      .mast-grid {
+        grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.7fr);
+        margin-top: 18px;
+        align-items: start;
+      }
+      .proof-grid, .surface-grid, .profile-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      h1, h2, h3 {
+        margin: 0;
+        font-family: "Iowan Old Style", Georgia, serif;
+        font-weight: 600;
+      }
+      h1 { margin-top: 16px; font-size: clamp(42px, 6vw, 74px); line-height: 0.98; }
+      h2 { font-size: clamp(30px, 4vw, 42px); line-height: 1.05; }
+      h3 { font-size: 22px; line-height: 1.2; }
+      p, li, td, th { color: var(--muted); line-height: 1.7; }
+      .lead { max-width: 860px; margin: 18px 0 0; font-size: 18px; }
+      .chip-row, .lang, .jump { display: flex; flex-wrap: wrap; gap: 10px; }
+      .chip-row { margin-top: 18px; }
+      .lang { margin-top: 16px; }
+      .note, .stack, .profile-card, .video-meta {
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.76);
+        border-radius: 22px;
+        padding: 18px;
+      }
+      .note strong, .video-meta strong, figcaption strong { color: var(--ink); }
+      .note ul, .video-meta ul { margin: 12px 0 0; padding-left: 18px; }
+      .section-head {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(220px, 340px);
+        gap: 18px;
+        align-items: end;
+        margin-bottom: 18px;
+      }
+      .section-kicker {
+        color: var(--accent);
+        font-size: 13px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+      }
+      .section-copy { margin: 10px 0 0; max-width: 760px; }
+      .video-frame, figure {
+        border: 1px solid var(--line);
+        border-radius: 26px;
+        overflow: hidden;
+        background: var(--paper-strong);
+      }
+      .video-frame {
+        background:
+          linear-gradient(180deg, rgba(255, 252, 247, 0.35), rgba(255, 252, 247, 0)),
+          #090c11;
+      }
+      figcaption { padding: 16px 18px 18px; }
+      figcaption strong { display: block; font-size: 17px; }
+      figcaption span { display: block; margin-top: 8px; }
+      .stack { display: grid; gap: 14px; }
+      .stack p { margin: 0; }
+      .surface-card { display: grid; gap: 14px; }
+      .surface-card figure { height: 100%; }
+      .profile-card { display: grid; gap: 10px; }
+      .profile-card .chip {
+        justify-self: start;
+        color: var(--accent);
+        background: var(--accent-soft);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 14px;
+        border-radius: 18px;
+        overflow: hidden;
+      }
+      th, td {
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--line);
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        color: var(--ink);
+        background: rgba(255, 255, 255, 0.72);
+        font-size: 13px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+      .foot p { margin: 12px 0 0; }
+      @media (max-width: 1120px) {
+        .mast-grid, .section-head, .proof-grid, .surface-grid, .profile-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      @media (max-width: 720px) {
+        .shell { width: min(100vw - 16px, 100%); padding: 16px 0 48px; }
+        .masthead, .section, .foot { padding: 18px; border-radius: 24px; }
+        h1 { font-size: 38px; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <section class="masthead">
+        <div class="eyebrow">OpenClaw WebUI Dossier</div>
+        <h1>What the memory-palace plugin and skill actually look like inside OpenClaw WebUI</h1>
+        <p class="lead">
+          This page answers only the questions a WebUI user actually cares about:
+          how a Memory Palace-related entry appears in `Skills`
+          (the exact visible label can vary by host build), how default recall and
+          `memory_get / media_ref` land inside chat as visible recall blocks, tool
+          cards, and answer blocks, and how ACL plus Profile B / C / D are manifested
+          from the OpenClaw WebUI user’s point of view.
+        </p>
+        <div class="chip-row">
+          <span class="chip">OpenClaw WebUI first, not Dashboard-first</span>
+          <span class="chip">Screenshots stay large enough to read</span>
+          <span class="chip">ACL boundaries are explained primarily by video</span>
+        </div>
+        <div class="lang">
+          <a href="./23-PROFILE_CAPABILITY_BOUNDARIES.html">中文</a>
+          <a href="./23-PROFILE_CAPABILITY_BOUNDARIES.en.html">English</a>
+        </div>
+        <div class="mast-grid">
+          <div class="stack">
+            <p>
+              This page follows two public-deliverable rules:
+              <strong>Show the current OpenClaw WebUI exactly as users encounter it.</strong>
+              <strong>Use burned-subtitle MP4 deliverables instead of HTML caption overlays.</strong>
+            </p>
+            <p>
+              That is why the page now uses only tracked screenshots and finished video deliverables. The HTML layer should not fake proof through card mosaics or subtitle-sync logic.
+            </p>
+          </div>
+          <aside class="note">
+            <strong>What this page uses to judge success</strong>
+            <ul>
+              <li>Can the user directly see a Memory Palace-related entry in `Skills`, without hard-coding one visible label?</li>
+              <li>Does chat expose recall as a visible block instead of hiding it behind internal plumbing?</li>
+              <li>Do `memory_get / media_ref` become visible tool cards and answer content in the same thread?</li>
+              <li>Can ACL be understood from video alone through `beta -> UNKNOWN`?</li>
+              <li>Are Profile B / C / D described in terms of user-visible WebUI impact plus honest backend boundaries?</li>
+            </ul>
+          </aside>
+        </div>
+      </section>
+
+      <section class="section" id="capability-tour">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">Capability Walkthrough</div>
+            <h2>Start with the finished film: the plugin + skill walkthrough inside WebUI</h2>
+            <p class="section-copy">
+              This video is the primary evidence. It no longer stops at “there is a skill in Skills”.
+              It now turns `Skills list -> Skills detail sheet -> recall block in Chat -> visual-memory tool card -> final answer block`
+              into one causal chain, and the subtitles are already burned into the MP4.
+            </p>
+          </div>
+          <div class="video-meta">
+            <strong>You will directly see</strong>
+            <ul>
+              <li>A Memory Palace-related entry inside `Skills`; do not treat one exact slug as the only acceptable host-visible label.</li>
+              <li>The `Skills` detail sheet stating when this skill is supposed to guide explicit intervention.</li>
+              <li>`memory-palace-profile / memory-palace-recall` becoming the visible plugin-owned default recall block.</li>
+              <li>`memory_get / media_ref` becoming the visible explicit-tool path when the default path is not enough.</li>
+              <li>The final chat frame making the plugin’s default effect on the conversation concrete.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="video-frame">
+          <video controls preload="metadata" poster="./assets/real-openclaw-run/openclaw-control-ui-skills-memory-palace.png">
+            <source src="./assets/real-openclaw-run/openclaw-control-ui-capability-tour.en.mp4" type="video/mp4" />
+          </video>
+        </div>
+      </section>
+
+      <section class="section" id="surfaces">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">WebUI Surfaces</div>
+            <h2>Break the film apart: the five surfaces the user can actually see</h2>
+            <p class="section-copy">
+              No internal architecture diagrams here. The goal is only to show what the OpenClaw WebUI user truly sees, at a scale that remains readable.
+            </p>
+          </div>
+          <div class="note">
+            <strong>The visible forms that matter</strong>
+            <ul>
+              <li>`skill entry` proves this is host-visible, not merely documented.</li>
+              <li>`skill detail sheet` proves the user can read the actual job scope inside WebUI.</li>
+              <li>`recall block` proves default durable recall is already entering chat.</li>
+              <li>`tool card + answer block` prove visual memory is not only a backend concept.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="surface-grid">
+          <div class="surface-card">
+            <figure>
+              <img src="./assets/real-openclaw-run/openclaw-control-ui-skills-memory-palace.png" alt="OpenClaw Skills page showing a Memory Palace-related entry" />
+              <figcaption>
+                <strong>`Skills`: a Memory Palace-related entry is host-visible</strong>
+                <span>
+                  The point is not merely that one fixed name exists in search. The point is that a Memory Palace-related entry becomes a visible, installable, toggleable WebUI entry. The exact visible label in this screenshot reflects one local host build rather than a permanent cross-version UI contract.
+                </span>
+              </figcaption>
+            </figure>
+          </div>
+          <div class="surface-card">
+            <figure>
+              <img src="./assets/real-openclaw-run/openclaw-control-ui-skills-memory-palace-detail.png" alt="OpenClaw Skills detail sheet for a Memory Palace-related entry" />
+              <figcaption>
+                <strong>`Skills` detail sheet: what this skill is supposed to do inside WebUI</strong>
+                <span>
+                  Once the user opens the entry, the detail sheet explicitly spells out when the model should escalate into durable memory recall, explicit memory verification, visual memory storage, and plugin health or index maintenance.
+                </span>
+              </figcaption>
+            </figure>
+          </div>
+          <div class="surface-card">
+            <figure>
+              <img src="./assets/real-openclaw-run/07-openclaw-control-ui-memory-chat.png" alt="OpenClaw chat page with plugin-managed conversation" />
+              <figcaption>
+                <strong>`Chat`: the plugin still enters through the native conversation surface</strong>
+                <span>
+                  The user does not begin on a raw MCP tool console. What is actually working by default is the memory-palace plugin as the active memory slot plus host hooks; the skill detail sheet only explains when explicit tool escalation should happen.
+                </span>
+              </figcaption>
+            </figure>
+          </div>
+          <div class="surface-card">
+            <figure>
+              <img src="./assets/real-openclaw-run/openclaw-control-ui-chat-recall-confirmed.png" alt="OpenClaw current-host acceptance chat showing visible tool output, confirmation text, and recall marker" />
+              <figcaption>
+                <strong>Chat proof 1: current-host strict acceptance shows confirmation text and the recall marker together</strong>
+                <span>
+                  This page no longer keeps using the older recall still that had already been overwritten by an empty chat shell. The public page now points directly at a current-host strict-acceptance screenshot where tool output, confirmation text, and the recall marker are visible in one native thread.
+                </span>
+              </figcaption>
+            </figure>
+          </div>
+          <div class="surface-card">
+            <figure>
+              <img src="./assets/real-openclaw-run/openclaw-control-ui-chat-force-confirm.png" alt="OpenClaw current-host acceptance chat showing guarded write confirmation inside the native chat thread" />
+              <figcaption>
+                <strong>Chat proof 2: guarded write also finishes inside the native chat page</strong>
+                <span>
+                  This still captures a controlled rerun of the block-then-confirm flow. Do not read one still as a blanket current-host strict success guarantee for every advanced profile. For visual memory, this refresh no longer overstates one chat still; the standalone static proof now moves to the Dashboard pair below.
+                </span>
+              </figcaption>
+            </figure>
+          </div>
+          <div class="surface-card">
+            <figure>
+              <img src="./assets/real-openclaw-run/dashboard-visual-memory-root.en.png" alt="Dashboard Memory Hall showing the visual branch under the root node" />
+              <figcaption>
+                <strong>`Dashboard / Memory` proof 1: the `visual` branch is really visible inside `Memory Hall`</strong>
+                <span>
+                  This first proves that visual memory is not just a documentation phrase. In the real Dashboard `Memory Hall`, the root node visibly contains a `visual` branch.
+                </span>
+              </figcaption>
+            </figure>
+          </div>
+          <div class="surface-card">
+            <figure>
+              <img src="./assets/real-openclaw-run/dashboard-visual-memory.en.png" alt="Dashboard visual memory node showing Visual Memory summary OCR and entities" />
+              <figcaption>
+                <strong>`Dashboard / Memory` proof 2: the `core://visual/...` node page shows the visual-memory payload itself</strong>
+                <span>
+                  The standalone static proof for visual memory now comes from this node-detail page. The still visibly shows `Visual Memory`, `Summary`, `OCR`, and `Entities` together, instead of continuing to rely on the older distorted `plugin-*` chat pair.
+                </span>
+              </figcaption>
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="acl">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">ACL Scenario</div>
+            <h2>ACL is currently an experimental multi-agent memory isolation feature, and this video shows the current result directly.</h2>
+            <p class="section-copy">
+              ACL here means `Access Control List`, but the plain-language meaning on this page is:
+              **experimental multi-agent memory isolation**. Once enabled, the current tested plugin path can narrow each agent to its own long-term memory by default.
+              It should not yet be read as a fully hardened backend security boundary.
+              So the film shows the full chain: which agents exist, how `alpha` stores a memory,
+              and why `beta` still cannot read it.
+            </p>
+          </div>
+          <div class="video-meta">
+            <strong>The video now makes four steps explicit</strong>
+            <ul>
+              <li>It starts in `Agents` and proves `main / alpha / beta` exist as distinct scopes.</li>
+              <li>It enters `alpha` chat and shows a memory being stored there first.</li>
+              <li>It then switches to `beta`, where only beta-scoped memory remains visible.</li>
+              <li>It finally asks for alpha’s workflow and gets `UNKNOWN`.</li>
+            </ul>
+            <p style="margin:12px 0 0; color:#5d6472;">
+              If you want to know <strong>how to enable it</strong>, go straight to
+              <a href="./24-AGENT_ACL_ISOLATION.en.md">document 24</a>. The real config lives under
+              <code>plugins.entries.memory-palace.config.acl</code>.
+            </p>
+          </div>
+        </div>
+        <div class="video-frame">
+          <video controls preload="metadata" poster="./assets/real-openclaw-run/24-acl-agents-page.en.png">
+            <source src="./assets/real-openclaw-run/openclaw-control-ui-acl-scenario.en.mp4" type="video/mp4" />
+          </video>
+        </div>
+        <div class="proof-grid" style="margin-top: 18px;">
+          <figure>
+            <img src="./assets/real-openclaw-run/24-acl-agents-page.en.png" alt="OpenClaw Agents page showing the ACL run agents" />
+            <figcaption>
+              <strong>Step 1: Start from the `Agents` page</strong>
+              <span>
+                The ACL story begins by showing `main / alpha / beta` directly inside the OpenClaw `Agents` page. Without those three visible scopes, the isolation proof would have no meaning.
+              </span>
+            </figcaption>
+          </figure>
+          <figure>
+            <img src="./assets/real-openclaw-run/24-acl-alpha-memory-confirmed.en.png" alt="OpenClaw alpha chat confirming that a memory was stored" />
+            <figcaption>
+              <strong>Step 2: First store the memory inside `alpha` chat</strong>
+              <span>
+                This frame matters because it shows the write actually happened in the WebUI. The assistant confirms the memory was stored for `alpha`, so the later `UNKNOWN` result cannot be dismissed as “nothing was ever remembered”.
+              </span>
+            </figcaption>
+          </figure>
+          <figure>
+            <img src="./assets/real-openclaw-run/24-acl-beta-chat-isolated.en.png" alt="OpenClaw beta chat showing isolated recall and UNKNOWN answer" />
+            <figcaption>
+              <strong>Step 3: Then switch to `beta`, which still returns `UNKNOWN`</strong>
+              <span>
+                The same thread now shows beta-scoped recall, a cross-agent question, and the `UNKNOWN` answer. In plain language, this records the current experimental behavior: alpha stored the memory first, but beta still did not read it in this flow.
+              </span>
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="section" id="profiles">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">Profiles In WebUI</div>
+            <h2>What Profile B / C / D mean from the OpenClaw WebUI user’s point of view</h2>
+            <p class="section-copy">
+              This section deliberately avoids pretending that B / C / D each have their
+              own dedicated pages. The more accurate statement is that users mostly keep
+              seeing the same `Skills / Chat / tool card / recall block` surfaces, while
+              the real differences emerge behind those surfaces and in output quality.
+            </p>
+          </div>
+          <div class="note">
+            <strong>Two misleading framings this page refuses</strong>
+            <ul>
+              <li>It does not make Dashboard setup forms the main story for B / C / D.</li>
+              <li>It does not invent separate WebUI pages for differences that are mainly backend-path differences.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="profile-grid">
+          <article class="profile-card">
+            <span class="chip">Profile A</span>
+            <h3>The user still sees the same WebUI shell, but the retrieval boundary shrinks to the minimum validation tier.</h3>
+            <p>
+              A is not a separate simplified page. The same chat, skills, and agent shell remain visible, while the backend retrieval path falls back to keyword-only with no embedding and no reranker.
+            </p>
+            <table>
+              <thead>
+                <tr><th>User-facing manifestation</th><th>What not to over-claim</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>The plugin entry, chat write, and basic recall evidence are still visible.</td><td>Do not describe it as the long-term recommended tier; it is closer to the minimum validation baseline.</td></tr>
+              </tbody>
+            </table>
+          </article>
+
+          <article class="profile-card">
+            <span class="chip">Profile B</span>
+            <h3>The user mostly sees “the chain works,” not an advanced-provider console</h3>
+            <p>
+              In WebUI terms, B feels like the baseline where chat, default recall, tool cards,
+              and answer blocks are already alive. Durable memory is visibly entering the thread.
+            </p>
+            <table>
+              <thead>
+                <tr><th>User-facing manifestation</th><th>What not to over-claim</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Visible recall blocks and a functional visual-memory loop are already present.</td><td>Do not describe it as the final real-model quality tier or the long-term production target.</td></tr>
+              </tbody>
+            </table>
+          </article>
+
+          <article class="profile-card">
+            <span class="chip">Profile C</span>
+            <h3>The WebUI shape barely changes. The deeper change is recall and extraction quality.</h3>
+            <p>
+              For the user, C is not a new page. It is the same WebUI thread now running on a real embedding / reranker / model chain. The visible form is similar; the depth and reliability of recall improve.
+            </p>
+            <p>
+              The current public default also needs to stay explicit: `Profile C` guarantees `embedding + reranker` by default, while `write_guard / compact_gist / intent_llm` remain opt-in instead of default-on.
+            </p>
+            <p>
+              The public story now keeps only the screenshots that are still directly embedded by the public pages. Older `profile-matrix/*`
+              inventory is maintainer-side evidence stock, not part of the default user-facing proof set of this page.
+            </p>
+            <table>
+              <thead>
+                <tr><th>User-facing manifestation</th><th>What not to over-claim</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>The same tool-card and answer-block surface becomes stronger because the underlying provider chain is real.</td><td>Do not treat “env configured” as equivalent to “provider actually healthy”; the probe still has to be green.</td></tr>
+              </tbody>
+            </table>
+          </article>
+
+          <article class="profile-card">
+            <span class="chip">Profile D</span>
+            <h3>The user still sees something very close to C, but the default target becomes the full advanced surface.</h3>
+            <p>
+              D usually does not grow a distinct WebUI surface. The more accurate interpretation is that the user still sees the same chat-and-tool shell, while the default target becomes `embedding + reranker + write_guard / compact_gist / intent_llm` together.
+            </p>
+            <p>
+              Provider location can still be local, intranet, or remote. The real boundary is provider health, network conditions, and latency budget rather than “remote by definition.”
+            </p>
+            <p>
+              The current public default is now: `Profile D` includes `write_guard / compact_gist / intent_llm` by default, while `plugins.slots.memory` still stays on `memory-palace` and `memory-core` remains only a facade-compat shim.
+            </p>
+            <table>
+              <thead>
+                <tr><th>User-facing manifestation</th><th>What not to over-claim</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>It still looks close to C in the WebUI, but the default target is the full advanced surface.</td><td>Do not describe it as “remote-only,” and do not describe it as naturally low-latency.</td></tr>
+              </tbody>
+            </table>
+          </article>
+
+          <article class="profile-card">
+            <span class="chip">One-line summary</span>
+            <h3>A / B / C / D differ more in backend depth than in top-level WebUI shape</h3>
+            <p>
+              That is why this page starts from the user-visible evidence first and only then explains where the differences remain behind the scenes. For users, the first thing that matters is not the profile label. It is whether `skill entry / recall block / tool card / answer block` have already entered the thread they use every day.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" id="validation">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">Validation Anchors</div>
+            <h2>Read the profile boundary together with the quality gates, or “the page opens” will be mistaken for “the advanced chain is fully ready”</h2>
+            <p class="section-copy">
+              The visible WebUI shell stays similar. The real boundary between B / C / D usually appears in provider probe status, retrieval quality, write guard behavior, and intent routing depth.
+            </p>
+          </div>
+          <div class="note">
+            <strong>These anchors only state facts that already exist</strong>
+            <ul>
+              <li>`intent 200 case`: accuracy=`1.000`</li>
+              <li>`write guard 200 case`: B EM=`0.975`, C/D EM=`0.845` (score normalization enabled by default)</li>
+              <li>`live LLM contradiction`: accuracy=`0.950`</li>
+              <li>`live LLM benchmark 400 case`: intent=`0.97`, write guard recall=`0.96`</li>
+            </ul>
+          </div>
+        </div>
+        <div class="proof-grid">
+          <figure>
+            <img src="./assets/real-openclaw-run/profile-matrix/d-default/chat.png" alt="Profile D default WebUI chat screenshot on OpenClaw" />
+            <figcaption>
+              <strong>Profile D live chat: advanced mode is still not “done because env exists”</strong>
+              <span>
+                This figure is intentionally a real WebUI screenshot rather than an onboarding hero. The point stays the same: `Profile C/D`
+                are not “ready” just because provider env values exist. The real threshold is that `provider probe / verify / doctor / smoke`
+                are all green in the target environment, and only then does the advanced recall-and-tool story become valid.
+              </span>
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="foot">
+        <div class="section-kicker">Next Reads</div>
+        <h2>Where to continue</h2>
+        <div class="jump" style="margin-top: 16px;">
+          <a href="./15-END_USER_INSTALL_AND_USAGE.en.md">15 · End-user install and usage assets</a>
+          <a href="../EVALUATION.en.md">docs/EVALUATION.en.md</a>
+          <a href="./24-AGENT_ACL_ISOLATION.en.md">24 · Multi-agent memory isolation (ACL) guide</a>
+          <a href="./01-INSTALL_AND_RUN.en.md">01 · Install and run</a>
+        </div>
+        <p>
+          This page only uses user-visible OpenClaw WebUI evidence and burned-subtitle MP4 deliverables. The public repository now keeps only the screenshots and videos that are still directly referenced by the public docs; older inventory stills, duplicate screenshots, and test-only evidence are no longer part of the public repo surface. For current host-version and rerun boundaries, read `EVALUATION.en.md`.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>

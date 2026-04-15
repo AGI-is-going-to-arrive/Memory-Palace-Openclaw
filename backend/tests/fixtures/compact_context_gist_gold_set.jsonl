@@ -1,0 +1,100 @@
+{"id": "gist-001", "reference_gist": "designed provider probe auto detection for onboarding", "candidate_gist": "built provider probe auto detection for onboarding"}
+{"id": "gist-002", "reference_gist": "reviewed pull request for write guard integration", "candidate_gist": "reviewed pull request for write guard integration"}
+{"id": "gist-003", "reference_gist": "tested search index with large memory corpus", "candidate_gist": "tested search index with large memory corpus"}
+{"id": "gist-004", "reference_gist": "rebuilt compact context after spike and confirmed accuracy", "candidate_gist": "rebuilt compact context after spike and confirmed accuracy"}
+{"id": "gist-005", "reference_gist": "rebuilt WAL journal after regression and confirmed stability", "candidate_gist": "rebuilt WAL journal after regression confirming stability"}
+{"id": "gist-006", "reference_gist": "reviewed pull request for embedding cache integration", "candidate_gist": "reviewed pull request for embedding cache integration"}
+{"id": "gist-007", "reference_gist": "reviewed pull request for WAL journal integration", "candidate_gist": "reviewed pull request for WAL journal integration"}
+{"id": "gist-008", "reference_gist": "profiled MCP server startup time and reduced cold start", "candidate_gist": "profiled MCP server startup time and reduced cold start"}
+{"id": "gist-009", "reference_gist": "fixed race condition in compact context under heavy load", "candidate_gist": "fixed race condition in compact context under heavy load"}
+{"id": "gist-010", "reference_gist": "migrated WAL journal configuration and validated search latency", "candidate_gist": "migrated WAL journal configuration and validated search latency"}
+{"id": "gist-011", "reference_gist": "refactored search index to support chinese queries", "candidate_gist": "refactored search index to support chinese queries"}
+{"id": "gist-012", "reference_gist": "benchmarked intent classifier accuracy on evaluation dataset", "candidate_gist": "benchmarked intent classifier accuracy on evaluation dataset"}
+{"id": "gist-013", "reference_gist": "deployed hotfix for embedding cache timeout bug", "candidate_gist": "deployed hotfix for embedding cache timeout bug"}
+{"id": "gist-014", "reference_gist": "analyzed MCP server regression regression across profiles", "candidate_gist": "investigated MCP server regression regression across profiles"}
+{"id": "gist-015", "reference_gist": "refactored MCP server to support chinese queries", "candidate_gist": "refactored MCP server to support chinese queries"}
+{"id": "gist-016", "reference_gist": "verified ACL isolation between main and beta agents", "candidate_gist": "verified ACL isolation between main and beta agents"}
+{"id": "gist-017", "reference_gist": "added visual memory OCR pipeline for screenshot ingestion", "candidate_gist": "added visual memory OCR pipeline for screenshot ingestion"}
+{"id": "gist-018", "reference_gist": "resolved write guard lock contention issue", "candidate_gist": "resolved write guard lock contention issue"}
+{"id": "gist-019", "reference_gist": "designed provider probe auto detection for onboarding", "candidate_gist": "built provider probe auto detection for onboarding"}
+{"id": "gist-020", "reference_gist": "fixed race condition in embedding cache under heavy load", "candidate_gist": "fixed race condition in embedding cache under heavy load"}
+{"id": "gist-021", "reference_gist": "fixed race condition in reranker under heavy load", "candidate_gist": "fixed race condition in reranker under heavy load"}
+{"id": "gist-022", "reference_gist": "configured embedding cache fallback chain with timeout policy", "candidate_gist": "configured embedding cache fallback chain with timeout policy"}
+{"id": "gist-023", "reference_gist": "resolved search index lock contention issue", "candidate_gist": "resolved search index lock contention issue"}
+{"id": "gist-024", "reference_gist": "refactored WAL journal to support chinese queries", "candidate_gist": "refactored WAL journal to support chinese queries"}
+{"id": "gist-025", "reference_gist": "planned sprint priorities for reranker improvements", "candidate_gist": "planned sprint priorities for reranker improvements"}
+{"id": "gist-026", "reference_gist": "refactored auto recall to support chinese queries", "candidate_gist": "updated auto recall to support chinese queries"}
+{"id": "gist-027", "reference_gist": "analyzed search index failure regression across profiles", "candidate_gist": "analyzed search index failure regression across profiles"}
+{"id": "gist-028", "reference_gist": "debugged MCP server corruption on concurrent writes", "candidate_gist": "diagnosed MCP server corruption on concurrent writes"}
+{"id": "gist-029", "reference_gist": "profiled reranker startup time and reduced cold start", "candidate_gist": "profiled reranker startup time and reduced cold start"}
+{"id": "gist-030", "reference_gist": "migrated MCP server configuration and validated recall rate", "candidate_gist": "migrated MCP server configuration plus validated recall rate"}
+{"id": "gist-031", "reference_gist": "debugged compact context corruption on concurrent writes", "candidate_gist": "debugged compact context corruption on concurrent writes"}
+{"id": "gist-032", "reference_gist": "rebuilt MCP server after spike and confirmed recovery", "candidate_gist": "rebuilt MCP server after spike and confirmed recovery"}
+{"id": "gist-033", "reference_gist": "triaged user reports of slow intent classifier", "candidate_gist": "triaged user reports of slow intent classifier"}
+{"id": "gist-034", "reference_gist": "tested write guard with large memory corpus", "candidate_gist": "ran tests on write guard with large memory corpus"}
+{"id": "gist-035", "reference_gist": "resolved MCP server lock contention issue", "candidate_gist": "resolved MCP server lock contention issue"}
+{"id": "gist-036", "reference_gist": "configured circuit breaker fallback chain with timeout policy", "candidate_gist": "configured circuit breaker fallback chain including timeout settings"}
+{"id": "gist-037", "reference_gist": "triaged user reports of slow intent classifier", "candidate_gist": "looked into user reports of slow intent classifier"}
+{"id": "gist-038", "reference_gist": "planned sprint priorities for reranker improvements", "candidate_gist": "planned sprint priorities for reranker improvements"}
+{"id": "gist-039", "reference_gist": "fixed race condition in MCP server under heavy load", "candidate_gist": "fixed race condition in MCP server under heavy load"}
+{"id": "gist-040", "reference_gist": "refactored compact context to support chinese queries", "candidate_gist": "refactored compact context to support chinese queries"}
+{"id": "gist-041", "reference_gist": "added visual memory OCR pipeline for screenshot ingestion", "candidate_gist": "added visual memory OCR pipeline for screenshot ingestion"}
+{"id": "gist-042", "reference_gist": "rebuilt auto recall after failure and confirmed stability", "candidate_gist": "rebuilt auto recall after failure and confirmed stability"}
+{"id": "gist-043", "reference_gist": "onboarded new team member with embedding cache briefing", "candidate_gist": "onboarded new team member with embedding cache briefing"}
+{"id": "gist-044", "reference_gist": "deployed hotfix for circuit breaker spike bug", "candidate_gist": "deployed hotfix for circuit breaker spike bug"}
+{"id": "gist-045", "reference_gist": "verified ACL isolation between main and beta agents", "candidate_gist": "verified ACL isolation between main and beta agents"}
+{"id": "gist-046", "reference_gist": "migrated reranker configuration and validated error rate", "candidate_gist": "migrated reranker configuration and validated error rate"}
+{"id": "gist-047", "reference_gist": "debugged search index corruption on concurrent writes", "candidate_gist": "debugged search index corruption on concurrent writes"}
+{"id": "gist-048", "reference_gist": "benchmarked WAL journal accuracy on evaluation dataset", "candidate_gist": "benchmarked WAL journal accuracy on evaluation dataset"}
+{"id": "gist-049", "reference_gist": "added visual memory OCR pipeline for screenshot ingestion", "candidate_gist": "added visual memory OCR pipeline for screenshot ingestion"}
+{"id": "gist-050", "reference_gist": "benchmarked write guard accuracy on evaluation dataset", "candidate_gist": "measured write guard accuracy on evaluation dataset"}
+{"id": "gist-051", "reference_gist": "added visual memory OCR pipeline for screenshot ingestion", "candidate_gist": "added visual memory OCR pipeline for screenshot ingestion"}
+{"id": "gist-052", "reference_gist": "debugged circuit breaker corruption on concurrent writes", "candidate_gist": "debugged circuit breaker corruption on concurrent writes"}
+{"id": "gist-053", "reference_gist": "benchmarked circuit breaker accuracy on evaluation dataset", "candidate_gist": "benchmarked circuit breaker accuracy on evaluation dataset"}
+{"id": "gist-054", "reference_gist": "resolved reranker lock contention issue", "candidate_gist": "resolved reranker lock contention issue"}
+{"id": "gist-055", "reference_gist": "fixed race condition in embedding cache under heavy load", "candidate_gist": "fixed race condition in embedding cache under heavy load"}
+{"id": "gist-056", "reference_gist": "deployed hotfix for write guard timeout bug", "candidate_gist": "deployed hotfix for write guard timeout bug"}
+{"id": "gist-057", "reference_gist": "configured auto recall fallback chain with timeout policy", "candidate_gist": "configured auto recall fallback chain with timeout policy"}
+{"id": "gist-058", "reference_gist": "resolved MCP server lock contention issue", "candidate_gist": "fixed MCP server lock contention issue"}
+{"id": "gist-059", "reference_gist": "debugged circuit breaker corruption on concurrent writes", "candidate_gist": "debugged circuit breaker corruption on concurrent writes"}
+{"id": "gist-060", "reference_gist": "resolved circuit breaker lock contention issue", "candidate_gist": "resolved circuit breaker lock contention issue"}
+{"id": "gist-061", "reference_gist": "debugged auto recall corruption on concurrent writes", "candidate_gist": "debugged auto recall corruption on concurrent writes"}
+{"id": "gist-062", "reference_gist": "debugged WAL journal corruption on concurrent writes", "candidate_gist": "debugged WAL journal corruption on concurrent writes"}
+{"id": "gist-063", "reference_gist": "analyzed MCP server failure regression across profiles", "candidate_gist": "analyzed MCP server failure regression across profiles"}
+{"id": "gist-064", "reference_gist": "tested reranker with large memory corpus", "candidate_gist": "tested reranker with large memory corpus"}
+{"id": "gist-065", "reference_gist": "planned sprint priorities for auto recall improvements", "candidate_gist": "planned sprint priorities for auto recall improvements"}
+{"id": "gist-066", "reference_gist": "rebuilt WAL journal after regression and confirmed stability", "candidate_gist": "rebuilt WAL journal after regression and confirmed stability"}
+{"id": "gist-067", "reference_gist": "deployed hotfix for intent classifier failure bug", "candidate_gist": "deployed hotfix for intent classifier failure bug"}
+{"id": "gist-068", "reference_gist": "profiled auto recall startup time and reduced cold start", "candidate_gist": "profiled auto recall startup time and reduced cold start"}
+{"id": "gist-069", "reference_gist": "onboarded new team member with circuit breaker briefing", "candidate_gist": "onboarded new team member with circuit breaker briefing"}
+{"id": "gist-070", "reference_gist": "profiled embedding cache startup time and reduced cold start", "candidate_gist": "profiled embedding cache startup time and reduced cold start"}
+{"id": "gist-071", "reference_gist": "configured embedding cache fallback chain with timeout policy", "candidate_gist": "configured embedding cache fallback chain including timeout settings"}
+{"id": "gist-072", "reference_gist": "tested compact context with large memory corpus", "candidate_gist": "tested compact context with large memory corpus"}
+{"id": "gist-073", "reference_gist": "rebuilt circuit breaker after failure and confirmed accuracy", "candidate_gist": "rebuilt circuit breaker after failure and confirmed accuracy"}
+{"id": "gist-074", "reference_gist": "rebuilt reranker after timeout and confirmed latency drop", "candidate_gist": "rebuilt reranker after timeout and confirmed latency drop"}
+{"id": "gist-075", "reference_gist": "planned sprint priorities for embedding cache improvements", "candidate_gist": "planned sprint priorities for embedding cache improvements"}
+{"id": "gist-076", "reference_gist": "reviewed pull request for search index integration", "candidate_gist": "reviewed pull request for search index integration"}
+{"id": "gist-077", "reference_gist": "resolved write guard lock contention issue", "candidate_gist": "resolved write guard lock contention issue"}
+{"id": "gist-078", "reference_gist": "profiled intent classifier startup time and reduced cold start", "candidate_gist": "profiled intent classifier startup time and reduced cold start"}
+{"id": "gist-079", "reference_gist": "fixed race condition in WAL journal under heavy load", "candidate_gist": "fixed race condition in WAL journal under heavy load"}
+{"id": "gist-080", "reference_gist": "reviewed pull request for WAL journal integration", "candidate_gist": "reviewed pull request for WAL journal integration"}
+{"id": "gist-081", "reference_gist": "migrated MCP server configuration and validated error rate", "candidate_gist": "migrated MCP server configuration and validated error rate"}
+{"id": "gist-082", "reference_gist": "analyzed intent classifier regression regression across profiles", "candidate_gist": "analyzed intent classifier regression regression across profiles"}
+{"id": "gist-083", "reference_gist": "added visual memory OCR pipeline for screenshot ingestion", "candidate_gist": "added visual memory OCR pipeline for screenshot ingestion"}
+{"id": "gist-084", "reference_gist": "rebuilt embedding cache after spike and confirmed stability", "candidate_gist": "rebuilt embedding cache after spike and confirmed stability"}
+{"id": "gist-085", "reference_gist": "analyzed write guard timeout regression across profiles", "candidate_gist": "analyzed write guard timeout regression across profiles"}
+{"id": "gist-086", "reference_gist": "added visual memory OCR pipeline for screenshot ingestion", "candidate_gist": "added visual memory OCR pipeline for screenshot ingestion"}
+{"id": "gist-087", "reference_gist": "analyzed reranker failure regression across profiles", "candidate_gist": "analyzed reranker failure regression across profiles"}
+{"id": "gist-088", "reference_gist": "profiled auto recall startup time and reduced cold start", "candidate_gist": "profiled auto recall startup time and reduced cold start"}
+{"id": "gist-089", "reference_gist": "onboarded new team member with MCP server briefing", "candidate_gist": "onboarded new team member with MCP server briefing"}
+{"id": "gist-090", "reference_gist": "triaged user reports of slow search index", "candidate_gist": "triaged user reports of slow search index"}
+{"id": "gist-091", "reference_gist": "refactored intent classifier to support chinese queries", "candidate_gist": "refactored intent classifier to support chinese queries"}
+{"id": "gist-092", "reference_gist": "fixed race condition in WAL journal under heavy load", "candidate_gist": "fixed race condition in WAL journal under heavy load"}
+{"id": "gist-093", "reference_gist": "migrated embedding cache configuration and validated throughput", "candidate_gist": "migrated embedding cache configuration and validated throughput"}
+{"id": "gist-094", "reference_gist": "profiled embedding cache startup time and reduced cold start", "candidate_gist": "optimized embedding cache startup time and reduced cold start"}
+{"id": "gist-095", "reference_gist": "migrated write guard configuration and validated throughput", "candidate_gist": "migrated write guard configuration and validated throughput"}
+{"id": "gist-096", "reference_gist": "triaged user reports of slow write guard", "candidate_gist": "triaged user reports of slow write guard"}
+{"id": "gist-097", "reference_gist": "added visual memory OCR pipeline for screenshot ingestion", "candidate_gist": "added visual memory OCR pipeline for screenshot ingestion"}
+{"id": "gist-098", "reference_gist": "designed provider probe auto detection for onboarding", "candidate_gist": "designed provider probe auto detection for onboarding"}
+{"id": "gist-099", "reference_gist": "documented WAL journal troubleshooting steps", "candidate_gist": "documented WAL journal troubleshooting steps"}
+{"id": "gist-100", "reference_gist": "added visual memory OCR pipeline for screenshot ingestion", "candidate_gist": "added visual memory OCR pipeline for screenshot ingestion"}

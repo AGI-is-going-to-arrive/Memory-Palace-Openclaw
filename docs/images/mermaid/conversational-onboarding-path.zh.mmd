@@ -1,0 +1,9 @@
+flowchart TD
+    A["用户把这页链接交给 OpenClaw"] --> B{"plugin 已安装并加载？"}
+    B -- "否" --> C["先给最短安装链路"]
+    C --> D["verify / doctor / smoke"]
+    D --> E["回到当前聊天线程继续 onboarding"]
+    B -- "是" --> F["memory_onboarding_status"]
+    F --> G["memory_onboarding_probe"]
+    G --> H["memory_onboarding_apply"]
+    H --> I["verify / doctor / smoke"]

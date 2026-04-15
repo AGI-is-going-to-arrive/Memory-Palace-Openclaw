@@ -1,0 +1,67 @@
+{
+  "name": "@openclaw/memory-palace",
+  "version": "0.2.0",
+  "private": false,
+  "description": "Memory Palace MCP-backed memory plugin for OpenClaw",
+  "type": "module",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "keywords": [
+    "openclaw",
+    "memory-palace",
+    "mcp",
+    "memory-plugin"
+  ],
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0 <23"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/AGI-is-going-to-arrive/Memory-Palace-Openclaw",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AGI-is-going-to-arrive/Memory-Palace-Openclaw.git",
+    "directory": "extensions/memory-palace"
+  },
+  "bugs": {
+    "url": "https://github.com/AGI-is-going-to-arrive/Memory-Palace-Openclaw/issues"
+  },
+  "scripts": {
+    "build": "bun build ./index.ts --outdir ./dist --target node && node ./scripts/sync-dist-manifest.mjs",
+    "validate:manifest": "bun test index.test.ts --test-name-pattern \"(keeps the static plugin manifest schema exactly aligned with runtime schema|publishes the OpenClaw extension entry from dist/index.js)\"",
+    "prepack": "npm run build && npm run validate:manifest && python ../../scripts/openclaw_memory_palace.py stage-package",
+    "test": "bun test src/client.test.ts src/smart-extraction.test.ts src/assistant-derived.test.ts src/host-bridge.test.ts src/runtime-layout.test.ts src/onboarding-tools.test.ts src/prompt-safety.test.ts src/visual-redaction.test.ts src/acl-search.test.ts src/reflection.test.ts src/lifecycle-hooks.test.ts index.test.ts",
+    "typecheck": "tsc --project tsconfig.json --noEmit"
+  },
+  "files": [
+    "dist",
+    "index.ts",
+    "src",
+    "skills",
+    "openclaw-plugin-sdk.d.ts",
+    "openclaw.plugin.json",
+    "tsconfig.json",
+    "release"
+  ],
+  "bin": {
+    "memory-palace-openclaw": "./release/scripts/openclaw_memory_palace_launcher.mjs"
+  },
+  "peerDependencies": {
+    "openclaw": ">=2026.3.2"
+  },
+  "peerDependenciesMeta": {
+    "openclaw": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "typescript": "^5.9.2"
+  },
+  "openclaw": {
+    "extensions": [
+      "./dist/index.js"
+    ]
+  }
+}

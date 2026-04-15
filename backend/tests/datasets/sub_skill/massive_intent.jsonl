@@ -1,0 +1,400 @@
+{"text": "give me the description about smartphone", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "给我一个电视电路的描述", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "你把我们正在听的这个称作什么类型的音乐", "mp_intent": "exploratory", "massive_intent": "music_query", "lang": "zh"}
+{"text": "what exactly is a resin tooth filling", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "list exchange rate information for the day for u. s. d. to jpy", "mp_intent": "factual", "massive_intent": "qa_currency", "lang": "en"}
+{"text": "hey tell me more about my meetings today", "mp_intent": "factual", "massive_intent": "general_quirky", "lang": "en"}
+{"text": "把事项罗列到我的工作清单里", "mp_intent": "factual", "massive_intent": "lists_query", "lang": "zh"}
+{"text": "am i free at four p. m.", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "en"}
+{"text": "嗨北京现在几点", "mp_intent": "temporal", "massive_intent": "datetime_query", "lang": "zh"}
+{"text": "有什么新鲜事", "mp_intent": "factual", "massive_intent": "general_quirky", "lang": "zh"}
+{"text": "关于中越边境问题有什么新消息吗", "mp_intent": "exploratory", "massive_intent": "news_query", "lang": "zh"}
+{"text": "what reminders do i still have", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "en"}
+{"text": "有有关选举的任何更新信息吗", "mp_intent": "exploratory", "massive_intent": "news_query", "lang": "zh"}
+{"text": "hey olly i missed you", "mp_intent": "factual", "massive_intent": "general_quirky", "lang": "en"}
+{"text": "我的订单什么时候准备好", "mp_intent": "exploratory", "massive_intent": "takeaway_query", "lang": "zh"}
+{"text": "什么是电子排放系统", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "法医的定义是什么", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "what is the weather condition in new york", "mp_intent": "factual", "massive_intent": "weather_query", "lang": "en"}
+{"text": "谁外卖需要花的时间少", "mp_intent": "exploratory", "massive_intent": "takeaway_query", "lang": "zh"}
+{"text": "你能解释一下过高的意思吗", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "consequences to actions", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "六月三日沈文裕音乐会是几点", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "zh"}
+{"text": "速度的定义", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "找到清单", "mp_intent": "factual", "massive_intent": "lists_query", "lang": "zh"}
+{"text": "广州", "mp_intent": "factual", "massive_intent": "transport_query", "lang": "zh"}
+{"text": "give the definition of motivation", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "give me the description of a television circuit", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "how many minutes do i need to wait to pick up my food from china on the go", "mp_intent": "exploratory", "massive_intent": "takeaway_query", "lang": "en"}
+{"text": "kung fu panda three", "mp_intent": "exploratory", "massive_intent": "recommendation_movies", "lang": "en"}
+{"text": "describe the heart stone card game", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "周二我的午餐会议要开久", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "zh"}
+{"text": "解释歌曲", "mp_intent": "exploratory", "massive_intent": "music_query", "lang": "zh"}
+{"text": "接下来做什么", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "zh"}
+{"text": "what time does the zach brown concert on june third begin", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "en"}
+{"text": "who sings the song about a long black train", "mp_intent": "exploratory", "massive_intent": "music_query", "lang": "en"}
+{"text": "人物传记", "mp_intent": "factual", "massive_intent": "general_quirky", "lang": "zh"}
+{"text": "印第安纳州印第安纳波利斯的温度是多少", "mp_intent": "factual", "massive_intent": "qa_factoid", "lang": "zh"}
+{"text": "给我一个智能手机电路的描述", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "what is the traffic situation at the bazaar highway", "mp_intent": "temporal", "massive_intent": "transport_traffic", "lang": "en"}
+{"text": "给我关于智能手机的描述", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "vacation spots", "mp_intent": "factual", "massive_intent": "general_quirky", "lang": "en"}
+{"text": "给我一个流行音乐的名字", "mp_intent": "exploratory", "massive_intent": "music_query", "lang": "zh"}
+{"text": "what is the traffic situation at the bazaar highway", "mp_intent": "temporal", "massive_intent": "transport_traffic", "lang": "en"}
+{"text": "when was last academy award winning movie", "mp_intent": "factual", "massive_intent": "qa_factoid", "lang": "en"}
+{"text": "what time are the trains going to chennai leaving", "mp_intent": "factual", "massive_intent": "transport_query", "lang": "en"}
+{"text": "我想听听中国新闻网的最新消息", "mp_intent": "exploratory", "massive_intent": "news_query", "lang": "zh"}
+{"text": "how would you describe a happy birthday", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "current time in", "mp_intent": "temporal", "massive_intent": "datetime_query", "lang": "en"}
+{"text": "keep me informed about bitcoin price", "mp_intent": "exploratory", "massive_intent": "news_query", "lang": "en"}
+{"text": "继续对我说甜言蜜语", "mp_intent": "factual", "massive_intent": "general_quirky", "lang": "zh"}
+{"text": "给我一个智能手机电路的描述", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "我需要一些关于李小龙的详细信息请帮忙", "mp_intent": "factual", "massive_intent": "qa_factoid", "lang": "zh"}
+{"text": "找下刘若英电影", "mp_intent": "exploratory", "massive_intent": "recommendation_movies", "lang": "zh"}
+{"text": "what is the highest building in the world", "mp_intent": "factual", "massive_intent": "qa_factoid", "lang": "en"}
+{"text": "i bought pre season baseball tickets", "mp_intent": "factual", "massive_intent": "general_quirky", "lang": "en"}
+{"text": "这是最近的披萨店", "mp_intent": "exploratory", "massive_intent": "recommendation_locations", "lang": "zh"}
+{"text": "where is the nearest walmart", "mp_intent": "exploratory", "massive_intent": "recommendation_locations", "lang": "en"}
+{"text": "有没有即将举行的活动", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "zh"}
+{"text": "给出动力的定义", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "what is a caftan", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "我今天和谁会面", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "zh"}
+{"text": "did i tell you to remind me something", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "en"}
+{"text": "一美元能换多少欧元", "mp_intent": "factual", "massive_intent": "qa_currency", "lang": "zh"}
+{"text": "给我展示最近的美食广场", "mp_intent": "exploratory", "massive_intent": "recommendation_locations", "lang": "zh"}
+{"text": "please check for new emails", "mp_intent": "factual", "massive_intent": "email_query", "lang": "en"}
+{"text": "did i remember to set a reminder alarm for my next doctor's appointment", "mp_intent": "temporal", "massive_intent": "alarm_query", "lang": "en"}
+{"text": "今天是什么月份", "mp_intent": "temporal", "massive_intent": "datetime_query", "lang": "zh"}
+{"text": "c. n. n. headlines", "mp_intent": "exploratory", "massive_intent": "news_query", "lang": "en"}
+{"text": "what day is halloween this year", "mp_intent": "temporal", "massive_intent": "datetime_query", "lang": "en"}
+{"text": "事件日程是什么", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "zh"}
+{"text": "明天是雨天吗", "mp_intent": "factual", "massive_intent": "weather_query", "lang": "zh"}
+{"text": "what is the time in another city", "mp_intent": "temporal", "massive_intent": "datetime_query", "lang": "en"}
+{"text": "what is the definition of forensic", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "嘿什么是书", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "你能解释一下过高的意思吗", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "九的平方根是多少", "mp_intent": "factual", "massive_intent": "qa_maths", "lang": "zh"}
+{"text": "what is the population of russia", "mp_intent": "factual", "massive_intent": "qa_factoid", "lang": "en"}
+{"text": "baking times for chicken in the oven", "mp_intent": "factual", "massive_intent": "cooking_recipe", "lang": "en"}
+{"text": "current time in cpt", "mp_intent": "temporal", "massive_intent": "datetime_query", "lang": "en"}
+{"text": "定义阐述", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "what day is the fifth", "mp_intent": "temporal", "massive_intent": "datetime_query", "lang": "en"}
+{"text": "show me my meeting for the next month", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "en"}
+{"text": "is there any news olly", "mp_intent": "exploratory", "massive_intent": "news_query", "lang": "en"}
+{"text": "alexa give me the headline news", "mp_intent": "exploratory", "massive_intent": "news_query", "lang": "en"}
+{"text": "what are converse shoes", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "what is the weather condition in new york", "mp_intent": "factual", "massive_intent": "weather_query", "lang": "en"}
+{"text": "song title", "mp_intent": "exploratory", "massive_intent": "music_query", "lang": "en"}
+{"text": "描述什么是球体", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "one thousand two hundred and thirty p. m. already you will have a meeting in ten mins", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "en"}
+{"text": "is there a meeting on my calendar this afternoon", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "en"}
+{"text": "what is the largest desk", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "what is a chair", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "what are the definitions of orange", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "查找任性的定义", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "告诉我一些商业新闻", "mp_intent": "exploratory", "massive_intent": "news_query", "lang": "zh"}
+{"text": "今晚我要割草吗", "mp_intent": "factual", "massive_intent": "weather_query", "lang": "zh"}
+{"text": "请定义法医", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "请为我描述那个物体", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "what does oscillate mean", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "what is the chance of precipitation in todays weather", "mp_intent": "factual", "massive_intent": "weather_query", "lang": "en"}
+{"text": "how do i make pizza", "mp_intent": "factual", "massive_intent": "cooking_recipe", "lang": "en"}
+{"text": "现在的天气预报", "mp_intent": "factual", "massive_intent": "weather_query", "lang": "zh"}
+{"text": "我五月份的计划是什么", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "zh"}
+{"text": "what is a caftan", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "告诉我卫报的最新消息", "mp_intent": "exploratory", "massive_intent": "news_query", "lang": "zh"}
+{"text": "我记得为下一次的医生预约设置提醒闹钟吗", "mp_intent": "temporal", "massive_intent": "alarm_query", "lang": "zh"}
+{"text": "i want to know about this song", "mp_intent": "exploratory", "massive_intent": "music_query", "lang": "en"}
+{"text": "我怎么去火车站买票", "mp_intent": "factual", "massive_intent": "transport_query", "lang": "zh"}
+{"text": "give me the time of the events", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "en"}
+{"text": "我们可以去太阳吗", "mp_intent": "factual", "massive_intent": "general_quirky", "lang": "zh"}
+{"text": "i hate how long the traffic jams get", "mp_intent": "factual", "massive_intent": "general_quirky", "lang": "en"}
+{"text": "show me the latest news from the guardian", "mp_intent": "exploratory", "massive_intent": "news_query", "lang": "en"}
+{"text": "veganism", "mp_intent": "factual", "massive_intent": "general_quirky", "lang": "en"}
+{"text": "你有去博蒙特德克萨斯的火车时间吗", "mp_intent": "factual", "massive_intent": "transport_query", "lang": "zh"}
+{"text": "请谷歌搜素拉什莫尔山的位置和信息", "mp_intent": "factual", "massive_intent": "qa_factoid", "lang": "zh"}
+{"text": "did i leave myself any reminders", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "en"}
+{"text": "why is the earth round", "mp_intent": "factual", "massive_intent": "general_quirky", "lang": "en"}
+{"text": "keep me up to date with today's n. b. a. scores", "mp_intent": "exploratory", "massive_intent": "news_query", "lang": "en"}
+{"text": "这首歌曲是周杰伦的吗", "mp_intent": "exploratory", "massive_intent": "music_query", "lang": "zh"}
+{"text": "look up movies near me", "mp_intent": "exploratory", "massive_intent": "recommendation_movies", "lang": "en"}
+{"text": "显示我最近的电子邮件", "mp_intent": "factual", "massive_intent": "email_query", "lang": "zh"}
+{"text": "斯蒂芬·库里结婚了吗", "mp_intent": "factual", "massive_intent": "qa_factoid", "lang": "zh"}
+{"text": "查查天气", "mp_intent": "factual", "massive_intent": "weather_query", "lang": "zh"}
+{"text": "c. n. n. headlines", "mp_intent": "exploratory", "massive_intent": "news_query", "lang": "en"}
+{"text": "is dinner ready yet", "mp_intent": "exploratory", "massive_intent": "takeaway_query", "lang": "en"}
+{"text": "告诉我从昨天到今天早晨发生的时事", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "zh"}
+{"text": "describe about the computer hard disk", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "做五分熟牛排需要多久", "mp_intent": "factual", "massive_intent": "cooking_recipe", "lang": "zh"}
+{"text": "我和珍妮弗什么时候吃早午餐", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "zh"}
+{"text": "tell me about my alarms", "mp_intent": "temporal", "massive_intent": "alarm_query", "lang": "en"}
+{"text": "define flabbergasted", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "where is the venue in which the marriage of tom is going to take place", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "en"}
+{"text": "what do i have coming up", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "en"}
+{"text": "三千浦有外卖吗", "mp_intent": "exploratory", "massive_intent": "takeaway_query", "lang": "zh"}
+{"text": "where is my meeting at nine am", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "en"}
+{"text": "接下来的活动是什么", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "zh"}
+{"text": "正式晚宴应该什么时候开始", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "zh"}
+{"text": "define blanket", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "是谁的生日吗", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "zh"}
+{"text": "描述树懒", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "meaning of", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "现在我该带件雨衣吗", "mp_intent": "factual", "massive_intent": "weather_query", "lang": "zh"}
+{"text": "who is the singer of song", "mp_intent": "exploratory", "massive_intent": "music_query", "lang": "en"}
+{"text": "what kinds of sunglasses are considered aviators", "mp_intent": "factual", "massive_intent": "qa_factoid", "lang": "en"}
+{"text": "what is the size of the united states", "mp_intent": "factual", "massive_intent": "qa_factoid", "lang": "en"}
+{"text": "我周围都是些什么电影", "mp_intent": "exploratory", "massive_intent": "recommendation_movies", "lang": "zh"}
+{"text": "hey olly what time is it", "mp_intent": "temporal", "massive_intent": "datetime_query", "lang": "en"}
+{"text": "请搜索还开着的当地餐厅", "mp_intent": "exploratory", "massive_intent": "recommendation_locations", "lang": "zh"}
+{"text": "我是不是该快点把轮胎换成雪地胎啊", "mp_intent": "factual", "massive_intent": "weather_query", "lang": "zh"}
+{"text": "which pole is colder south or north", "mp_intent": "factual", "massive_intent": "qa_factoid", "lang": "en"}
+{"text": "define flabbergasted", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "define speaker", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "这是最近的披萨店", "mp_intent": "exploratory", "massive_intent": "recommendation_locations", "lang": "zh"}
+{"text": "逻辑的定义是什么", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "title of song", "mp_intent": "exploratory", "massive_intent": "music_query", "lang": "en"}
+{"text": "is jessica's birthday on april twelfth", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "en"}
+{"text": "give me news on president trump", "mp_intent": "exploratory", "massive_intent": "news_query", "lang": "en"}
+{"text": "describe a rotor", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "感恩节火鸡", "mp_intent": "factual", "massive_intent": "cooking_recipe", "lang": "zh"}
+{"text": "一周的天气情况大概啥样", "mp_intent": "factual", "massive_intent": "weather_query", "lang": "zh"}
+{"text": "我想知道现在的时间", "mp_intent": "temporal", "massive_intent": "datetime_query", "lang": "zh"}
+{"text": "who is the contact that last called me", "mp_intent": "factual", "massive_intent": "email_querycontact", "lang": "en"}
+{"text": "hey what's a book", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "好的谷歌什么是总统", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "tell me how are the results of assembly elections in delhi going to come out", "mp_intent": "exploratory", "massive_intent": "news_query", "lang": "en"}
+{"text": "what's the sum of the two numbers four and six", "mp_intent": "factual", "massive_intent": "qa_maths", "lang": "en"}
+{"text": "接下来的活动是什么", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "zh"}
+{"text": "什么是长衫", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "what's going on in the world these days", "mp_intent": "exploratory", "massive_intent": "news_query", "lang": "en"}
+{"text": "这个周末市中心有什么活动吗", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "zh"}
+{"text": "what are the definitions of orange", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "一旦出现一个关于时政的新话题就提醒我", "mp_intent": "exploratory", "massive_intent": "news_query", "lang": "zh"}
+{"text": "how much wood could a woodchuck chuck if a woodchuck could chuck wood", "mp_intent": "factual", "massive_intent": "general_quirky", "lang": "en"}
+{"text": "描述事物 xy", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "堵塞我的", "mp_intent": "temporal", "massive_intent": "transport_traffic", "lang": "zh"}
+{"text": "notify me when joshua emails me", "mp_intent": "factual", "massive_intent": "email_query", "lang": "en"}
+{"text": "震荡是什么意思", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "给我最近的电子邮件", "mp_intent": "factual", "massive_intent": "email_query", "lang": "zh"}
+{"text": "topic", "mp_intent": "factual", "massive_intent": "email_query", "lang": "en"}
+{"text": "tell me about alarms", "mp_intent": "temporal", "massive_intent": "alarm_query", "lang": "en"}
+{"text": "will i need an umbrella this week", "mp_intent": "factual", "massive_intent": "weather_query", "lang": "en"}
+{"text": "what's the date", "mp_intent": "temporal", "massive_intent": "datetime_query", "lang": "en"}
+{"text": "坚持节食", "mp_intent": "factual", "massive_intent": "general_quirky", "lang": "zh"}
+{"text": "中国新闻网的头条新闻是什么", "mp_intent": "exploratory", "massive_intent": "news_query", "lang": "zh"}
+{"text": "what does turbulence mean", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "朋友状态更新", "mp_intent": "factual", "massive_intent": "general_quirky", "lang": "zh"}
+{"text": "are there any special events near me this weekend", "mp_intent": "exploratory", "massive_intent": "recommendation_events", "lang": "en"}
+{"text": "what shops are round here", "mp_intent": "exploratory", "massive_intent": "recommendation_locations", "lang": "en"}
+{"text": "definition of velocity", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "德华住哪里", "mp_intent": "factual", "massive_intent": "email_querycontact", "lang": "zh"}
+{"text": "what times do my alarms go off", "mp_intent": "temporal", "massive_intent": "alarm_query", "lang": "en"}
+{"text": "give me the latest news", "mp_intent": "exploratory", "massive_intent": "news_query", "lang": "en"}
+{"text": "current time in cpt", "mp_intent": "temporal", "massive_intent": "datetime_query", "lang": "en"}
+{"text": "谁是这首歌的音乐指导", "mp_intent": "exploratory", "massive_intent": "music_query", "lang": "zh"}
+{"text": "tell me the local events", "mp_intent": "exploratory", "massive_intent": "recommendation_events", "lang": "en"}
+{"text": "what is happening after one and before three p. m.", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "en"}
+{"text": "从伦敦到巴黎有火车吗几点", "mp_intent": "factual", "massive_intent": "transport_query", "lang": "zh"}
+{"text": "你能描述一张信用卡吗", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "who is the music director of this song", "mp_intent": "exploratory", "massive_intent": "music_query", "lang": "en"}
+{"text": "what movies are going around me", "mp_intent": "exploratory", "massive_intent": "recommendation_movies", "lang": "en"}
+{"text": "give the definition of motivation", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "what is the date next wednesday", "mp_intent": "temporal", "massive_intent": "datetime_query", "lang": "en"}
+{"text": "这周天气预报什么情况啊", "mp_intent": "factual", "massive_intent": "weather_query", "lang": "zh"}
+{"text": "time difference between u. k. and us", "mp_intent": "temporal", "massive_intent": "datetime_convert", "lang": "en"}
+{"text": "how old are you", "mp_intent": "factual", "massive_intent": "general_quirky", "lang": "en"}
+{"text": "我给小美的最后一封电子邮件写了些什么", "mp_intent": "factual", "massive_intent": "email_query", "lang": "zh"}
+{"text": "are you happy", "mp_intent": "factual", "massive_intent": "general_quirky", "lang": "en"}
+{"text": "下周有什么活动", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "zh"}
+{"text": "are there morning shows available", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "en"}
+{"text": "do you know how to cook risotto", "mp_intent": "factual", "massive_intent": "cooking_recipe", "lang": "en"}
+{"text": "有有关法国的新闻时告诉我", "mp_intent": "exploratory", "massive_intent": "news_query", "lang": "zh"}
+{"text": "你如何描述生日快乐", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "如果一只美洲旱獭能扔掉木头它能扔掉多少木头", "mp_intent": "factual", "massive_intent": "general_quirky", "lang": "zh"}
+{"text": "小爱告诉我一些在海边的精彩活动", "mp_intent": "exploratory", "massive_intent": "recommendation_events", "lang": "zh"}
+{"text": "我的上午九点的会议在哪里", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "zh"}
+{"text": "在政治上有什么特殊之处吗", "mp_intent": "exploratory", "massive_intent": "news_query", "lang": "zh"}
+{"text": "描述计算机硬盘", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "what reminders do i have", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "en"}
+{"text": "please check my emails for me", "mp_intent": "factual", "massive_intent": "email_query", "lang": "en"}
+{"text": "tell me current events between yesterday and this morning", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "en"}
+{"text": "欧丽我正在找酒吧你有什么好的推荐吗", "mp_intent": "exploratory", "massive_intent": "recommendation_locations", "lang": "zh"}
+{"text": "show me painting exhibition in bay area", "mp_intent": "exploratory", "massive_intent": "recommendation_events", "lang": "en"}
+{"text": "为明天做计划", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "zh"}
+{"text": "欧元美元现在是多少", "mp_intent": "factual", "massive_intent": "qa_currency", "lang": "zh"}
+{"text": "what will the weather be tomorrow", "mp_intent": "factual", "massive_intent": "weather_query", "lang": "en"}
+{"text": "is there anything happening on jazz scene around edinburgh", "mp_intent": "exploratory", "massive_intent": "recommendation_events", "lang": "en"}
+{"text": "what do we have on new york time's front page", "mp_intent": "exploratory", "massive_intent": "news_query", "lang": "en"}
+{"text": "我有任何事情计划了的吗", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "zh"}
+{"text": "我需要等多少分钟才能从梅江饭店取餐", "mp_intent": "exploratory", "massive_intent": "takeaway_query", "lang": "zh"}
+{"text": "iphone seven description", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "脸书当前股价", "mp_intent": "factual", "massive_intent": "qa_stock", "lang": "zh"}
+{"text": "告诉我当前的本地活动", "mp_intent": "exploratory", "massive_intent": "recommendation_events", "lang": "zh"}
+{"text": "究竟什么是树脂补牙", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "描述什么是球体", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "iphone seven description", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "olly what is the capital of california", "mp_intent": "factual", "massive_intent": "qa_factoid", "lang": "en"}
+{"text": "define elaborate", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "橙色的定义是什么", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "苹果七手机说明", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "when can we eat", "mp_intent": "exploratory", "massive_intent": "takeaway_query", "lang": "en"}
+{"text": "will it be rainy day tomorrow", "mp_intent": "factual", "massive_intent": "weather_query", "lang": "en"}
+{"text": "下周三是几号", "mp_intent": "temporal", "massive_intent": "datetime_query", "lang": "zh"}
+{"text": "我收到任何社交媒体的通知了吗", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "zh"}
+{"text": "说时间", "mp_intent": "temporal", "massive_intent": "datetime_query", "lang": "zh"}
+{"text": "十二月十三日是星期几", "mp_intent": "temporal", "massive_intent": "datetime_query", "lang": "zh"}
+{"text": "cisco system", "mp_intent": "exploratory", "massive_intent": "recommendation_movies", "lang": "en"}
+{"text": "今天我需要穿毛衣吗", "mp_intent": "factual", "massive_intent": "weather_query", "lang": "zh"}
+{"text": "行动的后果", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "我可以在北京做什么", "mp_intent": "exploratory", "massive_intent": "recommendation_events", "lang": "zh"}
+{"text": "what is the event agenda", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "en"}
+{"text": "what is the geology of this location", "mp_intent": "factual", "massive_intent": "general_quirky", "lang": "en"}
+{"text": "what information do i have on reminders", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "en"}
+{"text": "什么是假设", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "i want to know everything that breaks about the dam breaking in california", "mp_intent": "exploratory", "massive_intent": "news_query", "lang": "en"}
+{"text": "晚餐准备好了吗", "mp_intent": "exploratory", "massive_intent": "takeaway_query", "lang": "zh"}
+{"text": "show me the best recipe for spaghetti", "mp_intent": "factual", "massive_intent": "cooking_recipe", "lang": "en"}
+{"text": "tell me what clothing stores are within five miles of me", "mp_intent": "exploratory", "massive_intent": "recommendation_locations", "lang": "en"}
+{"text": "打包梅江饭店可外送的菜", "mp_intent": "exploratory", "massive_intent": "takeaway_query", "lang": "zh"}
+{"text": "show me nearby musical events", "mp_intent": "exploratory", "massive_intent": "recommendation_events", "lang": "en"}
+{"text": "anything interesting going on in the bay area", "mp_intent": "exploratory", "massive_intent": "recommendation_events", "lang": "en"}
+{"text": "show me my events", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "en"}
+{"text": "hows the food order going", "mp_intent": "exploratory", "massive_intent": "takeaway_query", "lang": "en"}
+{"text": "hey do you have home delivery", "mp_intent": "exploratory", "massive_intent": "takeaway_query", "lang": "en"}
+{"text": "日历事件是否为真", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "zh"}
+{"text": "正上映点评最高的电影是哪部", "mp_intent": "exploratory", "massive_intent": "recommendation_movies", "lang": "zh"}
+{"text": "交通灯", "mp_intent": "temporal", "massive_intent": "transport_traffic", "lang": "zh"}
+{"text": "发送科技新闻", "mp_intent": "exploratory", "massive_intent": "news_query", "lang": "zh"}
+{"text": "今天是周五吗", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "zh"}
+{"text": "给我教宗这个词的定义", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "the news from c. b. s. alexa", "mp_intent": "exploratory", "massive_intent": "news_query", "lang": "en"}
+{"text": "how would you describe a happy birthday", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "描述计算机硬盘", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "我怎样在网上订火车票", "mp_intent": "factual", "massive_intent": "transport_query", "lang": "zh"}
+{"text": "定义毯子", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "告诉我城市交通怎样", "mp_intent": "temporal", "massive_intent": "transport_traffic", "lang": "zh"}
+{"text": "describe the heart stone card game", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "what's the recipe for fish soup", "mp_intent": "factual", "massive_intent": "cooking_recipe", "lang": "en"}
+{"text": "我下周会是什么样子", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "zh"}
+{"text": "what are converse shoes", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "who takes less of duration of time for delivery", "mp_intent": "exploratory", "massive_intent": "takeaway_query", "lang": "en"}
+{"text": "are there any fun events in la today", "mp_intent": "exploratory", "massive_intent": "recommendation_events", "lang": "en"}
+{"text": "describe a rotor", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "上海现在几点", "mp_intent": "temporal", "massive_intent": "datetime_query", "lang": "zh"}
+{"text": "苹果七手机说明", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "你能告诉我现在是几点吗", "mp_intent": "temporal", "massive_intent": "datetime_query", "lang": "zh"}
+{"text": "meaning of", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "what's the week's forecast", "mp_intent": "factual", "massive_intent": "weather_query", "lang": "en"}
+{"text": "定义扬声器", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "please define forensic", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "what shops are within ten miles", "mp_intent": "exploratory", "massive_intent": "recommendation_locations", "lang": "en"}
+{"text": "播放视频", "mp_intent": "factual", "massive_intent": "general_quirky", "lang": "zh"}
+{"text": "i want to know more about this event", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "en"}
+{"text": "is it friday", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "en"}
+{"text": "elections in up", "mp_intent": "exploratory", "massive_intent": "news_query", "lang": "en"}
+{"text": "显示我最近的电子邮件", "mp_intent": "factual", "massive_intent": "email_query", "lang": "zh"}
+{"text": "what does turbulence mean", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "does the nearby dominoes have delivery", "mp_intent": "exploratory", "massive_intent": "takeaway_query", "lang": "en"}
+{"text": "what artist is this", "mp_intent": "exploratory", "massive_intent": "music_query", "lang": "en"}
+{"text": "我想知道当地评级最好的酒吧", "mp_intent": "exploratory", "massive_intent": "recommendation_locations", "lang": "zh"}
+{"text": "帮我查一下东方财富的股价", "mp_intent": "exploratory", "massive_intent": "news_query", "lang": "zh"}
+{"text": "如果为了救三个人你必须杀一个人你会这样做吗如果会告诉我为什么", "mp_intent": "factual", "massive_intent": "general_quirky", "lang": "zh"}
+{"text": "tell me what the weather is doing in grand rapids mi right now", "mp_intent": "factual", "massive_intent": "weather_query", "lang": "en"}
+{"text": "找下靠近我的电影", "mp_intent": "exploratory", "massive_intent": "recommendation_movies", "lang": "zh"}
+{"text": "显示金字塔的详细地理位置", "mp_intent": "factual", "massive_intent": "qa_factoid", "lang": "zh"}
+{"text": "日历事件是否为真", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "zh"}
+{"text": "我有任何预约吗", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "zh"}
+{"text": "我想知道脱欧的事", "mp_intent": "exploratory", "massive_intent": "news_query", "lang": "zh"}
+{"text": "olly what do i have planned next", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "en"}
+{"text": "位置", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "一加二等于多少", "mp_intent": "factual", "massive_intent": "qa_maths", "lang": "zh"}
+{"text": "描述炉石传说", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "what's the date of the winter solstice two years from now", "mp_intent": "temporal", "massive_intent": "datetime_query", "lang": "en"}
+{"text": "当前附近前进大街", "mp_intent": "temporal", "massive_intent": "transport_traffic", "lang": "zh"}
+{"text": "我在二十一岁的时候有什么计划吗", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "zh"}
+{"text": "它是哪种类型的音乐", "mp_intent": "exploratory", "massive_intent": "music_query", "lang": "zh"}
+{"text": "广播里的是谁", "mp_intent": "exploratory", "massive_intent": "music_query", "lang": "zh"}
+{"text": "what is the largest desk", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "描述什么是球体", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "do i have any appointments", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "en"}
+{"text": "青岛即将举行的音乐会有什么", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "zh"}
+{"text": "what day of the week was december four one thousand nine hundred and eighty two", "mp_intent": "temporal", "massive_intent": "datetime_query", "lang": "en"}
+{"text": "我有什么提醒", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "zh"}
+{"text": "are sunglasses a good choice for today", "mp_intent": "factual", "massive_intent": "weather_query", "lang": "en"}
+{"text": "what time is it in london right now", "mp_intent": "temporal", "massive_intent": "datetime_query", "lang": "en"}
+{"text": "consequences to actions", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "世界各地正在发生什么事", "mp_intent": "exploratory", "massive_intent": "news_query", "lang": "zh"}
+{"text": "does pizza hut have delivery", "mp_intent": "exploratory", "massive_intent": "takeaway_query", "lang": "en"}
+{"text": "这首歌曲是周杰伦的吗", "mp_intent": "exploratory", "massive_intent": "music_query", "lang": "zh"}
+{"text": "我有什么新电子邮件", "mp_intent": "factual", "massive_intent": "email_query", "lang": "zh"}
+{"text": "想要看优酷冷静一下进", "mp_intent": "factual", "massive_intent": "general_quirky", "lang": "zh"}
+{"text": "are there any good pizza places around here", "mp_intent": "exploratory", "massive_intent": "recommendation_locations", "lang": "en"}
+{"text": "i have my clothes list", "mp_intent": "factual", "massive_intent": "lists_query", "lang": "en"}
+{"text": "hey what will be the predicted weather for tomorrow", "mp_intent": "factual", "massive_intent": "weather_query", "lang": "en"}
+{"text": "can you describe a credit card", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "在我领域数字营销薪资最高的工作", "mp_intent": "factual", "massive_intent": "general_quirky", "lang": "zh"}
+{"text": "你能告诉我大吃一惊是什么意思吗", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "现在的时间", "mp_intent": "temporal", "massive_intent": "datetime_query", "lang": "zh"}
+{"text": "嘿现在德克萨斯州拉达斯时间是几点", "mp_intent": "temporal", "massive_intent": "datetime_query", "lang": "zh"}
+{"text": "今晚市中心会举办什么活动吗", "mp_intent": "exploratory", "massive_intent": "recommendation_events", "lang": "zh"}
+{"text": "最大的桌子是什么", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "显示伦敦这时候的当地时间", "mp_intent": "temporal", "massive_intent": "datetime_query", "lang": "zh"}
+{"text": "道路交通", "mp_intent": "temporal", "massive_intent": "transport_traffic", "lang": "zh"}
+{"text": "the weather was bad today", "mp_intent": "factual", "massive_intent": "general_quirky", "lang": "en"}
+{"text": "facebook current stock rate", "mp_intent": "factual", "massive_intent": "qa_stock", "lang": "en"}
+{"text": "give me the description of a smartphone circuit", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "看一看所有的闹钟", "mp_intent": "temporal", "massive_intent": "alarm_query", "lang": "zh"}
+{"text": "这周末航班我的起床闹钟设的几点啊", "mp_intent": "temporal", "massive_intent": "alarm_query", "lang": "zh"}
+{"text": "meetings from twenty to twenty five june", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "en"}
+{"text": "what is the weather in pittsburgh", "mp_intent": "factual", "massive_intent": "weather_query", "lang": "en"}
+{"text": "has it been a busy day", "mp_intent": "factual", "massive_intent": "general_quirky", "lang": "en"}
+{"text": "定义毯子", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "游泳", "mp_intent": "exploratory", "massive_intent": "recommendation_events", "lang": "zh"}
+{"text": "请检查我的网易邮箱以获取新邮件", "mp_intent": "factual", "massive_intent": "email_query", "lang": "zh"}
+{"text": "从新闻联播给我找些精彩的新闻", "mp_intent": "exploratory", "massive_intent": "news_query", "lang": "zh"}
+{"text": "describe a sloth", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "is the twenty second on a wednesday", "mp_intent": "temporal", "massive_intent": "datetime_query", "lang": "en"}
+{"text": "what is an electronic emissions system", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "what does situation mean", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "b. b. c. world headlines", "mp_intent": "exploratory", "massive_intent": "news_query", "lang": "en"}
+{"text": "纽约市现在几点", "mp_intent": "temporal", "massive_intent": "datetime_query", "lang": "zh"}
+{"text": "这首歌是哪年出来的", "mp_intent": "exploratory", "massive_intent": "music_query", "lang": "zh"}
+{"text": "what is the traffic like now", "mp_intent": "temporal", "massive_intent": "transport_traffic", "lang": "en"}
+{"text": "give me the description of a television circuit", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "do i have a meeting on saturday march twenty fifth", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "en"}
+{"text": "获得每小时的体育新闻通知", "mp_intent": "exploratory", "massive_intent": "news_query", "lang": "zh"}
+{"text": "where is yosemite park", "mp_intent": "factual", "massive_intent": "qa_factoid", "lang": "en"}
+{"text": "主体的定义是什么", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "好的谷歌什么是总统", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "描述岩砂", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "define elaborate", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "what is the current time", "mp_intent": "temporal", "massive_intent": "datetime_query", "lang": "en"}
+{"text": "what is a chair", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "什么是电子排放系统", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "我要买礼物一公里半径内的礼品店有哪些", "mp_intent": "exploratory", "massive_intent": "recommendation_locations", "lang": "zh"}
+{"text": "显示我的下个月会议", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "zh"}
+{"text": "附近有什么主题公园", "mp_intent": "exploratory", "massive_intent": "recommendation_events", "lang": "zh"}
+{"text": "我的今天的日程安排是什么", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "zh"}
+{"text": "what is the definition of subjegant", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "把我的杂货清单读给我听", "mp_intent": "factual", "massive_intent": "lists_query", "lang": "zh"}
+{"text": "妈妈最后一封电子邮件的主题是什么", "mp_intent": "factual", "massive_intent": "email_query", "lang": "zh"}
+{"text": "what was the subject of the last email from mom", "mp_intent": "factual", "massive_intent": "email_query", "lang": "en"}
+{"text": "how tall is hulk hogan", "mp_intent": "factual", "massive_intent": "qa_factoid", "lang": "en"}
+{"text": "这首音乐出自哪部电影这首音乐的名字是什么", "mp_intent": "exploratory", "massive_intent": "music_query", "lang": "zh"}
+{"text": "描述岩砂", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "请紧记今天我跟小新的会议", "mp_intent": "factual", "massive_intent": "general_quirky", "lang": "zh"}
+{"text": "给出动力的定义", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "what is the definition of subjegant", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "give me up to date on sports news", "mp_intent": "exploratory", "massive_intent": "news_query", "lang": "en"}
+{"text": "有任何消息吗", "mp_intent": "exploratory", "massive_intent": "news_query", "lang": "zh"}
+{"text": "描述事物 xy", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "tell me all about hurricane", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "en"}
+{"text": "what are some theme parks nearby", "mp_intent": "exploratory", "massive_intent": "recommendation_events", "lang": "en"}
+{"text": "what are my pending tasks", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "en"}
+{"text": "please check all new email of income tax department", "mp_intent": "factual", "massive_intent": "email_query", "lang": "en"}
+{"text": "what does my schedule look like today", "mp_intent": "temporal", "massive_intent": "calendar_query", "lang": "en"}
+{"text": "城市里现在是什么时间", "mp_intent": "temporal", "massive_intent": "datetime_query", "lang": "zh"}
+{"text": "我的一天充满了工作 olly", "mp_intent": "factual", "massive_intent": "general_quirky", "lang": "zh"}
+{"text": "tell me what clothing stores are within five miles of me", "mp_intent": "exploratory", "massive_intent": "recommendation_locations", "lang": "en"}
+{"text": "湍流是什么意思", "mp_intent": "causal", "massive_intent": "qa_definition", "lang": "zh"}
+{"text": "检查所有菜的价格", "mp_intent": "exploratory", "massive_intent": "takeaway_query", "lang": "zh"}

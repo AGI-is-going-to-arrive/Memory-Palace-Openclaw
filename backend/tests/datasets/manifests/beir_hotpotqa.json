@@ -1,0 +1,43 @@
+{
+  "schema_version": "v1",
+  "dataset": "beir_hotpotqa",
+  "source_url": "https://public.ukp.informatik.tu-darmstadt.de/thakur/BEIR/datasets/hotpotqa.zip",
+  "downloaded_at_utc": "2026-02-18T17:57:47+00:00",
+  "record_count_full": 6000,
+  "sample_counts": {
+    "100": 100,
+    "200": 200,
+    "500": 500
+  },
+  "raw_files": [
+    {
+      "path": "backend/tests/datasets/raw/beir_hotpotqa/train.tsv",
+      "sha256": "bb59cff902d1b6b0784f6136b8f96eab5ab9e8543d4cf035b06da2f9901e0224",
+      "size_bytes": 5947534
+    },
+    {
+      "path": "backend/tests/datasets/raw/beir_hotpotqa/test.tsv",
+      "sha256": "e8e5fa27d6253bc47e89df47af1a9c7cecafc5b0672fb69b2f6a7b4e9c0f7e34",
+      "size_bytes": 517809
+    },
+    {
+      "path": "backend/tests/datasets/raw/beir_hotpotqa/dev.tsv",
+      "sha256": "cfb5b12cfcd47fc7b182069f6820323e99bb8aa806eb20940a28c18f09f08f9c",
+      "size_bytes": 381315
+    },
+    {
+      "path": "backend/tests/datasets/raw/beir_hotpotqa/queries.jsonl",
+      "sha256": "26bd91dd9ad69592c02e07180e62096f572b6814f5f413695151485b4ab40a2c",
+      "size_bytes": 27458928
+    }
+  ],
+  "processed_files": {
+    "full": "backend/tests/datasets/processed/beir_hotpotqa.jsonl"
+  },
+  "sample_files": {
+    "100": "backend/tests/datasets/processed/beir_hotpotqa_sample_100.jsonl",
+    "200": "backend/tests/datasets/processed/beir_hotpotqa_sample_200.jsonl",
+    "500": "backend/tests/datasets/processed/beir_hotpotqa_sample_500.jsonl"
+  },
+  "status": "ready"
+}

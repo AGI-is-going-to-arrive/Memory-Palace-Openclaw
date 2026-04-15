@@ -1,0 +1,668 @@
+{
+  "id": "memory-palace",
+  "name": "Memory Palace",
+  "version": "0.2.0",
+  "description": "Memory Palace MCP-backed memory plugin for OpenClaw",
+  "skills": [
+    "../skills"
+  ],
+  "kind": "memory",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "transport": {
+        "type": "string",
+        "enum": [
+          "auto",
+          "stdio",
+          "sse"
+        ]
+      },
+      "timeoutMs": {
+        "type": "number",
+        "minimum": 100
+      },
+      "connection": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "connectRetries": {
+            "type": "number",
+            "minimum": 0
+          },
+          "connectBackoffMs": {
+            "type": "number",
+            "minimum": 1
+          },
+          "connectBackoffMaxMs": {
+            "type": "number",
+            "minimum": 1
+          },
+          "requestRetries": {
+            "type": "number",
+            "minimum": 1
+          },
+          "idleCloseMs": {
+            "type": "number",
+            "minimum": 0
+          },
+          "healthcheckTool": {
+            "type": "string"
+          },
+          "healthcheckTtlMs": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      },
+      "stdio": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "type": "string"
+          },
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "cwd": {
+            "type": "string"
+          },
+          "env": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "sse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "url": {
+            "type": "string",
+            "pattern": "^https?://.+"
+          },
+          "apiKey": {
+            "type": "string"
+          },
+          "apiKeyEnv": {
+            "type": "string"
+          },
+          "headers": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "query": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "keyword",
+              "semantic",
+              "hybrid"
+            ]
+          },
+          "maxResults": {
+            "type": "number",
+            "minimum": 1
+          },
+          "candidateMultiplier": {
+            "type": "number",
+            "minimum": 1
+          },
+          "includeSession": {
+            "type": "boolean"
+          },
+          "verbose": {
+            "type": "boolean"
+          },
+          "filters": {
+            "type": "object"
+          },
+          "scopeHint": {
+            "type": "string"
+          }
+        }
+      },
+      "read": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "maxChars": {
+            "type": "number",
+            "minimum": 1
+          },
+          "includeAncestors": {
+            "type": "boolean"
+          }
+        }
+      },
+      "mapping": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "virtualRoot": {
+            "type": "string"
+          },
+          "defaultDomain": {
+            "type": "string"
+          }
+        }
+      },
+      "visualMemory": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "defaultDomain": {
+            "type": "string"
+          },
+          "pathPrefix": {
+            "type": "string"
+          },
+          "maxSummaryChars": {
+            "type": "number",
+            "minimum": 1
+          },
+          "maxOcrChars": {
+            "type": "number",
+            "minimum": 1
+          },
+          "duplicatePolicy": {
+            "type": "string",
+            "enum": [
+              "merge",
+              "reject",
+              "new"
+            ]
+          },
+          "disclosure": {
+            "type": "string"
+          },
+          "retentionNote": {
+            "type": "string"
+          },
+          "traceEnabled": {
+            "type": "boolean"
+          },
+          "storeOcr": {
+            "type": "boolean"
+          },
+          "storeEntities": {
+            "type": "boolean"
+          },
+          "storeScene": {
+            "type": "boolean"
+          },
+          "storeWhyRelevant": {
+            "type": "boolean"
+          },
+          "currentTurnCacheTtlMs": {
+            "type": "number",
+            "minimum": 0
+          },
+          "enrichment": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              },
+              "timeoutMs": {
+                "type": "number",
+                "minimum": 1
+              },
+              "ocr": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "command": {
+                    "type": "string"
+                  },
+                  "args": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "cwd": {
+                    "type": "string"
+                  },
+                  "env": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  },
+                  "timeoutMs": {
+                    "type": "number",
+                    "minimum": 1
+                  }
+                }
+              },
+              "analyzer": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "command": {
+                    "type": "string"
+                  },
+                  "args": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "cwd": {
+                    "type": "string"
+                  },
+                  "env": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  },
+                  "timeoutMs": {
+                    "type": "number",
+                    "minimum": 1
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "observability": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "transportDiagnosticsPath": {
+            "type": "string"
+          },
+          "maxRecentTransportEvents": {
+            "type": "number",
+            "minimum": 1
+          }
+        }
+      },
+      "profileMemory": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "injectBeforeAgentStart": {
+            "type": "boolean"
+          },
+          "maxCharsPerBlock": {
+            "type": "number",
+            "minimum": 64
+          },
+          "blocks": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "identity",
+                "preferences",
+                "workflow"
+              ]
+            }
+          }
+        }
+      },
+      "hostBridge": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "importUserMd": {
+            "type": "boolean"
+          },
+          "importMemoryMd": {
+            "type": "boolean"
+          },
+          "importDailyMemory": {
+            "type": "boolean"
+          },
+          "writeBackSummary": {
+            "type": "boolean"
+          },
+          "maxHits": {
+            "type": "number",
+            "minimum": 1
+          },
+          "maxImportPerRun": {
+            "type": "number",
+            "minimum": 1
+          },
+          "maxFileBytes": {
+            "type": "number",
+            "minimum": 1024
+          },
+          "maxSnippetChars": {
+            "type": "number",
+            "minimum": 64
+          },
+          "traceEnabled": {
+            "type": "boolean"
+          }
+        }
+      },
+      "smartExtraction": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "disabled",
+              "local",
+              "remote"
+            ]
+          },
+          "minConversationMessages": {
+            "type": "number",
+            "minimum": 1
+          },
+          "maxTranscriptChars": {
+            "type": "number",
+            "minimum": 256
+          },
+          "timeoutMs": {
+            "type": "number",
+            "minimum": 1
+          },
+          "retryAttempts": {
+            "type": "number",
+            "minimum": 1
+          },
+          "circuitBreakerFailures": {
+            "type": "number",
+            "minimum": 1
+          },
+          "circuitBreakerCooldownMs": {
+            "type": "number",
+            "minimum": 1000
+          },
+          "traceEnabled": {
+            "type": "boolean"
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "profile",
+                "preference",
+                "preferences",
+                "workflow",
+                "entity",
+                "entities",
+                "event",
+                "events",
+                "case",
+                "cases",
+                "pattern",
+                "patterns",
+                "reminder",
+                "reminders"
+              ]
+            }
+          }
+        }
+      },
+      "reconcile": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "profileMergePolicy": {
+            "type": "string",
+            "enum": [
+              "always_merge",
+              "replace"
+            ]
+          },
+          "eventMergePolicy": {
+            "type": "string",
+            "enum": [
+              "append_only",
+              "replace"
+            ]
+          },
+          "similarityThreshold": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "pendingOnConflict": {
+            "type": "boolean"
+          },
+          "maxSearchResults": {
+            "type": "number",
+            "minimum": 1
+          },
+          "actions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "ADD",
+                "UPDATE",
+                "DELETE",
+                "NONE"
+              ]
+            }
+          }
+        }
+      },
+      "capturePipeline": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "v1",
+              "v2"
+            ]
+          },
+          "captureAssistantDerived": {
+            "type": "boolean"
+          },
+          "maxAssistantDerivedPerRun": {
+            "type": "number",
+            "minimum": 1
+          },
+          "pendingOnFailure": {
+            "type": "boolean"
+          },
+          "minConfidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "pendingConfidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "traceEnabled": {
+            "type": "boolean"
+          }
+        }
+      },
+      "autoRecall": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "maxResults": {
+            "type": "number",
+            "minimum": 1
+          },
+          "minPromptChars": {
+            "type": "number",
+            "minimum": 1
+          },
+          "allowShortCjk": {
+            "type": "boolean"
+          },
+          "traceEnabled": {
+            "type": "boolean"
+          }
+        }
+      },
+      "autoCapture": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "minChars": {
+            "type": "number",
+            "minimum": 1
+          },
+          "maxChars": {
+            "type": "number",
+            "minimum": 1
+          },
+          "maxItemsPerRun": {
+            "type": "number",
+            "minimum": 1
+          },
+          "traceEnabled": {
+            "type": "boolean"
+          }
+        }
+      },
+      "acl": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "sharedUriPrefixes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "sharedWriteUriPrefixes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "defaultPrivateRootTemplate": {
+            "type": "string"
+          },
+          "allowIncludeAncestors": {
+            "type": "boolean"
+          },
+          "defaultDisclosure": {
+            "type": "string"
+          },
+          "agents": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "allowedDomains": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "allowedUriPrefixes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "writeRoots": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "disclosurePolicy": {
+                  "type": "string"
+                },
+                "allowIncludeAncestors": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      },
+      "reflection": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "autoRecall": {
+            "type": "boolean"
+          },
+          "maxResults": {
+            "type": "number",
+            "minimum": 1
+          },
+          "rootUri": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "agent_end",
+              "compact_context",
+              "command_new"
+            ]
+          },
+          "compactMaxLines": {
+            "type": "number",
+            "minimum": 3
+          },
+          "traceEnabled": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  }
+}

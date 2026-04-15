@@ -1,0 +1,6 @@
+flowchart LR
+    Setup["Setup<br/>先接入"] --> Memory["Memory<br/>再查阅"]
+    Memory --> Review["Review<br/>再复核"]
+    Review --> Maintenance["Maintenance<br/>最后维护"]
+    Review --> Observability["Observability<br/>看运行状态"]
+    Maintenance --> Observability

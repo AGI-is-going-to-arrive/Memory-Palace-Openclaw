@@ -1,0 +1,605 @@
+const profileBlockNames = ["identity", "preferences", "workflow"] as const;
+const queryModeEnum = ["keyword", "semantic", "hybrid"] as const;
+const smartExtractionCategoryEnum = [
+  "profile",
+  "preference",
+  "preferences",
+  "workflow",
+  "entity",
+  "entities",
+  "event",
+  "events",
+  "case",
+  "cases",
+  "pattern",
+  "patterns",
+  "reminder",
+  "reminders",
+] as const;
+
+export const pluginConfigSchema = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    transport: {
+      type: "string",
+      enum: ["auto", "stdio", "sse"],
+    },
+    timeoutMs: {
+      type: "number",
+      minimum: 100,
+    },
+    connection: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        connectRetries: {
+          type: "number",
+          minimum: 0,
+        },
+        connectBackoffMs: {
+          type: "number",
+          minimum: 1,
+        },
+        connectBackoffMaxMs: {
+          type: "number",
+          minimum: 1,
+        },
+        requestRetries: {
+          type: "number",
+          minimum: 1,
+        },
+        idleCloseMs: {
+          type: "number",
+          minimum: 0,
+        },
+        healthcheckTool: {
+          type: "string",
+        },
+        healthcheckTtlMs: {
+          type: "number",
+          minimum: 0,
+        },
+      },
+    },
+    stdio: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        command: { type: "string" },
+        args: {
+          type: "array",
+          items: { type: "string" },
+        },
+        cwd: { type: "string" },
+        env: {
+          type: "object",
+          additionalProperties: { type: "string" },
+        },
+      },
+    },
+    sse: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        url: {
+          type: "string",
+          pattern: "^https?://.+",
+        },
+        apiKey: { type: "string" },
+        apiKeyEnv: { type: "string" },
+        headers: {
+          type: "object",
+          additionalProperties: { type: "string" },
+        },
+      },
+    },
+    query: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        mode: {
+          type: "string",
+          enum: [...queryModeEnum],
+        },
+        maxResults: { type: "number", minimum: 1 },
+        candidateMultiplier: { type: "number", minimum: 1 },
+        includeSession: { type: "boolean" },
+        verbose: { type: "boolean" },
+        filters: { type: "object" },
+        scopeHint: { type: "string" },
+      },
+    },
+    read: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        maxChars: { type: "number", minimum: 1 },
+        includeAncestors: { type: "boolean" },
+      },
+    },
+    mapping: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        virtualRoot: { type: "string" },
+        defaultDomain: { type: "string" },
+      },
+    },
+    visualMemory: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        enabled: { type: "boolean" },
+        defaultDomain: { type: "string" },
+        pathPrefix: { type: "string" },
+        maxSummaryChars: { type: "number", minimum: 1 },
+        maxOcrChars: { type: "number", minimum: 1 },
+        duplicatePolicy: {
+          type: "string",
+          enum: ["merge", "reject", "new"],
+        },
+        disclosure: { type: "string" },
+        retentionNote: { type: "string" },
+        traceEnabled: { type: "boolean" },
+        storeOcr: { type: "boolean" },
+        storeEntities: { type: "boolean" },
+        storeScene: { type: "boolean" },
+        storeWhyRelevant: { type: "boolean" },
+        currentTurnCacheTtlMs: { type: "number", minimum: 0 },
+        enrichment: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            enabled: { type: "boolean" },
+            timeoutMs: { type: "number", minimum: 1 },
+            ocr: {
+              type: "object",
+              additionalProperties: false,
+              properties: {
+                command: { type: "string" },
+                args: {
+                  type: "array",
+                  items: { type: "string" },
+                },
+                cwd: { type: "string" },
+                env: {
+                  type: "object",
+                  additionalProperties: { type: "string" },
+                },
+                timeoutMs: { type: "number", minimum: 1 },
+              },
+            },
+            analyzer: {
+              type: "object",
+              additionalProperties: false,
+              properties: {
+                command: { type: "string" },
+                args: {
+                  type: "array",
+                  items: { type: "string" },
+                },
+                cwd: { type: "string" },
+                env: {
+                  type: "object",
+                  additionalProperties: { type: "string" },
+                },
+                timeoutMs: { type: "number", minimum: 1 },
+              },
+            },
+          },
+        },
+      },
+    },
+    observability: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        enabled: { type: "boolean" },
+        transportDiagnosticsPath: { type: "string" },
+        maxRecentTransportEvents: { type: "number", minimum: 1 },
+      },
+    },
+    profileMemory: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        enabled: { type: "boolean" },
+        injectBeforeAgentStart: { type: "boolean" },
+        maxCharsPerBlock: { type: "number", minimum: 64 },
+        blocks: {
+          type: "array",
+          items: {
+            type: "string",
+            enum: [...profileBlockNames],
+          },
+        },
+      },
+    },
+    hostBridge: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        enabled: { type: "boolean" },
+        importUserMd: { type: "boolean" },
+        importMemoryMd: { type: "boolean" },
+        importDailyMemory: { type: "boolean" },
+        writeBackSummary: { type: "boolean" },
+        maxHits: { type: "number", minimum: 1 },
+        maxImportPerRun: { type: "number", minimum: 1 },
+        maxFileBytes: { type: "number", minimum: 1024 },
+        maxSnippetChars: { type: "number", minimum: 64 },
+        traceEnabled: { type: "boolean" },
+      },
+    },
+    smartExtraction: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        enabled: { type: "boolean" },
+        mode: {
+          type: "string",
+          enum: ["auto", "disabled", "local", "remote"],
+        },
+        minConversationMessages: { type: "number", minimum: 1 },
+        maxTranscriptChars: { type: "number", minimum: 256 },
+        timeoutMs: { type: "number", minimum: 1 },
+        retryAttempts: { type: "number", minimum: 1 },
+        circuitBreakerFailures: { type: "number", minimum: 1 },
+        circuitBreakerCooldownMs: { type: "number", minimum: 1000 },
+        traceEnabled: { type: "boolean" },
+        categories: {
+          type: "array",
+          items: {
+            type: "string",
+            enum: [...smartExtractionCategoryEnum],
+          },
+        },
+      },
+    },
+    reconcile: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        enabled: { type: "boolean" },
+        profileMergePolicy: {
+          type: "string",
+          enum: ["always_merge", "replace"],
+        },
+        eventMergePolicy: {
+          type: "string",
+          enum: ["append_only", "replace"],
+        },
+        similarityThreshold: { type: "number", minimum: 0, maximum: 1 },
+        pendingOnConflict: { type: "boolean" },
+        maxSearchResults: { type: "number", minimum: 1 },
+        actions: {
+          type: "array",
+          items: {
+            type: "string",
+            enum: ["ADD", "UPDATE", "DELETE", "NONE"],
+          },
+        },
+      },
+    },
+    capturePipeline: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        mode: {
+          type: "string",
+          enum: ["v1", "v2"],
+        },
+        captureAssistantDerived: { type: "boolean" },
+        maxAssistantDerivedPerRun: { type: "number", minimum: 1 },
+        pendingOnFailure: { type: "boolean" },
+        minConfidence: { type: "number", minimum: 0, maximum: 1 },
+        pendingConfidence: { type: "number", minimum: 0, maximum: 1 },
+        traceEnabled: { type: "boolean" },
+      },
+    },
+    autoRecall: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        enabled: { type: "boolean" },
+        maxResults: { type: "number", minimum: 1 },
+        minPromptChars: { type: "number", minimum: 1 },
+        allowShortCjk: { type: "boolean" },
+        traceEnabled: { type: "boolean" },
+      },
+    },
+    autoCapture: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        enabled: { type: "boolean" },
+        minChars: { type: "number", minimum: 1 },
+        maxChars: { type: "number", minimum: 1 },
+        maxItemsPerRun: { type: "number", minimum: 1 },
+        traceEnabled: { type: "boolean" },
+      },
+    },
+    acl: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        enabled: { type: "boolean" },
+        sharedUriPrefixes: {
+          type: "array",
+          items: { type: "string" },
+        },
+        sharedWriteUriPrefixes: {
+          type: "array",
+          items: { type: "string" },
+        },
+        defaultPrivateRootTemplate: { type: "string" },
+        allowIncludeAncestors: { type: "boolean" },
+        defaultDisclosure: { type: "string" },
+        agents: {
+          type: "object",
+          additionalProperties: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              allowedDomains: {
+                type: "array",
+                items: { type: "string" },
+              },
+              allowedUriPrefixes: {
+                type: "array",
+                items: { type: "string" },
+              },
+              writeRoots: {
+                type: "array",
+                items: { type: "string" },
+              },
+              disclosurePolicy: { type: "string" },
+              allowIncludeAncestors: { type: "boolean" },
+            },
+          },
+        },
+      },
+    },
+    reflection: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        enabled: { type: "boolean" },
+        autoRecall: { type: "boolean" },
+        maxResults: { type: "number", minimum: 1 },
+        rootUri: { type: "string" },
+        source: { type: "string", enum: ["agent_end", "compact_context", "command_new"] },
+        compactMaxLines: { type: "number", minimum: 3 },
+        traceEnabled: { type: "boolean" },
+      },
+    },
+  },
+} as const;
+
+export const memorySearchSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["query"],
+  properties: {
+    query: { type: "string" },
+    maxResults: { type: "number" },
+    max_results: { type: "number" },
+    minScore: { type: "number" },
+    min_score: { type: "number" },
+    mode: { type: "string" },
+    candidateMultiplier: { type: "number" },
+    candidate_multiplier: { type: "number" },
+    includeSession: { type: "boolean" },
+    include_session: { type: "boolean" },
+    verbose: { type: "boolean" },
+    scopeHint: { type: "string" },
+    scope_hint: { type: "string" },
+    includeReflection: { type: "boolean" },
+    include_reflection: { type: "boolean" },
+    filters: {
+      anyOf: [{ type: "object" }, { type: "string" }],
+    },
+  },
+} as const;
+
+export const memoryGetSchema = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    path: { type: "string" },
+    uri: { type: "string" },
+    from: { type: "number" },
+    lines: { type: "number" },
+    maxChars: { type: "number" },
+    max_chars: { type: "number" },
+    includeAncestors: { type: "boolean" },
+    include_ancestors: { type: "boolean" },
+  },
+} as const;
+
+export const memoryLearnSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["content"],
+  properties: {
+    content: { type: "string" },
+    force: { type: "boolean" },
+    confirmationPhrase: { type: "string" },
+    confirmation_phrase: { type: "string" },
+    category: {
+      type: "string",
+      enum: ["profile", "preference", "workflow", "decision", "fact", "reminder", "event"],
+    },
+    priority: { type: "number" },
+    disclosure: { type: "string" },
+  },
+} as const;
+
+export const memoryStoreVisualSchema = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    mediaRef: { type: "string" },
+    media_ref: { type: "string" },
+    summary: { type: "string" },
+    sourceChannel: { type: "string" },
+    source_channel: { type: "string" },
+    observedAt: { type: "string" },
+    observed_at: { type: "string" },
+    ocr: { type: "string" },
+    scene: { type: "string" },
+    whyRelevant: { type: "string" },
+    why_relevant: { type: "string" },
+    confidence: { type: "number" },
+    duplicatePolicy: {
+      type: "string",
+      enum: ["merge", "reject", "new"],
+    },
+    duplicate_policy: {
+      type: "string",
+      enum: ["merge", "reject", "new"],
+    },
+    entities: {
+      type: "array",
+      items: { type: "string" },
+    },
+    visualContext: {
+      anyOf: [{ type: "object" }, { type: "string" }],
+    },
+    visual_context: {
+      anyOf: [{ type: "object" }, { type: "string" }],
+    },
+  },
+} as const;
+
+export const memoryOnboardingStatusSchema = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    config: { type: "string" },
+    locale: { type: "string" },
+    setupRoot: { type: "string" },
+    setup_root: { type: "string" },
+    envFile: { type: "string" },
+    env_file: { type: "string" },
+  },
+} as const;
+
+export const memoryOnboardingProviderProbeSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["profile"],
+  properties: {
+    config: { type: "string" },
+    locale: { type: "string" },
+    setupRoot: { type: "string" },
+    setup_root: { type: "string" },
+    envFile: { type: "string" },
+    env_file: { type: "string" },
+    mode: { type: "string", enum: ["basic", "full", "dev"] },
+    profile: { type: "string", enum: ["a", "b", "c", "d"] },
+    transport: { type: "string", enum: ["stdio", "sse"] },
+    sseUrl: { type: "string" },
+    sse_url: { type: "string" },
+    mcpApiKey: { type: "string" },
+    mcp_api_key: { type: "string" },
+    allowInsecureLocal: { type: "boolean" },
+    allow_insecure_local: { type: "boolean" },
+    embeddingApiBase: { type: "string" },
+    embedding_api_base: { type: "string" },
+    embeddingApiKey: { type: "string" },
+    embedding_api_key: { type: "string" },
+    embeddingModel: { type: "string" },
+    embedding_model: { type: "string" },
+    embeddingDim: { anyOf: [{ type: "string" }, { type: "number" }] },
+    embedding_dim: { anyOf: [{ type: "string" }, { type: "number" }] },
+    rerankerApiBase: { type: "string" },
+    reranker_api_base: { type: "string" },
+    rerankerApiKey: { type: "string" },
+    reranker_api_key: { type: "string" },
+    rerankerModel: { type: "string" },
+    reranker_model: { type: "string" },
+    llmApiBase: { type: "string" },
+    llm_api_base: { type: "string" },
+    llmApiKey: { type: "string" },
+    llm_api_key: { type: "string" },
+    llmModel: { type: "string" },
+    llm_model: { type: "string" },
+    writeGuardLlmApiBase: { type: "string" },
+    write_guard_llm_api_base: { type: "string" },
+    writeGuardLlmApiKey: { type: "string" },
+    write_guard_llm_api_key: { type: "string" },
+    writeGuardLlmModel: { type: "string" },
+    write_guard_llm_model: { type: "string" },
+    compactGistLlmApiBase: { type: "string" },
+    compact_gist_llm_api_base: { type: "string" },
+    compactGistLlmApiKey: { type: "string" },
+    compact_gist_llm_api_key: { type: "string" },
+    compactGistLlmModel: { type: "string" },
+    compact_gist_llm_model: { type: "string" },
+  },
+} as const;
+
+export const memoryOnboardingApplySchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["profile"],
+  properties: {
+    config: { type: "string" },
+    locale: { type: "string" },
+    setupRoot: { type: "string" },
+    setup_root: { type: "string" },
+    envFile: { type: "string" },
+    env_file: { type: "string" },
+    mode: { type: "string", enum: ["basic", "full", "dev"] },
+    profile: { type: "string", enum: ["a", "b", "c", "d"] },
+    transport: { type: "string", enum: ["stdio", "sse"] },
+    validate: { type: "boolean" },
+    strictProfile: { type: "boolean" },
+    strict_profile: { type: "boolean" },
+    reconfigure: { type: "boolean" },
+    noActivate: { type: "boolean" },
+    no_activate: { type: "boolean" },
+    sseUrl: { type: "string" },
+    sse_url: { type: "string" },
+    mcpApiKey: { type: "string" },
+    mcp_api_key: { type: "string" },
+    allowInsecureLocal: { type: "boolean" },
+    allow_insecure_local: { type: "boolean" },
+    allowGenerateRemoteApiKey: { type: "boolean" },
+    allow_generate_remote_api_key: { type: "boolean" },
+    embeddingApiBase: { type: "string" },
+    embedding_api_base: { type: "string" },
+    embeddingApiKey: { type: "string" },
+    embedding_api_key: { type: "string" },
+    embeddingModel: { type: "string" },
+    embedding_model: { type: "string" },
+    embeddingDim: { anyOf: [{ type: "string" }, { type: "number" }] },
+    embedding_dim: { anyOf: [{ type: "string" }, { type: "number" }] },
+    rerankerApiBase: { type: "string" },
+    reranker_api_base: { type: "string" },
+    rerankerApiKey: { type: "string" },
+    reranker_api_key: { type: "string" },
+    rerankerModel: { type: "string" },
+    reranker_model: { type: "string" },
+    llmApiBase: { type: "string" },
+    llm_api_base: { type: "string" },
+    llmApiKey: { type: "string" },
+    llm_api_key: { type: "string" },
+    llmModel: { type: "string" },
+    llm_model: { type: "string" },
+    writeGuardLlmApiBase: { type: "string" },
+    write_guard_llm_api_base: { type: "string" },
+    writeGuardLlmApiKey: { type: "string" },
+    write_guard_llm_api_key: { type: "string" },
+    writeGuardLlmModel: { type: "string" },
+    write_guard_llm_model: { type: "string" },
+    compactGistLlmApiBase: { type: "string" },
+    compact_gist_llm_api_base: { type: "string" },
+    compactGistLlmApiKey: { type: "string" },
+    compact_gist_llm_api_key: { type: "string" },
+    compactGistLlmModel: { type: "string" },
+    compact_gist_llm_model: { type: "string" },
+  },
+} as const;

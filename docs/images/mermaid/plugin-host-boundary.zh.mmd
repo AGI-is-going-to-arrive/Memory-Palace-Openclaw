@@ -1,0 +1,8 @@
+flowchart TD
+    Host["OpenClaw 宿主"] --> Slot["active memory slot = memory-palace"]
+    Slot --> Hooks["typed lifecycle hooks<br/>before_prompt_build / agent_end / message:preprocessed"]
+    Hooks --> Auto["默认自动链路<br/>recall / capture / visual harvest"]
+    Auto --> Skill["少数高层 tool / plugin-bundled skill<br/>只在需要时显式升级"]
+    Skill --> MCP["MCP 工具面"]
+    MCP --> Backend["Memory Palace backend"]
+    Host --> Files["宿主文件记忆<br/>USER.md / MEMORY.md / memory/*.md"]

@@ -1,0 +1,464 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const { mockApi, mockCreate, interceptorRef } = vi.hoisted(() => {
+  const ref = { current: null };
+  const apiInstance = {
+    get: vi.fn(),
+    post: vi.fn(),
+    put: vi.fn(),
+    delete: vi.fn(),
+    interceptors: {
+      request: {
+        use: vi.fn((handler) => {
+          ref.current = handler;
+        }),
+      },
+    },
+  };
+  return {
+    mockApi: apiInstance,
+    mockCreate: vi.fn(() => apiInstance),
+    interceptorRef: ref,
+  };
+});
+
+vi.mock('axios', () => ({
+  default: {
+    create: mockCreate,
+  },
+}));
+
+import {
+  applyBootstrapConfiguration,
+  getMemoryNode,
+  getBootstrapStatus,
+  getSnapshotStorageSummary,
+  probeBootstrapProviders,
+  requestBootstrapRestart,
+  runObservabilitySearch,
+  listOrphanMemories,
+  getOrphanMemoryDetail,
+  deleteOrphanMemory,
+  extractApiErrorCode,
+  clearStoredMaintenanceAuth,
+} from './api';
+
+describe('api contract regression', () => {
+  beforeEach(() => {
+    mockApi.get.mockReset();
+    mockApi.post.mockReset();
+    mockApi.put.mockReset();
+    mockApi.delete.mockReset();
+    delete window.__MEMORY_PALACE_RUNTIME__;
+    delete window.__MCP_RUNTIME_CONFIG__;
+    clearStoredMaintenanceAuth();
+    window.sessionStorage?.removeItem?.('memory-palace.dashboardAuth');
+    window.localStorage?.removeItem?.('memory-palace.dashboardAuth');
+  });
+
+  it('normalizes memory node gist fields from backend payload', async () => {
+    mockApi.get.mockResolvedValue({
+      data: {
+        node: {
+          uri: 'core://agent/index',
+          gist_text: 'Index summary',
+          gist_method: 'llm',
+          gist_quality: '0.72',
+          source_hash: 'abc',
+        },
+        children: [
+          {
+            uri: 'core://agent/index/child',
+            gist_text: '',
+            gist_method: '',
+            gist_quality: 'NaN',
+          },
+        ],
+        breadcrumbs: null,
+      },
+    });
+
+    const result = await getMemoryNode({ path: 'agent/index', domain: 'core' });
+
+    expect(mockApi.get).toHaveBeenCalledWith('/browse/node', {
+      params: { path: 'agent/index', domain: 'core' },
+    });
+    expect(result.node.gist_quality).toBe(0.72);
+    expect(result.node.source_hash).toBe('abc');
+    expect(result.children[0].gist_text).toBeNull();
+    expect(result.children[0].gist_method).toBeNull();
+    expect(result.children[0].gist_quality).toBeNull();
+    expect(result.children[0].source_hash).toBeNull();
+    expect(result.breadcrumbs).toEqual([]);
+  });
+
+  it('extracts normalized api error code from structured detail', () => {
+    const code = extractApiErrorCode({
+      response: {
+        data: {
+          detail: {
+            error: 'CONFIRMATION_PHRASE_MISMATCH',
+            message: 'phrase mismatch',
+          },
+        },
+      },
+    });
+
+    expect(code).toBe('confirmation_phrase_mismatch');
+  });
+
+  it('returns null when detail does not contain code-like token', () => {
+    const code = extractApiErrorCode({
+      response: {
+        data: {
+          detail: 'job not found',
+        },
+      },
+    });
+
+    expect(code).toBeNull();
+  });
+
+  it('preserves observability search response contract', async () => {
+    mockApi.post.mockResolvedValue({
+      data: {
+        ok: true,
+        mode_requested: 'hybrid',
+        mode_applied: 'hybrid',
+        degraded: false,
+        results: [],
+      },
+    });
+
+    const payload = { query: 'release plan', mode: 'hybrid', include_session: false };
+    const result = await runObservabilitySearch(payload);
+
+    expect(mockApi.post).toHaveBeenCalledWith('/maintenance/observability/search', payload);
+    expect(result.ok).toBe(true);
+    expect(result.mode_requested).toBe('hybrid');
+    expect(result.mode_applied).toBe('hybrid');
+    expect(result.degraded).toBe(false);
+    expect(result.results).toEqual([]);
+  });
+
+  it('routes bootstrap setup APIs through the unified client', async () => {
+    mockApi.get.mockResolvedValueOnce({
+      data: {
+        ok: true,
+        summary: 'Needs onboarding',
+      },
+    });
+    mockApi.post.mockResolvedValueOnce({
+      data: {
+        ok: true,
+        summary: 'Bootstrap applied',
+      },
+    });
+
+    const status = await getBootstrapStatus();
+    const result = await applyBootstrapConfiguration({
+      mode: 'full',
+      profile: 'c',
+      transport: 'sse',
+    });
+
+    expect(mockApi.get).toHaveBeenCalledWith('/bootstrap/status');
+    expect(mockApi.post).toHaveBeenCalledWith('/bootstrap/apply', {
+      mode: 'full',
+      profile: 'c',
+      transport: 'sse',
+    });
+    expect(status).toEqual({
+      ok: true,
+      summary: 'Needs onboarding',
+    });
+    expect(result).toEqual({
+      ok: true,
+      summary: 'Bootstrap applied',
+    });
+  });
+
+  it('routes review storage summary through the unified client', async () => {
+    mockApi.get.mockResolvedValueOnce({
+      data: {
+        session_count: 3,
+        total_resources: 12,
+        total_bytes: 4096,
+      },
+    });
+
+    const result = await getSnapshotStorageSummary();
+
+    expect(mockApi.get).toHaveBeenCalledWith('/review/storage');
+    expect(result).toEqual({
+      session_count: 3,
+      total_resources: 12,
+      total_bytes: 4096,
+    });
+  });
+
+  it('routes bootstrap restart through the unified client', async () => {
+    mockApi.post.mockResolvedValueOnce({
+      data: {
+        ok: true,
+        restartAccepted: true,
+      },
+    });
+
+    const result = await requestBootstrapRestart();
+
+    expect(mockApi.post).toHaveBeenCalledWith('/bootstrap/restart');
+    expect(result).toEqual({
+      ok: true,
+      restartAccepted: true,
+    });
+  });
+
+  it('routes bootstrap provider probe through the unified client', async () => {
+    mockApi.post.mockResolvedValueOnce({
+      data: {
+        ok: true,
+        providerProbe: {
+          requestedProfile: 'c',
+          summaryStatus: 'pass',
+        },
+      },
+    });
+
+    const result = await probeBootstrapProviders({
+      profile: 'c',
+      embeddingApiBase: 'https://embedding.example/v1',
+    });
+
+    expect(mockApi.post).toHaveBeenCalledWith('/bootstrap/provider-probe', {
+      profile: 'c',
+      embeddingApiBase: 'https://embedding.example/v1',
+    });
+    expect(result).toEqual({
+      ok: true,
+      providerProbe: {
+        requestedProfile: 'c',
+        summaryStatus: 'pass',
+      },
+    });
+  });
+
+  it('routes orphan maintenance APIs through unified client', async () => {
+    mockApi.get.mockResolvedValueOnce({ data: [{ id: 1 }] });
+    mockApi.get.mockResolvedValueOnce({ data: { id: 1, content: 'content' } });
+    mockApi.delete.mockResolvedValueOnce({ data: { deleted: true } });
+
+    const list = await listOrphanMemories();
+    const detail = await getOrphanMemoryDetail(1);
+    const deleted = await deleteOrphanMemory(1);
+
+    expect(mockApi.get).toHaveBeenNthCalledWith(1, '/maintenance/orphans');
+    expect(mockApi.get).toHaveBeenNthCalledWith(2, '/maintenance/orphans/1');
+    expect(mockApi.delete).toHaveBeenCalledWith('/maintenance/orphans/1');
+    expect(list).toEqual([{ id: 1 }]);
+    expect(detail).toEqual({ id: 1, content: 'content' });
+    expect(deleted).toEqual({ deleted: true });
+  });
+
+  it('does not inject maintenance key by default', () => {
+    const interceptor = interceptorRef.current;
+
+    const config = interceptor({
+      url: '/maintenance/orphans',
+      headers: {},
+    });
+
+    expect(config.headers?.Authorization).toBeUndefined();
+    expect(config.headers?.['X-MCP-API-Key']).toBeUndefined();
+  });
+
+  it('supports runtime-only maintenance key injection without VITE env', () => {
+    const interceptor = interceptorRef.current;
+    window.__MEMORY_PALACE_RUNTIME__ = {
+      maintenanceApiKey: 'runtime-key',
+      maintenanceApiKeyMode: 'bearer',
+    };
+
+    const maintenanceConfig = interceptor({
+      url: '/maintenance/orphans',
+      headers: {},
+    });
+    const browseConfig = interceptor({
+      url: '/browse/node',
+      headers: {},
+    });
+
+    expect(maintenanceConfig.headers.Authorization).toBe('Bearer runtime-key');
+    expect(maintenanceConfig.headers['X-MCP-API-Key']).toBeUndefined();
+    expect(browseConfig.headers.Authorization).toBe('Bearer runtime-key');
+    expect(browseConfig.headers['X-MCP-API-Key']).toBeUndefined();
+  });
+
+  it('falls back to stored maintenance key when runtime config is absent', () => {
+    const interceptor = interceptorRef.current;
+    // Seed sessionStorage so migration picks it up into in-memory auth
+    window.sessionStorage.setItem(
+      'memory-palace.dashboardAuth',
+      JSON.stringify({
+        maintenanceApiKey: 'stored-key',
+        maintenanceApiKeyMode: 'header',
+      })
+    );
+
+    const config = interceptor({
+      url: '/maintenance/orphans',
+      headers: {},
+      method: 'get',
+    });
+
+    expect(config.headers['X-MCP-API-Key']).toBe('stored-key');
+    expect(config.headers.Authorization).toBeUndefined();
+    // After migration, sessionStorage copy is cleared
+    expect(window.sessionStorage.getItem('memory-palace.dashboardAuth')).toBeNull();
+  });
+
+  it('migrates legacy localStorage auth into memory and clears the old copy', () => {
+    const interceptor = interceptorRef.current;
+    window.localStorage.setItem(
+      'memory-palace.dashboardAuth',
+      JSON.stringify({
+        maintenanceApiKey: 'legacy-key',
+        maintenanceApiKeyMode: 'header',
+      })
+    );
+
+    const config = interceptor({
+      url: '/maintenance/orphans',
+      headers: {},
+      method: 'get',
+    });
+
+    expect(config.headers['X-MCP-API-Key']).toBe('legacy-key');
+    expect(window.localStorage.getItem('memory-palace.dashboardAuth')).toBeNull();
+    // Auth is now in-memory only — no sessionStorage copy
+    expect(window.sessionStorage.getItem('memory-palace.dashboardAuth')).toBeNull();
+  });
+
+  it('prefers runtime maintenance key over stored fallback', () => {
+    const interceptor = interceptorRef.current;
+    window.sessionStorage.setItem(
+      'memory-palace.dashboardAuth',
+      JSON.stringify({
+        maintenanceApiKey: 'stored-key',
+        maintenanceApiKeyMode: 'header',
+      })
+    );
+    window.__MEMORY_PALACE_RUNTIME__ = {
+      maintenanceApiKey: 'runtime-key',
+      maintenanceApiKeyMode: 'bearer',
+    };
+
+    const config = interceptor({
+      url: '/maintenance/orphans',
+      headers: {},
+      method: 'get',
+    });
+
+    expect(config.headers.Authorization).toBe('Bearer runtime-key');
+    expect(config.headers['X-MCP-API-Key']).toBeUndefined();
+  });
+
+  it('does not inject key to cross-origin URLs even with protected path', () => {
+    const interceptor = interceptorRef.current;
+    window.__MEMORY_PALACE_RUNTIME__ = {
+      maintenanceApiKey: 'runtime-key',
+      maintenanceApiKeyMode: 'header',
+    };
+
+    const config = interceptor({
+      url: 'https://evil.example/maintenance/orphans',
+      headers: {},
+      method: 'get',
+    });
+
+    expect(config.headers.Authorization).toBeUndefined();
+    expect(config.headers['X-MCP-API-Key']).toBeUndefined();
+  });
+
+  it('injects runtime key for review and browse read/write requests', () => {
+    const interceptor = interceptorRef.current;
+    window.__MEMORY_PALACE_RUNTIME__ = {
+      maintenanceApiKey: 'runtime-key',
+      maintenanceApiKeyMode: 'header',
+    };
+
+    const reviewConfig = interceptor({
+      url: '/review/sessions',
+      headers: {},
+      method: 'get',
+    });
+    const browseWriteConfig = interceptor({
+      url: '/browse/node',
+      headers: {},
+      method: 'post',
+    });
+    const browseReadConfig = interceptor({
+      url: '/browse/node',
+      headers: {},
+      method: 'get',
+    });
+
+    expect(reviewConfig.headers['X-MCP-API-Key']).toBe('runtime-key');
+    expect(browseWriteConfig.headers['X-MCP-API-Key']).toBe('runtime-key');
+    expect(browseReadConfig.headers['X-MCP-API-Key']).toBe('runtime-key');
+  });
+
+  it('injects runtime key for protected bootstrap write routes only', () => {
+    const interceptor = interceptorRef.current;
+    window.__MEMORY_PALACE_RUNTIME__ = {
+      maintenanceApiKey: 'runtime-key',
+      maintenanceApiKeyMode: 'header',
+    };
+
+    const probeConfig = interceptor({
+      url: '/bootstrap/provider-probe',
+      headers: {},
+      method: 'post',
+    });
+    const applyConfig = interceptor({
+      url: '/bootstrap/apply',
+      headers: {},
+      method: 'post',
+    });
+    const restartConfig = interceptor({
+      url: '/bootstrap/restart',
+      headers: {},
+      method: 'post',
+    });
+    const statusConfig = interceptor({
+      url: '/bootstrap/status',
+      headers: {},
+      method: 'get',
+    });
+
+    expect(probeConfig.headers['X-MCP-API-Key']).toBe('runtime-key');
+    expect(applyConfig.headers['X-MCP-API-Key']).toBe('runtime-key');
+    expect(restartConfig.headers['X-MCP-API-Key']).toBe('runtime-key');
+    expect(statusConfig.headers['X-MCP-API-Key']).toBeUndefined();
+  });
+
+  it('merges getMemoryNode params safely with requestConfig', async () => {
+    mockApi.get.mockResolvedValue({
+      data: {
+        node: { uri: 'core://agent/index' },
+        children: [],
+        breadcrumbs: [],
+      },
+    });
+
+    await getMemoryNode(
+      { path: 'agent/index', domain: 'core' },
+      { params: { path: 'evil/path', domain: 'evil' }, signal: 'sig' }
+    );
+
+    expect(mockApi.get).toHaveBeenCalledWith('/browse/node', {
+      signal: 'sig',
+      params: { path: 'agent/index', domain: 'core' },
+    });
+  });
+});

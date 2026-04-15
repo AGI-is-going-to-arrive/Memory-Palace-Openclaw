@@ -1,0 +1,107 @@
+#!/usr/bin/env bash
+# Maintainer-only helper. Do not document this as the end-user OpenClaw entrypoint.
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/../.." && pwd)"
+OPENCLAW_MODULE="${PROJECT_ROOT}/node_modules/openclaw/openclaw.mjs"
+
+is_memory_palace_json_command() {
+  local saw_json=0
+  local first_command=""
+  local skip_value=0
+  local arg
+  for arg in "$@"; do
+    [[ "${arg}" == "--json" ]] && saw_json=1
+  done
+  for arg in "$@"; do
+    if [[ ${skip_value} -eq 1 ]]; then
+      skip_value=0
+      continue
+    fi
+    case "${arg}" in
+      --profile|--log-level)
+        skip_value=1
+        continue
+        ;;
+      --dev|--no-color|-h|--help|-V|--version)
+        continue
+        ;;
+      -*)
+        continue
+        ;;
+      *)
+        first_command="${arg}"
+        break
+        ;;
+    esac
+  done
+  [[ ${saw_json} -eq 1 && "${first_command}" == "memory-palace" ]]
+}
+
+extract_json_stdout() {
+  local stdout_path="$1"
+  node - "${stdout_path}" <<'NODE'
+const fs = require("node:fs");
+const stdoutPath = process.argv[2];
+const text = fs.readFileSync(stdoutPath, "utf8").trim();
+if (!text) {
+  process.exit(1);
+}
+const lines = text.split(/\r?\n/);
+const candidateStartIndexes = [];
+for (let index = 0; index < lines.length; index += 1) {
+  const trimmed = lines[index].trimStart();
+  if (
+    trimmed === "{" ||
+    trimmed.startsWith("{") ||
+    trimmed === "[" ||
+    trimmed.startsWith("[{") ||
+    trimmed.startsWith('["') ||
+    trimmed === "[]"
+  ) {
+    candidateStartIndexes.push(index);
+  }
+}
+for (const startIndex of candidateStartIndexes) {
+  for (let endIndex = lines.length; endIndex > startIndex; endIndex -= 1) {
+    const candidate = lines.slice(startIndex, endIndex).join("\n").trim();
+    if (!candidate) {
+      continue;
+    }
+    try {
+      JSON.parse(candidate);
+      process.stdout.write(`${candidate}\n`);
+      process.exit(0);
+    } catch {
+      // Keep shrinking the trailing lines until the JSON block parses cleanly.
+    }
+  }
+}
+process.exit(1);
+NODE
+}
+
+if is_memory_palace_json_command "$@"; then
+  stdout_path="$(mktemp "${TMPDIR:-/tmp}/openclaw-memory-palace-json-XXXXXX")"
+  cleanup() {
+    rm -f "${stdout_path}"
+  }
+  trap cleanup EXIT
+
+  if OPENCLAW_MEMORY_PALACE_QUIET_JSON=1 node "${OPENCLAW_MODULE}" "$@" >"${stdout_path}"; then
+    if ! extract_json_stdout "${stdout_path}"; then
+      cat "${stdout_path}" >&2
+      exit 1
+    fi
+    exit 0
+  fi
+
+  status=$?
+  if [[ -s "${stdout_path}" ]]; then
+    cat "${stdout_path}" >&2
+  fi
+  exit "${status}"
+fi
+
+exec node "${OPENCLAW_MODULE}" "$@"

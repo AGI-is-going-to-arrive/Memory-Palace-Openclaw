@@ -1,0 +1,6 @@
+flowchart LR
+    Setup["Setup<br/>Connect First"] --> Memory["Memory<br/>Inspect Next"]
+    Memory --> Review["Review<br/>Review Before Signoff"]
+    Review --> Maintenance["Maintenance<br/>Maintain Last"]
+    Review --> Observability["Observability<br/>Watch Runtime Health"]
+    Maintenance --> Observability

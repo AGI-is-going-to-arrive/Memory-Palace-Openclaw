@@ -1,0 +1,7 @@
+flowchart TD
+    A["Install the OpenClaw host first"] --> B["Source checkout setup<br/>python3 scripts/openclaw_memory_palace.py setup --mode basic --profile b"]
+    B --> C["verify"]
+    C --> D["doctor"]
+    D --> E["smoke"]
+    B --> F["If you also want the local Dashboard<br/>switch to --mode full"]
+    B --> G["If you explicitly need package validation<br/>use the local tgz path"]

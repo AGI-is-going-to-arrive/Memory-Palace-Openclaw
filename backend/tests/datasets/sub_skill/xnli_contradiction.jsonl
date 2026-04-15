@@ -1,0 +1,200 @@
+{"premise": "We have been told that Pickard and Ashcroft did not have a good relationship.", "hypothesis": "Pickard and Ashcroft were known to be very close friends.", "label": "contradiction", "lang": "en"}
+{"premise": "怎么做到的？", "hypothesis": "一个人怎么能做这样一件坏事？", "label": "not_contradiction", "lang": "zh"}
+{"premise": "DOT必须购买那物业和东西。", "hypothesis": "该物业花了交通部超过三百万美元用于购买。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "与城市及其他公民及社区组织代表就IMA的艺术发展进行对话&amp", "hypothesis": "美国管理会计师协会与该地区的其他组织合作。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "Samuel Sheinbein will serve a murder sentence in Israel.", "hypothesis": "Samuel Sheinbein will serve a murder sentence in Canada.", "label": "contradiction", "lang": "en"}
+{"premise": "It is important and we hope that you will make a significant contribution to the Pursuit of Excellence fund this year.", "hypothesis": "Without your contribution the Pursuit of Excellence fund will no longer exist.", "label": "not_contradiction", "lang": "en"}
+{"premise": "我怎么能诚恳地拘留他们？ 这是讨价还价。", "hypothesis": "我一看到他们就拘留他们。", "label": "contradiction", "lang": "zh"}
+{"premise": "这些工人没有被困住，但与大多数高层居民不同，他们在撞击之后，没有选择立即下楼。", "hypothesis": "楼上的一些工人们选择在碰撞后不立即下降。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "it's um about twenty minutes", "hypothesis": "It is exactly ten minutes long.", "label": "contradiction", "lang": "en"}
+{"premise": "你会和玩滑板鞋的人一起或者往街机里投几个硬币", "hypothesis": "你可以在拉斯维加斯赌博。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "伯恩斯坦在介绍中解释道", "hypothesis": "介绍中有作解释。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "15名劫机者中，除了2名外，其他人都被接纳为游客在美国逗留6个月（除了米达尔获得四个月的情况）。", "hypothesis": "所有劫机者都是通过工作签证入境。", "label": "contradiction", "lang": "zh"}
+{"premise": "Prototypes were used by commercial companies throughout the product development process and not just during product integration.", "hypothesis": "The commercial companies use prototypes.", "label": "not_contradiction", "lang": "en"}
+{"premise": "So, I called U-Haul to inquire about its rental policies.", "hypothesis": "I contacted U-Haul regarding their rental agreements.", "label": "not_contradiction", "lang": "en"}
+{"premise": "她非常白，她的双眼盯着她那合着的双手。", "hypothesis": "她很忧郁，一直闭着眼睛。", "label": "contradiction", "lang": "zh"}
+{"premise": "使用这八种简单的技巧，您可以在舒适的家中制作新闻故事。", "hypothesis": "只有新闻编辑部的新闻记者才能撰写新闻报道，并且需要20个步骤才能完成。", "label": "contradiction", "lang": "zh"}
+{"premise": "C. P. Snow描述了两种文化，科学和人文科学，从不混合。", "hypothesis": "C. P. Snow从未写过关于科学和人文科学的文字。", "label": "contradiction", "lang": "zh"}
+{"premise": "你知道的，特别是做接缝之类的事情，你知道的，这需要专业的技能来完成", "hypothesis": "接缝完成得非常熟练。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "显然，只有当这部野心勃勃的书发表后，我们的讨论才会停止。", "hypothesis": "本书出版后，我们将安排会议，然后继续讨论。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "Yousef 已经成功潜逃到巴基斯坦，但是他的共犯Murad-whom KSM已经被捕并在审讯时坦白作案细节。Murad-whom KSM宣称为这次作案资助Yousef 3000美金。", "hypothesis": "穆拉德和尤瑟夫都逃到了巴基斯坦，从此再也没有露面。", "label": "contradiction", "lang": "zh"}
+{"premise": "While he continued to monitor the citywide SOD channel, which NYPD helicopters were using, he also monitored the point-to-point tactical channel that the ESU teams climbing in the towers would use.", "hypothesis": "Nobody was using the citywide SOD channel.", "label": "contradiction", "lang": "en"}
+{"premise": "The Friends operate at two levels -the Citywide Friends and the Branch Friends -and you can become active at either one or both levels.", "hypothesis": "There are two levels of Friends.", "label": "not_contradiction", "lang": "en"}
+{"premise": "Mihdhar received a new U.S. visa two days after the CIA-FBI meeting in New York.", "hypothesis": "Mihdhar never got a visa, so he never came to the us.", "label": "contradiction", "lang": "en"}
+{"premise": "This is a simple displacement from equilibrium, and a simple device, the mica flake, will be made to quake, hence, extract mechanical work.", "hypothesis": "The mica flake is a complex device.", "label": "contradiction", "lang": "en"}
+{"premise": "8月25日，民主党大会在大西洋城开幕后，当时56岁的约翰逊在三次有记录的谈话中威胁退出总统竞选。", "hypothesis": "约翰逊从来没有想过要退出。", "label": "contradiction", "lang": "zh"}
+{"premise": "5月16日，中央情报局最先报告了对阿联酋的电话。", "hypothesis": "其它机构于5月17日向UAE报告了那次通话。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "Ye're going to deliver yourself into Bishop's hands,  Pitt warned him.", "hypothesis": "Pitt did not say anything to them.", "label": "contradiction", "lang": "en"}
+{"premise": "There was here quite plainly a vague threat, a mutinous spirit he could not understand.", "hypothesis": "He did not understand the threat that laid before him.", "label": "not_contradiction", "lang": "en"}
+{"premise": "Upon impact, many were killed or severely injured; others were relatively unharmed.", "hypothesis": "Many people died on impact.", "label": "not_contradiction", "lang": "en"}
+{"premise": "今天在北京几乎没有它的踪迹。", "hypothesis": "你仍然可以看到一大堆。", "label": "contradiction", "lang": "zh"}
+{"premise": "然后el abuelo会说，Pues que recen y se acuesten（嗯，让他们祈祷，然后上床睡觉）。", "hypothesis": "我们应该在我们睡觉前祷告。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "然而，在现代法国小说中，关于军事经验，人们可能会发现一个士兵向他的伙伴，艾伦斯（Allons, les gars求婚。", "hypothesis": "法国小说都是关于食物和浪漫的。", "label": "contradiction", "lang": "zh"}
+{"premise": "排放有助于汞在水中的沉积。", "hypothesis": "汞排放完全不会影响水质。", "label": "contradiction", "lang": "zh"}
+{"premise": "周三，克林顿选择谈论一个不同的行业。", "hypothesis": "克林顿拒绝谈话。", "label": "contradiction", "lang": "zh"}
+{"premise": "uh-huh you don't feel as though that that's a decision you're comfortable with because", "hypothesis": "You are comfortable with that decision.", "label": "contradiction", "lang": "en"}
+{"premise": "3. The call was placed from a pay phone in Terminal C (between the screening checkpoint and United 175's boarding gate).", "hypothesis": "The phone call was for a large pepperoni pizza.", "label": "not_contradiction", "lang": "en"}
+{"premise": "奥格尔诅咒着，猛拧着摆脱了它。", "hypothesis": "奥格尔一直盯着它，没有移动。", "label": "contradiction", "lang": "zh"}
+{"premise": "His sense of good fortune helped him to be the most beloved dean ever to serve at our law school.", "hypothesis": "We've never had a good dean at our law school.", "label": "contradiction", "lang": "en"}
+{"premise": "在听说营地将要关闭时，他和其他人前往坎大哈附近的Al Faruq营地，在那里他们接受了更多培训。", "hypothesis": "坎大哈附近没有任何营地。", "label": "contradiction", "lang": "zh"}
+{"premise": "查韦斯的案例反映了科罗拉多法律服务公司的调查结果，该调查报告说，全州农场的农民工经常违反联邦法律接触危险农药。", "hypothesis": "查韦斯的案件赞同科罗拉多法律服务。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "The largest bay on the northwest coast makes a fine harbor, but both the water and the beach can be dirty.", "hypothesis": "The water and the beach are always clean.", "label": "contradiction", "lang": "en"}
+{"premise": "然而，如果我将胡德的RCA建筑与格罗皮乌斯的泛美（现在的MetLife）航空大厦进行比较，谁是更有创意的设计师是毫无疑问的。", "hypothesis": "胡德的RCA大楼与格罗皮乌斯的泛美航空公司大楼对比", "label": "not_contradiction", "lang": "zh"}
+{"premise": "I'm uh, Chief Master Sergeant, retired, as Rick said.", "hypothesis": "I retired in 2002.", "label": "not_contradiction", "lang": "en"}
+{"premise": "The arabesques and curlicues of the moldings and architectural ornaments in a French salon mirrored the flouncing ribbons that adorned the women's dresses and the frills of the men's shirts.", "hypothesis": "The women's dresses were very plain.", "label": "contradiction", "lang": "en"}
+{"premise": "The second tower houses the infinitely more boisterous, modern Toronto Stock Exchange.", "hypothesis": "There is just one tower.", "label": "contradiction", "lang": "en"}
+{"premise": "no they're still they're still on tour they've been touring since late sixties", "hypothesis": "They recently ended their tour.", "label": "contradiction", "lang": "en"}
+{"premise": "而当然，十八世纪对自由的理解的伟大典范是“宪法”和“权利法案”。", "hypothesis": "宪法保存在真空中。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "i know everybody's i mean everybody's always busy and worried and so many problems people don't just sit down and you know just talk and know everything's going to be okay", "hypothesis": "All I see are people sitting and talking about their problems.", "label": "contradiction", "lang": "en"}
+{"premise": "If we keep our prices low, we need to come to you, our audience members, to ask for a small contribution in order to help us meet this mission.", "hypothesis": "In order to keep our ticket prices under $10, we would need all of our audience members to donate $25.", "label": "not_contradiction", "lang": "en"}
+{"premise": "嗯，不，我住在校外", "hypothesis": "我住在离校园不远的地方。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "考虑到不能平移，交叉阴影梯形部分是邮件市场的福利损失。", "hypothesis": "五角大楼的阴影帮助邮寄市场提升收益。", "label": "contradiction", "lang": "zh"}
+{"premise": "been nice talking to you", "hypothesis": "Talking to you has been very annoying.", "label": "contradiction", "lang": "en"}
+{"premise": "The Politicization of Nearly Everything (Literary Division) proceeds apace.", "hypothesis": "The Politicization of Nearly Everything has come to a stand still.", "label": "contradiction", "lang": "en"}
+{"premise": "Across from the square are the back streets of Laleli, the place to look for low-priced clothes.", "hypothesis": "Cheap clothes are for sale in Laleli if you go to the right boutiques.", "label": "not_contradiction", "lang": "en"}
+{"premise": "1In contrast to the previous section, all data in this section are from the year 1988.", "hypothesis": "ALl the data is from different years.", "label": "contradiction", "lang": "en"}
+{"premise": "However, as Mr. Levitt's daughter pointed out, it is usually found as a stretchy tie used to bind things up, as a reefed mainsail on its boom, light articles to a luggage rack, etc.--Editor.", "hypothesis": "Mr. Levitt had a daughter.", "label": "not_contradiction", "lang": "en"}
+{"premise": "The notion of having college freshmen explore the realities of these two campuses in a Diary (Seth Bisen-Hersh of MIT, Ben Trachtenberg of Yale) is very appealing--the problem arises in the execution.", "hypothesis": "It's easy for college freshman to give great detail about their campus.", "label": "contradiction", "lang": "en"}
+{"premise": "那就是钱被花掉的方式--", "hypothesis": "你永远无法知道金钱会带来什么。", "label": "contradiction", "lang": "zh"}
+{"premise": "oh i see well i like the atmosphere myself", "hypothesis": "I do not like the negative energy this place gives off.", "label": "contradiction", "lang": "en"}
+{"premise": "宝藏海滩是唯一一个可以提及的的度假胜地, 只有少数酒店伸展横跨三个沙湾。", "hypothesis": "对于参观Treasure Beach的人士没有很多酒店可供选择。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "Heave her to, and signal to them to send a boat.   A silence of astonishment fell upon the ship--of astonishment and suspicion at this sudden yielding.", "hypothesis": "The entire crew on the ship was rather shocked at the yield.", "label": "not_contradiction", "lang": "en"}
+{"premise": "是的，我能听到他的声音。", "hypothesis": "我想我听到他了。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "正如我们详细阐述的那样，平等待遇的一般原则适用于限制言论自由的论点。", "hypothesis": "所有人都同意言论自由。", "label": "contradiction", "lang": "zh"}
+{"premise": "您可以在甲板上走走，又或在加拿大十分硬币上所描绘的著名1921年冠军飞船的复制品上度过两小时的漫游。", "hypothesis": "巡航只持续17分钟。", "label": "contradiction", "lang": "zh"}
+{"premise": "We have not interviewed every knowledgeable person or found every relevant piece of paper.", "hypothesis": "Every relevant piece of paper has been found and filed.", "label": "contradiction", "lang": "en"}
+{"premise": "one time we did go that thing uh there we came back from an event and turned the lights on around the camp site and there's a skunk right", "hypothesis": "We found a goat at the camp site after we had already turned out the lights.", "label": "contradiction", "lang": "en"}
+{"premise": "And yet he has been what he has been and done what he has done in these last three years,  said she, but she said it sorrowfully now, without any of her earlier scorn.", "hypothesis": "She did not like that he had murdered many men in the past three years.", "label": "not_contradiction", "lang": "en"}
+{"premise": "不，他们仍然，仍然在旅行，他们从60年代末开始旅行。", "hypothesis": "他们最近终止了他们的旅行。", "label": "contradiction", "lang": "zh"}
+{"premise": "For Atta's travel to the Czech Republic, see ibid.", "hypothesis": "Atta never went to the Czech Republic.", "label": "contradiction", "lang": "en"}
+{"premise": "在信托基金和特别基金（信托循环基金除外）之前结束债务证券。", "hypothesis": "一些信托拥有循环基金。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "蝗虫山，啊啊，是的很伟大。", "hypothesis": "洛克斯特丘是最好的。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "By taking advantage of them all, we need not depend on any one point in the system to do the whole job.", "hypothesis": "If we extract them all we can complete the whole operation.", "label": "not_contradiction", "lang": "en"}
+{"premise": "成为价值创造者，以客户为中心的业务成果合作伙伴", "hypothesis": "专注于利润而非客户是理想之选。", "label": "contradiction", "lang": "zh"}
+{"premise": "Bishop小姐也在皇家玛丽号上，我解救了她，也一起解救了他的尊贵身份。", "hypothesis": "我还拯救了另外15个人。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "我身上会发生什么呢,Jeremy?当然了，现在，我会回来吃晚饭的，我会的。Blood向下爬进了等候船。", "hypothesis": "鲜血流入了一艘船。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "Bandar al Hazmi continued his training at Arizona Aviation with intermittent trips home to Saudi Arabia, before departing the United States for the last time in January 2000.", "hypothesis": "Bandar al Hazmi came to the US in 2000.", "label": "not_contradiction", "lang": "en"}
+{"premise": "伍德沃德是我们最有可能获得科林·鲍威尔精神的人。", "hypothesis": "伍德沃德表示从未见过科林鲍威尔，也不知道他是谁。", "label": "contradiction", "lang": "zh"}
+{"premise": "关于KSM对基地组织的援助，请参阅情报报告，2003年7月12日KSM的讯问（两份报告）。", "hypothesis": "没有任何包含KSM信息的文件。", "label": "contradiction", "lang": "zh"}
+{"premise": "So it was just really interesting.", "hypothesis": "It was interesting to me.", "label": "not_contradiction", "lang": "en"}
+{"premise": "航空业取得进展，但需要长期关注。", "hypothesis": "由于现在正在取得进展，因此没有理由进行长期变更。", "label": "contradiction", "lang": "zh"}
+{"premise": "The notion of having college freshmen explore the realities of these two campuses in a Diary (Seth Bisen-Hersh of MIT, Ben Trachtenberg of Yale) is very appealing--the problem arises in the execution.", "hypothesis": "It's hard for college freshman to keep a diary.", "label": "not_contradiction", "lang": "en"}
+{"premise": "Sullivan invokes the mantra of equal treatment as if it's an argument-ender.", "hypothesis": "Sullivan uses the mantra of equal treatment after he realizes that he is losing the argument.", "label": "not_contradiction", "lang": "en"}
+{"premise": "最近的设施可以在距离城市2小时车程的Mount Parnassus（12月至3月）找到。", "hypothesis": "Parnassus山不用驱车很久就能到。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "there are almost no traces of it in Beijing today.", "hypothesis": "You can't see much of the original paint in Beijing.", "label": "not_contradiction", "lang": "en"}
+{"premise": "That sits in shadow of Apollo's tree.", "hypothesis": "The place where it sits is in a shadow made from Apollo's tree.", "label": "not_contradiction", "lang": "en"}
+{"premise": "The immediate task is finishing the war and reuniting the nation.", "hypothesis": "We need to make sure that the war goes on for ages.", "label": "contradiction", "lang": "en"}
+{"premise": "uh we get we get uh New Years Day Good Friday Memorial Day July Fourth Labor Day uh Thanksgiving and the day after and then Christmas and a day either side of it", "hypothesis": "We don't have any holidays at all!", "label": "contradiction", "lang": "en"}
+{"premise": "The Washington Center's controllers were looking for the flight, but they were not told to look for primary radar returns.", "hypothesis": "The controllers had seen the flight earlier.", "label": "not_contradiction", "lang": "en"}
+{"premise": "这些地点都在亚特兰大附近。", "hypothesis": "所有的地点都在洛杉矶。", "label": "contradiction", "lang": "zh"}
+{"premise": "Captain Blood's glance raked the ranks of those resolute, fierce-eyed fellows, then it came to rest again on Ogle.", "hypothesis": "Captain Blood looked at other men before he looked at Ogle.", "label": "not_contradiction", "lang": "en"}
+{"premise": "我谨代表布什总统，期待着与您的未来合作。", "hypothesis": "布什总统说你应该离开。", "label": "contradiction", "lang": "zh"}
+{"premise": "The nearest facilities can be found at Mount Parnassus (from December-March), a two-hour drive from the city.", "hypothesis": "Mount Parnassus is only a 10 minute drive from the city", "label": "contradiction", "lang": "en"}
+{"premise": "Just within the doorway of the alley leading to the cabin, he ran into Miss Bishop.", "hypothesis": "He encountered Miss Bishop.", "label": "not_contradiction", "lang": "en"}
+{"premise": "9月9日，从阿富汗传来了极具戏剧性的消息。", "hypothesis": "直到十月我们才听说了来自阿富汗的消息。", "label": "contradiction", "lang": "zh"}
+{"premise": "布瑞恩在德克萨斯布兰诺，你今天过得如何？", "hypothesis": "你今天过得怎么样？", "label": "not_contradiction", "lang": "zh"}
+{"premise": "On September 9, dramatic news arrived from Afghanistan.", "hypothesis": "We heard nothing from Afghanistan until October.", "label": "contradiction", "lang": "en"}
+{"premise": "那么，他几乎已经，够年纪当她的爸爸。", "hypothesis": "他比她年轻得多。", "label": "contradiction", "lang": "zh"}
+{"premise": "You are making too much of this.", "hypothesis": "You aren't making enough.", "label": "contradiction", "lang": "en"}
+{"premise": "And today we must also have grounds for taking human equality seriously as a basic ideal of social and political justice.", "hypothesis": "We should never think of human equality when we consider social and political justice.", "label": "contradiction", "lang": "en"}
+{"premise": "uh-huh you don't feel as though that that's a decision you're comfortable with because", "hypothesis": "Why are you not comfortable with that decision?", "label": "not_contradiction", "lang": "en"}
+{"premise": "That'll cool Colonel Bishop's heat, maybe.", "hypothesis": "Colonel Bishop is already cool.", "label": "contradiction", "lang": "en"}
+{"premise": "因此, 联邦机构需要重新评估其人力资本做法, 以确保联邦金融专业人员能够应付这些新的挑战, 来支持其机构的任务和目标。", "hypothesis": "联邦特工们有足够的人力资本实践。", "label": "contradiction", "lang": "zh"}
+{"premise": "自始至终，莫里斯坚持认为他所做的事非常高尚。", "hypothesis": "莫里斯说他有不好的动机。", "label": "contradiction", "lang": "zh"}
+{"premise": "许多年轻捐助者的父母都是知道规则的长期政治活动家。", "hypothesis": "父母没有参与政治。", "label": "contradiction", "lang": "zh"}
+{"premise": "Finally, if the data you assessed are not sufficiently reliable, you should include this finding in the report and recommend that the audited entity take corrective action.", "hypothesis": "The audited entity can take corrective action to increase data reliability.", "label": "not_contradiction", "lang": "en"}
+{"premise": "rom the beginning people had to have names to identify themselves.", "hypothesis": "The beginning people were the first people to use names.", "label": "not_contradiction", "lang": "en"}
+{"premise": "旅游局试图重新命名L'Estrie地区，但即使是最激进的魁北克人也更喜欢直接的，就像类似于Cantons de l'Est 的这类翻译。", "hypothesis": "他们希望保持相同的名字，因为它太棒了。", "label": "contradiction", "lang": "zh"}
+{"premise": "如果你指望着打动毕夏普的心弦，那你就是个大傻瓜，奥格尔，我总以为你除了枪什么都没有。", "hypothesis": "奥格尔非常喜欢主教。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "This was the first time that, that had happened in 75 years, that TX legislature had voted a military unit being TX Ambassadors, so, needed TX Ambassadors.", "hypothesis": "The military unit was named TX Ambassadors.", "label": "not_contradiction", "lang": "en"}
+{"premise": "如果你获取这样一个垫子根本没有问题，呃，你去店里，他们通常会有这些垫子，各种这些锻炼身体的东西", "hypothesis": "你必须订购锻炼的东西", "label": "contradiction", "lang": "zh"}
+{"premise": "本次钢琴演奏家Lil Armstrong即兴创作了一个答案，叫做“Muskrat Ramble”；难道不对，红色？", "hypothesis": "这个即兴回答后来成为他职业生涯中最著名的作品之一。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "对，这是真的，但呃，但我认为我的意思是超越了这些，即使我是说如果你高中辍学", "hypothesis": "是的，这就是事实。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "这样的作品无疑会给人留下这样的印象：弦乐部分突然令人振奋。", "hypothesis": "给人的印像是，大火开始于绳子的部分。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "A recent Lou Harris poll indicates that over 66% of today's female business leaders have Girl Scout backgrounds.", "hypothesis": "Only 10% of female business leaders have been in Scouts.", "label": "contradiction", "lang": "en"}
+{"premise": "Prototype Engineering prototypes (virtual or Production representative prototypes Initial products physical)", "hypothesis": "Prototypes don't exist.", "label": "contradiction", "lang": "en"}
+{"premise": "岛上的宁静一直持续到1287年，阿拉贡的阿方索三世为他的贵族们的一系列屈辱而感到痛苦，他找到了入侵的借口。", "hypothesis": "这个岛从未平静过。", "label": "contradiction", "lang": "zh"}
+{"premise": "Captain Blood bared his head and bowed silently in a greeting which she returned composedly and formally.", "hypothesis": "Captain Blood completely ignored her presence and she didn't even notice him.", "label": "contradiction", "lang": "en"}
+{"premise": "uh Dances With Wolves we just saw that kind of late what else have i seen uh Silence of the Lambs", "hypothesis": "I've never seen a Kevin Costner movie.", "label": "contradiction", "lang": "en"}
+{"premise": "Worldwide asset freezes have not been adequately enforced and have been easily circumvented, often within weeks, by simple methods.", "hypothesis": "Sometimes people get away with avoiding worldwide asset freezes.", "label": "not_contradiction", "lang": "en"}
+{"premise": "在提出一个玩笑词汇的词源时，我们必须非常谨慎，它们常常是民间词源，完全没有任何东西，只能靠凭空想象。", "hypothesis": "无论何时你都可以提出一个新的词源。", "label": "contradiction", "lang": "zh"}
+{"premise": "Bishop上校已经收到我的来信通知。 Calverley突然改变了Lord Julian提到他的名字的态度，结果显示通知已经收到，并且他知道了。", "hypothesis": "当我的名字被提及时，Bishop上校和Calverly看起来很惊讶。", "label": "contradiction", "lang": "zh"}
+{"premise": "you know it's probably about twenty by i don't know twenty by six something like that and it's amazing what you can you know how many plants you can plant in there", "hypothesis": "The number of plants it can hold depends upon the types of plants you put in.", "label": "not_contradiction", "lang": "en"}
+{"premise": "Say break, steak, but bleak and streak.", "hypothesis": "Do not say break.", "label": "contradiction", "lang": "en"}
+{"premise": "他做了几年包装和文书工作。", "hypothesis": "他赚了钱把东西放进箱子里。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "虽然只能通过小道和农场小路到达海边，但是，这是个不错的远足，远离人群。", "hypothesis": "只有巨型的公路去海边。", "label": "contradiction", "lang": "zh"}
+{"premise": "For pilot's belief and the helicopter not hovering, see NYPD interview 12, Aviation (Mar.", "hypothesis": "There was no NYPD interview.", "label": "contradiction", "lang": "en"}
+{"premise": "so if we have the opportunity just because it's quieter", "hypothesis": "It's so loud that we just won't have the chance to talk.", "label": "contradiction", "lang": "en"}
+{"premise": "Even with the continuing generosity of donors, the Museum has programs and operations that go unfunded each year.", "hypothesis": "The museum always hits their funding goals.", "label": "contradiction", "lang": "en"}
+{"premise": "四面体的面积和体积的边缘旋转值的改变可被视为使几何体变形，以便以不同的方式扭曲。", "hypothesis": "四面体的体积总是相同的。", "label": "contradiction", "lang": "zh"}
+{"premise": "there, click Actress. You should find yourself...", "hypothesis": "You are listed under Actress.", "label": "not_contradiction", "lang": "en"}
+{"premise": "Plans to house parliament here after Independence came to nothing", "hypothesis": "The Parliament was never housed here.", "label": "not_contradiction", "lang": "en"}
+{"premise": "In a sense, it seems illogical that we have retained the historic spellings for Spenser's works yet use modern spellings for the titles of plays by his contemporary, William Shakespeare.", "hypothesis": "We only use the historic spellings.", "label": "contradiction", "lang": "en"}
+{"premise": "The Ming Tombs were once a staple of tours to the Great Wall at Badaling, but foreign tourists have seldom been impressed by the site, finding it dank and poorly restored.", "hypothesis": "The Ming Tombs are inaccessible regions of the Egyptian pyramids.", "label": "contradiction", "lang": "en"}
+{"premise": "媒体集群循环运行，因此目前通过媒体国王的肚子前进的鱼可能不会在那里停留很长时间。", "hypothesis": "媒体集群是线性的。", "label": "contradiction", "lang": "zh"}
+{"premise": "-一个综合的幻灯片展示各种各样的戏剧主题的图书馆，", "hypothesis": "剧院有很多幻灯片。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "It's like more simplified, like the one that she had given me was all detailed and complicated and the second one is all simple.", "hypothesis": "She gave me two different versions.", "label": "not_contradiction", "lang": "en"}
+{"premise": "Bishop小姐也在皇家玛丽号上，我解救了她，也一起解救了他的尊贵身份。", "hypothesis": "我拯救了主教小姐和大人。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "Jewish  Kol Jehudim eruvim ze bze是对于共同命运最好的表达 [所有犹太人都对彼此负责]。", "hypothesis": "犹太人不帮助人。", "label": "contradiction", "lang": "zh"}
+{"premise": "The ending theories identify ages with distinguishing features that have come to an end or will come to an end and will not recur.", "hypothesis": "The theories identify ages with features.", "label": "not_contradiction", "lang": "en"}
+{"premise": "请参阅第82页和第85页的沙滩亮点列表。", "hypothesis": "有一个关于海滩的清单。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "新到的，每件礼物都会有所不同！", "hypothesis": "每一件礼物都有一定的价值。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "But there is also intense competition among law schools to attract the best and brightest students.", "hypothesis": "Law schools don't care about the caliber of students, they just want money.", "label": "contradiction", "lang": "en"}
+{"premise": "资金筹措，说白了就是穿着华服行乞丐。", "hypothesis": "穿着得体的乞丐有时被称作资助对象。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "不是为他的侄女，不是为了他的女儿，也不是为了他自己的母亲，他会放弃他认为应该归功于他的血液。", "hypothesis": "他不会因为他女儿、母亲或侄女而放弃他认为的血统。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "没有这个解释，姓氏来自法语的信息对我来说似乎没什么兴趣。", "hypothesis": "如果没有解释，“Surnom”这个意思为姓氏的法语词并不是特别吸引人。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "The man was shot by police and then killed himself on the aircraft while it was still on the ground at the airport.", "hypothesis": "The man was on the aircraft when he died.", "label": "not_contradiction", "lang": "en"}
+{"premise": "11 However, in more difficult retrofits, down time might be impacted in a significant way.", "hypothesis": "Retrofits have no real impact on down time.", "label": "contradiction", "lang": "en"}
+{"premise": "Finally, if the data you assessed are not sufficiently reliable, you should include this finding in the report and recommend that the audited entity take corrective action.", "hypothesis": "Keeping physical receipts is one way to increase data reliability.", "label": "not_contradiction", "lang": "en"}
+{"premise": "显然，近年来，美国注册会计师协会一直将提升价值和以贸易导向视为工作重心。", "hypothesis": "美国会计师协会已经运营一年多。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "As an Inner Circle member you will receive select seating during the Convention, and special invitations to dinners, receptions and activities throughout the week.", "hypothesis": "Inner Circle members receive various perks.", "label": "not_contradiction", "lang": "en"}
+{"premise": "The hand-made cars are the city's best-loved attraction, and the system was declared a National Historic Landmark in 1964.", "hypothesis": "The cars get a lot of visitors.", "label": "not_contradiction", "lang": "en"}
+{"premise": "在1996的5月早期，CIA得到线报，本拉登会离开苏丹", "hypothesis": "中央情报局确信本·拉登将在苏丹呆上数年。", "label": "contradiction", "lang": "zh"}
+{"premise": "这看起来和我想做的完全一样。", "hypothesis": "我正在努力下周完成我的项目。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "1926年，由一位来自中国的佛教师傅修建的霹雳洞位于怡保以北六公里（4英里）处。", "hypothesis": "霹雳洞是一位佛教僧侣修建的。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "Despite their reputation for distrusting polyglots, it is by no means unusual for Englishmen to be bilingual.", "hypothesis": "Lots of people from England speak more than one language.", "label": "not_contradiction", "lang": "en"}
+{"premise": "我想，如果有错，那也是你的错。", "hypothesis": "别担心，如果有错，我会帮忙承担责备。", "label": "contradiction", "lang": "zh"}
+{"premise": "The inability to communicate was a critical element at the World Trade Center, Pentagon, and Somerset County, Pennsylvania, crash sites, where multiple agencies and multiple jurisdictions responded.", "hypothesis": "People had a hard time communicating at the World Trade Center because the power was out and phone lines were down.", "label": "not_contradiction", "lang": "en"}
+{"premise": "但在这方面他没有希望！ 她哭了。", "hypothesis": "她大声说他没有希望了。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "是的，如果我们今年没有把所有的钱都花掉，那么我们明年可能就会出现短缺，所以无论消费多么愚蠢，我们确定能把那笔钱花掉。", "hypothesis": "明年我们可能没有足够的人数。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "你去过欧洲的博物馆吗？", "hypothesis": "你参观过加拿大的博物馆吗？", "label": "contradiction", "lang": "zh"}
+{"premise": "It is critical that we educate Americans about the importance of Philanthropy that we develop a new generation of informed and committed leaders.", "hypothesis": "Philanthropy isn't important and no one should be taught about it.", "label": "contradiction", "lang": "en"}
+{"premise": "即使捐助者继续慷慨解囊，该博物馆每年仍有一些项目和运作没有资金。", "hypothesis": "这个博物馆今年短缺50万美元。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "uh whenever you buy an item especially a large purchase item it it's it's something in which you're you're paying and you've always got to add in that about ten percent tax", "hypothesis": "You never have to figure out the tax in order to determine cost.", "label": "contradiction", "lang": "en"}
+{"premise": "情报报告，，审讯Binalshibh，2002年10月1日。", "hypothesis": "Binalshibh被联邦调查局特遣部队审问。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "The landmark acquisition in December of 75 rare and important hanging scrolls and folding screens is evidence of the commitment to build the IMA's permanent collection of world art.", "hypothesis": "They didn't acquire anything new, so the museum closed.", "label": "contradiction", "lang": "en"}
+{"premise": "BLM included the fully successful performance standards", "hypothesis": "BLM didn't have any information.", "label": "contradiction", "lang": "en"}
+{"premise": "Squamish镇以其在八月举办的滚动比赛而闻名，是前往加里波第省立公园徒步旅行者的有用基地。", "hypothesis": "斯夸米什是水上踩滚木竞赛开始的地方。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "港口城镇纳夫普利翁是游览该地区的理想去处，或者一个在您的旅途中享用午餐的地方。", "hypothesis": "Nafplio是一个糟糕的基地。", "label": "contradiction", "lang": "zh"}
+{"premise": "So and let me tell you I got to the point today where I was about to quit.", "hypothesis": "I almost ended up quitting.", "label": "not_contradiction", "lang": "en"}
+{"premise": "现代女性喜欢变瘦，但他们也希望自己的力量在浪漫的情境中看起来不仅仅是情绪上的或精神上的肉体上的。", "hypothesis": "当今的女性喜欢拥有苗条身材。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "and it still scared me", "hypothesis": "It didn't scare me.", "label": "contradiction", "lang": "en"}
+{"premise": "I have never understood why the International Phonetic Alphabet is not used in English dictionaries of all sorts, but this is beyond the scope of our remarks in this review.", "hypothesis": "I have never heard of the International Phonetic Alphabet and don't know why it would be included in a dictionary.", "label": "contradiction", "lang": "en"}
+{"premise": "卢克雷修斯在两千年前争辩说，没有什么是来自什么的，而同义重复论者证明他是正确的。", "hypothesis": "同义反复论者已经证明Lecretius所提出的论据是不正确的。", "label": "contradiction", "lang": "zh"}
+{"premise": "自20世纪60年代以来发现的开放场地现在被用于球类运动，在印度文化中有着非常重要，但人们所知甚少的仪式目的。", "hypothesis": "他们自1932年以来没有再发现空地。", "label": "contradiction", "lang": "zh"}
+{"premise": "是那该死的裙子让你变成了胆小鬼。", "hypothesis": "你因为衬裙胆小了。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "Several witnesses testified about terminating representation once the alien left the country.", "hypothesis": "The witnesses would not testify.", "label": "contradiction", "lang": "en"}
+{"premise": "那个瑞典教堂与那个瑞典人教堂不太一样。", "hypothesis": "瑞典人的教堂和瑞典教堂是一样的。", "label": "contradiction", "lang": "zh"}
+{"premise": "尽管如果你对美国政治有兴趣，它可以帮助你，但是让你听水门事件磁带或在外交上采访尼克松的节目也会同样很有意思。", "hypothesis": "水门事件的磁带从未公之于众。", "label": "contradiction", "lang": "zh"}
+{"premise": "在1996的5月早期，CIA得到线报，本拉登会离开苏丹", "hypothesis": "中情局认为本拉登早在五月就会离开苏丹。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "My intuition, of course, has a very specific basis-you are a person who cares, as demonstrated by your annual stewardship donation to your parish.", "hypothesis": "Your donation of $2000 shows you're a nice person.", "label": "not_contradiction", "lang": "en"}
+{"premise": "KSM, who had been indicted in January 1996 for his role in the Manila air plot, was seen primarily as another freelance terrorist, associated with Ramzi Yousef.", "hypothesis": "KSM was a terrorist associated with Ramzi Yousef.", "label": "not_contradiction", "lang": "en"}
+{"premise": "how would you do aerobics", "hypothesis": "I'm interested in aerobics because I need some cardiovascular activity.", "label": "not_contradiction", "lang": "en"}
+{"premise": "President Kennedy says to the pilots, says, Gentlemen you take good pictures.", "hypothesis": "Kennedy talked to the pilots.", "label": "not_contradiction", "lang": "en"}
+{"premise": "查韦斯的案例反映了科罗拉多法律服务公司的调查结果，该调查报告说，全州农场的农民工经常违反联邦法律接触危险农药。", "hypothesis": "查韦斯的案件涉及茶党。", "label": "contradiction", "lang": "zh"}
+{"premise": "The roadless Na Pali Coast on the heavenly north shore is one of the world's most challenging and majestic seaside hikes (see page 71).", "hypothesis": "The Na Pali Coast can be a challenging hike", "label": "not_contradiction", "lang": "en"}
+{"premise": "在科学发表的这项研究，通过记录第一个成功的功能性心脏细胞移植到动物模型中来表明取得了进展。", "hypothesis": "心脏细胞可以移植到动物体内。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "This question is about the etiquette of having a love affair with a macroeconomist.", "hypothesis": "The question is related to driving a truck.", "label": "contradiction", "lang": "en"}
+{"premise": "不建议禁止这些主题，只是即使经过了二十多年的文化适应，也很难让外国人辨别出很多关于他们的有趣事物。", "hypothesis": "这些议题对外人来说很难理解。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "grantsmanship a form of panhandling in which the participants are very well dressed.", "hypothesis": "Grantsmanship used to be more popular in the nineteenth century.", "label": "not_contradiction", "lang": "en"}
+{"premise": "One of the great interiors of this period is the main living space of the Tugendhat House, designed by Mies Van der Rohe in 1928.", "hypothesis": "Mies Van der Rohe designed the Tugendhat House.", "label": "not_contradiction", "lang": "en"}
+{"premise": "The deleteriously loaded term elaborate scheme popped into the hearings with Representative Jack Brooks' words,  ..", "hypothesis": "Jack Brooks is a politician.", "label": "not_contradiction", "lang": "en"}
+{"premise": "Some 1,400 years before the Palace of Estei was erected, Milreu was also the large country house of an eminent person.", "hypothesis": "Milreu was 10 miles from anything.", "label": "not_contradiction", "lang": "en"}
+{"premise": "在利雅得，他告诉他的兄弟们他一直在车臣参加圣战。", "hypothesis": "他的家庭里有七个姐妹并且没有一个兄弟。", "label": "contradiction", "lang": "zh"}
+{"premise": "In fact, it was the flashpoint for protests and riots during the busing controversy in the 1970s.", "hypothesis": "There were protests in the 70's.", "label": "not_contradiction", "lang": "en"}
+{"premise": "尽管经过了两年的调查，联邦调查局还是找不到同事，也无法确定他的真实身份。", "hypothesis": "联邦调查局找出了他是谁，并将他投入监狱。", "label": "contradiction", "lang": "zh"}
+{"premise": "所以如果我们有机会，只因为它更安静。", "hypothesis": "噪音太大了，我们根本没有机会交谈。", "label": "contradiction", "lang": "zh"}
+{"premise": "使用这八种简单的技巧，您可以在舒适的家中制作新闻故事。", "hypothesis": "如果您遵循一些简单的技巧，您可以从任何位置撰写新闻报道。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "I was reporting to a certain place in Del Rio, then I had to go to Laughlin Air Force Base, which had just re-opened.", "hypothesis": "The Laughlin Air Force Base has always stayed open.", "label": "contradiction", "lang": "en"}
+{"premise": "怎么样？她突然惊讶地问他。", "hypothesis": "她突然对谈话很有兴趣。", "label": "not_contradiction", "lang": "zh"}
+{"premise": "这一时期的一个伟大的室内设计是由密斯·凡·德·罗于1928年设计的Tugendhat House的主要居住空间。", "hypothesis": "Mies Van der Rohe设计了图根哈特别墅。", "label": "not_contradiction", "lang": "zh"}

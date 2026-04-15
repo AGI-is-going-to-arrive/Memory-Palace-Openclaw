@@ -1,0 +1,10 @@
+{"session_group": "m1_boost", "fixture_id": "__session_anchor__", "uri": "personal://session-anchor", "content": "刚才在讨论饮食习惯和碳水控制的话题，周末允许自由餐", "priority": 0}
+{"session_group": "m2_override", "fixture_id": "mnc_research_002", "uri": "research://product-x-analysis", "content": "User was comparing Product X with Transformer-based memory architectures and attention mechanisms", "priority": 0}
+{"session_group": "m_smoke", "fixture_id": "mnc_project_001", "uri": "project://auth-decisions", "content": "刚才讨论了认证服务的架构决策，从 JWT 切换到 session cookies", "priority": 0}
+{"session_group": "m1_finance", "fixture_id": "__session_anchor_fin__", "uri": "finance://session-budget-talk", "content": "我手头有20万投资预算，想把科技股配置控制在30%，其余分散到指数和债券里。", "priority": 0}
+{"session_group": "m1_finance", "fixture_id": "mnc_finance_005", "uri": "finance://watchlist/tech-stocks", "content": "我刚看了NVDA和TSMC最近的表现，NVDA涨势很猛，TSMC也有回升，但我还是有点担心估值。", "priority": 0}
+{"session_group": "m2_personal", "fixture_id": "__session_anchor_per__", "uri": "personal://session-routine-chat", "content": "我最近早上总是起不来，想把作息调整一下，顺便学着更好地安排每天的时间。", "priority": 0}
+{"session_group": "m2_personal", "fixture_id": "mnc_personal_005", "uri": "personal://habits/morning-routine", "content": "我最近开始早起了，把运动时间也往前调整了一点，感觉状态更稳定。", "priority": 0}
+{"session_group": "m1_learning", "fixture_id": "__session_anchor_learn__", "uri": "learning://session-rust-study", "content": "Just reviewed the Rust chapter on move vs borrow semantics. Key difference: move transfers ownership (value consumed), borrow gives temporary access (&T shared, &mut T exclusive).", "priority": 0}
+{"session_group": "m2_finance", "fixture_id": "__session_anchor_fin2__", "uri": "finance://session-portfolio-review", "content": "我最近简单看了下投资组合，ETF占比有点高，债券配置是不是该再加一点？", "priority": 0}
+{"session_group": "m_smoke_2", "fixture_id": "mnc_writing_001", "uri": "writing://novel/chapter-3/notes", "content": "我觉得第三章的转折很关键，主角在冲突中的选择也让角色发展更立体。", "priority": 0}

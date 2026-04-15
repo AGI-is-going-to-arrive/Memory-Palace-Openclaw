@@ -1,0 +1,5 @@
+{"target_fixture_id": "mnc_personal_003", "new_uri": "personal://饮食禁忌", "priority": 0, "disclosure": "", "note": "CJK alias for latest diet preferences"}
+{"target_fixture_id": "mnc_research_001", "new_uri": "research://transformer-paper", "priority": 0, "disclosure": "", "note": "Short alias for Attention paper"}
+{"target_fixture_id": "mnc_personal_006", "new_uri": "personal://沟通规则", "priority": 0, "disclosure": "", "note": "CJK alias for communication policies"}
+{"target_fixture_id": "mnc_writing_011", "new_uri": "writing://小说语气指南", "priority": 0, "disclosure": "", "note": "CJK alias for novel tone guide"}
+{"target_fixture_id": "mnc_learning_001", "new_uri": "learning://rust-ownership", "priority": 0, "disclosure": "", "note": "English alias for Rust ownership notes"}

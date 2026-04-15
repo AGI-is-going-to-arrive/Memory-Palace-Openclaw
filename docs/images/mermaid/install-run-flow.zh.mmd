@@ -1,0 +1,7 @@
+flowchart TD
+    A["先装 OpenClaw 宿主"] --> B["源码仓 setup<br/>python3 scripts/openclaw_memory_palace.py setup --mode basic --profile b"]
+    B --> C["verify"]
+    C --> D["doctor"]
+    D --> E["smoke"]
+    B --> F["如果要本机 Dashboard<br/>再改走 --mode full"]
+    B --> G["如果你明确要验证 package<br/>再走本地 tgz"]

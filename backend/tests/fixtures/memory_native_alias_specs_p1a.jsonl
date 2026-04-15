@@ -1,0 +1,2 @@
+{"target_fixture_id":"mnc_personal_003","new_uri":"personal://饮食禁忌","priority":0,"disclosure":"","note":"CJK alias for latest diet preferences (CJK chars are valid path segments)"}
+{"target_fixture_id":"mnc_research_001","new_uri":"research://transformer-paper","priority":0,"disclosure":"","note":"Short alias for Attention Is All You Need paper"}

@@ -1,0 +1,40 @@
+{"id":"wgc-001","content":"user switched from Python 3.10 to Python 3.14","existing_snippet":"user prefers Python 3.10 for all projects","expected_contradiction":true}
+{"id":"wgc-002","content":"meeting moved from Tuesday to Thursday this week","existing_snippet":"weekly meeting is every Tuesday at 2pm","expected_contradiction":true}
+{"id":"wgc-003","content":"embedding dimension changed from 384 to 1024","existing_snippet":"embedding model configured with dim=384","expected_contradiction":true}
+{"id":"wgc-004","content":"user now prefers dark mode over light mode","existing_snippet":"user prefers light mode for all editors","expected_contradiction":true}
+{"id":"wgc-005","content":"reranker disabled due to latency concerns","existing_snippet":"reranker enabled and working well for quality boost","expected_contradiction":true}
+{"id":"wgc-006","content":"project deadline extended to Q3 from Q2","existing_snippet":"project deadline is end of Q2","expected_contradiction":true}
+{"id":"wgc-007","content":"switched from SQLite to PostgreSQL for production","existing_snippet":"using SQLite as primary database","expected_contradiction":true}
+{"id":"wgc-008","content":"user stopped using vim, now prefers VS Code","existing_snippet":"user primary editor is vim","expected_contradiction":true}
+{"id":"wgc-009","content":"search mode changed from keyword to hybrid","existing_snippet":"search default mode is keyword","expected_contradiction":true}
+{"id":"wgc-010","content":"team lead role transferred from Alice to Bob","existing_snippet":"Alice is the team lead for project alpha","expected_contradiction":true}
+{"id":"wgc-011","content":"用户从 macOS 切换到了 Linux 作为主力开发环境","existing_snippet":"用户使用 macOS 作为开发环境","expected_contradiction":true}
+{"id":"wgc-012","content":"Profile C 现在是默认推荐档位，不再是 Profile B","existing_snippet":"Profile B 是默认推荐的起步档位","expected_contradiction":true}
+{"id":"wgc-013","content":"incident status changed from open to resolved","existing_snippet":"incident is currently open and under investigation","expected_contradiction":true}
+{"id":"wgc-014","content":"API rate limit raised from 100 to 500 requests per minute","existing_snippet":"API rate limit is 100 requests per minute","expected_contradiction":true}
+{"id":"wgc-015","content":"user now prefers Chinese language for documentation","existing_snippet":"user prefers English for all documentation","expected_contradiction":true}
+{"id":"wgc-016","content":"added more details about the deployment pipeline","existing_snippet":"deployment pipeline uses GitHub Actions","expected_contradiction":false}
+{"id":"wgc-017","content":"updated the onboarding guide with screenshots","existing_snippet":"onboarding guide covers setup steps","expected_contradiction":false}
+{"id":"wgc-018","content":"fixed a typo in the configuration docs","existing_snippet":"configuration docs describe env variables","expected_contradiction":false}
+{"id":"wgc-019","content":"same exact meeting notes from yesterday","existing_snippet":"meeting notes: discussed roadmap and priorities","expected_contradiction":false}
+{"id":"wgc-020","content":"extended the postmortem with customer impact analysis","existing_snippet":"postmortem covers root cause and timeline","expected_contradiction":false}
+{"id":"wgc-021","content":"added troubleshooting section to embedding guide","existing_snippet":"embedding guide explains model configuration","expected_contradiction":false}
+{"id":"wgc-022","content":"duplicate of existing release checklist","existing_snippet":"release checklist: 1. run tests 2. deploy staging","expected_contradiction":false}
+{"id":"wgc-023","content":"verbatim copy of the search quality report","existing_snippet":"search quality: HR@10=0.75, MRR=0.48","expected_contradiction":false}
+{"id":"wgc-024","content":"user still prefers Python for backend work","existing_snippet":"user prefers Python for backend development","expected_contradiction":false}
+{"id":"wgc-025","content":"additional notes on reranker tuning parameters","existing_snippet":"reranker weight is set to 0.25","expected_contradiction":false}
+{"id":"wgc-026","content":"user also enjoys Go for CLI tools","existing_snippet":"user prefers Python for backend development","expected_contradiction":false}
+{"id":"wgc-027","content":"minor formatting update to the architecture doc","existing_snippet":"architecture doc describes the MCP protocol layer","expected_contradiction":false}
+{"id":"wgc-028","content":"linked related issue to the circuit breaker report","existing_snippet":"circuit breaker opened after 3 consecutive failures","expected_contradiction":false}
+{"id":"wgc-029","content":"用户补充了一些关于 onboarding 的细节","existing_snippet":"onboarding 文档描述了安装步骤","expected_contradiction":false}
+{"id":"wgc-030","content":"rephrased the same deployment pipeline summary","existing_snippet":"deployment pipeline uses CI/CD with staging env","expected_contradiction":false}
+{"id":"wgc-031","content":"user switched primary language from English to Chinese","existing_snippet":"user communicates in English","expected_contradiction":true}
+{"id":"wgc-032","content":"WAL mode rolled back to delete mode after corruption","existing_snippet":"WAL mode enabled for better concurrent access","expected_contradiction":true}
+{"id":"wgc-033","content":"embedding provider changed from Gitee AI to local Ollama","existing_snippet":"embedding provider is ai.gitee.com Qwen3-Embedding","expected_contradiction":true}
+{"id":"wgc-034","content":"compact context LLM switched from gpt-5.4 to gpt-5.4-mini","existing_snippet":"compact gist uses gpt-5.4 model","expected_contradiction":true}
+{"id":"wgc-035","content":"auto capture disabled by user preference","existing_snippet":"auto capture is enabled for all sessions","expected_contradiction":true}
+{"id":"wgc-036","content":"same database migration notes pasted again","existing_snippet":"database migration: added vitality_score column","expected_contradiction":false}
+{"id":"wgc-037","content":"added benchmark results for Profile D","existing_snippet":"benchmark results available for Profile A, B, C","expected_contradiction":false}
+{"id":"wgc-038","content":"user clarified preference: tabs for Go, spaces for Python","existing_snippet":"user prefers tabs for indentation","expected_contradiction":false}
+{"id":"wgc-039","content":"updated the risk assessment with new findings","existing_snippet":"risk assessment covers dependency and security risks","expected_contradiction":false}
+{"id":"wgc-040","content":"identical copy of the visual memory pipeline docs","existing_snippet":"visual memory supports OCR and scene analysis","expected_contradiction":false}

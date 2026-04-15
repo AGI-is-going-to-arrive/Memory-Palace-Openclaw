@@ -1,0 +1,4 @@
+# Benchmark-only dependencies (not required for production)
+# Install: pip install -r requirements-benchmark.txt
+bert-score>=0.3.13
+torch>=2.0.0
