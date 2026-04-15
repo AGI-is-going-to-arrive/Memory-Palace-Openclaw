@@ -156,7 +156,18 @@ def package_layout() -> str:
 
 
 def resolve_openclaw_binary(explicit: str | None = None) -> str | None:
-    return explicit or first_non_blank(os.getenv("OPENCLAW_BIN"), shutil.which("openclaw"))
+    candidate = explicit or first_non_blank(os.getenv("OPENCLAW_BIN"), shutil.which("openclaw"))
+    rendered = str(candidate or "").strip()
+    if not rendered:
+        return None
+    has_explicit_path_hint = (
+        any(separator in rendered for separator in ("\\", "/"))
+        or rendered.startswith(".")
+        or (len(rendered) >= 2 and rendered[1] == ":")
+    )
+    if has_explicit_path_hint:
+        return rendered
+    return shutil.which(rendered) or rendered
 
 
 @lru_cache(maxsize=8)
@@ -421,6 +432,7 @@ def detect_config_path_with_source(
     cwd: Path | None = None,
     home: Path | None = None,
     openclaw_bin: str | None = None,
+    prefer_local_workspace: bool = True,
 ) -> tuple[Path, str]:
     if explicit:
         return Path(explicit).expanduser().resolve(), "explicit"
@@ -430,12 +442,19 @@ def detect_config_path_with_source(
     candidates = candidate_config_paths(cwd=cwd, home=home)
     cwd_candidates = candidates[:2]
     home_candidates = candidates[2:]
-    for candidate in cwd_candidates:
-        if candidate.exists():
-            return candidate.resolve(), f"detected:{candidate}"
     cli_path = detect_config_path_from_openclaw(openclaw_bin=openclaw_bin)
-    if cli_path is not None:
+    if prefer_local_workspace:
+        for candidate in cwd_candidates:
+            if candidate.exists():
+                return candidate.resolve(), f"detected:{candidate}"
+        if cli_path is not None:
+            return cli_path, "openclaw config file"
+    elif cli_path is not None:
         return cli_path, "openclaw config file"
+    if not prefer_local_workspace:
+        for candidate in cwd_candidates:
+            if candidate.exists():
+                return candidate.resolve(), f"detected:{candidate}"
     for candidate in home_candidates:
         if candidate.exists():
             return candidate.resolve(), f"detected:{candidate}"
@@ -451,6 +470,74 @@ def detect_config_path(
     openclaw_bin: str | None = None,
 ) -> Path:
     return detect_config_path_with_source(
+        explicit,
+        cwd=cwd,
+        home=home,
+        openclaw_bin=openclaw_bin,
+    )[0]
+
+
+def detect_host_config_path_with_source(
+    explicit: str | None = None,
+    *,
+    cwd: Path | None = None,
+    home: Path | None = None,
+    openclaw_bin: str | None = None,
+) -> tuple[Path, str]:
+    return detect_config_path_with_source(
+        explicit,
+        cwd=cwd,
+        home=home,
+        openclaw_bin=openclaw_bin,
+        prefer_local_workspace=False,
+    )
+
+
+def detect_host_config_path(
+    explicit: str | None = None,
+    *,
+    cwd: Path | None = None,
+    home: Path | None = None,
+    openclaw_bin: str | None = None,
+) -> Path:
+    return detect_host_config_path_with_source(
+        explicit,
+        cwd=cwd,
+        home=home,
+        openclaw_bin=openclaw_bin,
+    )[0]
+
+
+def detect_setup_config_path_with_source(
+    explicit: str | None = None,
+    *,
+    cwd: Path | None = None,
+    home: Path | None = None,
+    openclaw_bin: str | None = None,
+) -> tuple[Path, str]:
+    if os.name == "nt":
+        return detect_host_config_path_with_source(
+            explicit,
+            cwd=cwd,
+            home=home,
+            openclaw_bin=openclaw_bin,
+        )
+    return detect_config_path_with_source(
+        explicit,
+        cwd=cwd,
+        home=home,
+        openclaw_bin=openclaw_bin,
+    )
+
+
+def detect_setup_config_path(
+    explicit: str | None = None,
+    *,
+    cwd: Path | None = None,
+    home: Path | None = None,
+    openclaw_bin: str | None = None,
+) -> Path:
+    return detect_setup_config_path_with_source(
         explicit,
         cwd=cwd,
         home=home,

@@ -66,7 +66,7 @@
 - 用户页只保留用户真正需要知道的结论
 - 完整命令、次数、宿主版本、跳过项统一看 [../EVALUATION.md](../EVALUATION.md)
 - 最新留档复跑已经再次确认：
-  - `openclaw plugins info memory-palace` 可以看到 plugin 已加载
+  - `openclaw plugins inspect memory-palace --json` 可以看到 plugin 已加载
   - 同一份 onboarding 文档已经验证过可以在 CLI / WebUI、未安装 / 已安装、中英文这些主分支里给出正确下一步
   - `Profile C / D` 的 repo wrapper `onboarding --apply --validate` 路径在最新留档复跑中已通过
   - 最新一轮 profile-matrix 记录里，已经复现当前实验性 `A / B / C / D + ACL` 行为
@@ -102,11 +102,12 @@
 
 平台边界也要说清：
 
-- 当前完整闭环的**真实宿主**复跑主机是 **macOS**
+- 当前公开摘要对应的最新**真实宿主**完整复跑，已经包含 **Windows native**
+- 较早留档的 **macOS** 真实宿主复跑仍然保留为增量维护者证据
 - 这轮也补上了 Docker 里的 **Linux userspace** 复跑：`linux/aarch64` 和 `linux/amd64` 都已经实际跑过 `setup --profile b`、`setup --profile d`、`onboarding --profile d --strict-profile --apply --validate`
 - 仓库本身仍然提供 **Linux / Windows** 的模板和验证路径
 - 但如果你要把“现在可用”写成某台目标机器上的事实，还是应该在那个目标环境再跑一次
-- 特别是 **Windows native**，更稳的做法是在目标 Windows 主机上直接重跑同一条
+- 即使现在已经有 **Windows native** 的留档基线，如果你要把“这台目标机已经 ready”写成事实，还是建议在目标 Windows 主机上直接重跑同一条
   `setup -> verify -> doctor -> smoke` 链路
 - 更细的 Windows 验证附录属于维护者材料，不在公开用户文档集里
 
@@ -159,6 +160,7 @@
 - 真正门槛是 `provider-probe`、`verify`、`doctor`、`smoke` 这些检查在你的环境里都能成功跑完
 - 如果这些检查里还有 `warn`，更稳的说法是“已经通过，但带注意事项”，先看清告警再决定是否把环境写成 ready
 - 如果你看的正好是 package/tgz 安装验证，还要把 `smoke_mode=seeded_retrieval` 和 `stdio_capture_* / sse_*` 分开读；前者是 seeded retrieval 烟测，后者才是当前真实 capture/profile 结论
+- 如果 package/tgz 验证里刚好是重复写同一条稳定 workflow，profile block 这次没重写也不一定是错；先看 capture 有没有被处理，再看原来的 profile block 还能不能正常读
 
 ---
 

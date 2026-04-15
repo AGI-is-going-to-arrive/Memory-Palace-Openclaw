@@ -906,7 +906,7 @@ def preview_provider_probe_status(
     if normalized_transport not in TRANSPORT_VALUES:
         raise ValueError(f"Unsupported transport: {transport}")
 
-    config_path, _ = detect_config_path_with_source(config)
+    config_path, _ = detect_setup_config_path_with_source(config)
     setup_root_path = (
         Path(setup_root_value).expanduser().resolve()
         if setup_root_value
@@ -1262,7 +1262,7 @@ def build_onboarding_report(
     if normalized_transport not in TRANSPORT_VALUES:
         raise ValueError(f"Unsupported transport: {transport}")
 
-    config_path, _config_source = detect_config_path_with_source(config)
+    config_path, _config_source = detect_setup_config_path_with_source(config)
     setup_root_path = (
         Path(setup_root_value).expanduser().resolve()
         if setup_root_value

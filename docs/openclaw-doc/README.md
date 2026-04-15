@@ -156,6 +156,7 @@ flowchart TD
 - 当前 repo 不再保留 active `.github/workflows/*`
 - 公开验证口径按本机 / package / 目标环境复跑理解，不按 hosted CI 理解
 - 完整数字和复跑命令统一看 [../EVALUATION.md](../EVALUATION.md)
+- 最新公开验证基线已经包含 `2026-04-15` 的 Windows 实机复跑；package/tgz 的细结论统一去看 `../EVALUATION.md` 和 `04-TROUBLESHOOTING.md`
 - 这轮已经再次确认：
   - `openclaw plugins inspect memory-palace --json` 已能确认 plugin 已加载；有些宿主也接受 `openclaw plugins info memory-palace`
   - `openclaw skills list` 不是 bundled onboarding skill 的安装判断条件

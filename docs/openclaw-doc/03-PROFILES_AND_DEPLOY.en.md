@@ -66,7 +66,7 @@ The safest reading is to separate **user-facing proof pages** from the **full re
 - user-facing pages keep only the conclusions users actually need
 - the full commands, counts, host versions, and caveats stay in [../EVALUATION.en.md](../EVALUATION.en.md)
 - the latest recorded reruns confirm that:
-  - `openclaw plugins info memory-palace` reports the plugin as loaded
+  - `openclaw plugins inspect memory-palace --json` reports the plugin as loaded
   - the same onboarding document can drive the correct next step in CLI / WebUI, in installed / uninstalled states, in both Chinese and English
   - the repo-wrapper `Profile C / D` onboarding `--apply --validate` path passed in the latest recorded rerun
   - the latest profile-matrix record reproduced the current experimental `A / B / C / D + ACL` behavior
@@ -102,11 +102,12 @@ The safer user-facing wording is:
 
 Keep the platform boundary explicit:
 
-- the current recorded **real-host** full end-to-end rerun was executed on **macOS**
+- the latest public-summary **real-host** full end-to-end reruns now include **Windows native**
+- the earlier recorded **macOS** real-host reruns remain as additive maintainer evidence
 - this round also added recorded **Linux userspace** reruns in Docker on both `linux/aarch64` and `linux/amd64` for `setup --profile b`, `setup --profile d`, and `onboarding --profile d --strict-profile --apply --validate`
 - the repository still provides supported templates and validation paths for **Linux / Windows**
 - but if you want to state that a target machine is really ready, rerun in that target environment
-- for **Windows native** specifically, rerun the same `setup -> verify -> doctor -> smoke` chain on the target Windows host before treating it as ready
+- even with the current **Windows native** recorded baseline, rerun the same `setup -> verify -> doctor -> smoke` chain on the target Windows host before treating that specific machine as ready
 - the detailed Windows appendix is maintainer-only and is not part of the public user-doc set
 
 ---
@@ -160,6 +161,7 @@ That is also why this page keeps repeating one boundary:
 - the real threshold is that `provider-probe`, `verify`, `doctor`, and `smoke` all complete successfully in your environment
 - if one of those commands still returns `warn`, treat it as “passed with cautions”, inspect the warnings, and do not over-claim readiness
 - if you are reading the package/tgz validation path, also split `smoke_mode=seeded_retrieval` from `stdio_capture_* / sse_*`; the former is the seeded retrieval smoke, while the latter is the current real capture/profile conclusion
+- if the package/tgz validation happens to write the same stable workflow again, a profile block that stays unchanged is not automatically wrong; first check whether the capture was processed, then check whether the existing profile block is still readable
 
 ---
 

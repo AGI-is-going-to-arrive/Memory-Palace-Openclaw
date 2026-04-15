@@ -6,6 +6,7 @@ import json
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 from subprocess import CompletedProcess
 
@@ -102,6 +103,35 @@ class WindowsNativeValidationTests(unittest.TestCase):
             supported, reason = validation.phase23_e2e_supported(
                 {"OPENCLAW_CONFIG_PATH": str(config_path)}
             )
+
+        self.assertTrue(supported)
+        self.assertIn(str(config_path.resolve()), reason)
+
+    def test_phase23_e2e_supported_uses_detected_host_config_when_home_path_is_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            config_path = Path(tmp_dir) / "AppData" / "Roaming" / "OpenClaw" / "openclaw.json"
+            config_path.parent.mkdir(parents=True, exist_ok=True)
+            config_path.write_text(
+                json.dumps(
+                    {
+                        "models": {
+                            "providers": {
+                                "local": {
+                                    "baseUrl": "http://127.0.0.1:8317/v1",
+                                }
+                            }
+                        }
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            with mock.patch.object(
+                validation.installer,
+                "detect_setup_config_path_with_source",
+                return_value=(config_path.resolve(), "openclaw config file"),
+            ):
+                supported, reason = validation.phase23_e2e_supported({})
 
         self.assertTrue(supported)
         self.assertIn(str(config_path.resolve()), reason)

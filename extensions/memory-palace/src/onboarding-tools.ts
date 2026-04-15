@@ -251,11 +251,11 @@ function buildGuide(locale?: string) {
         ),
       },
       d: {
-        role: localizedText(locale, "高级远程/API 客户环境路径。", "Advanced remote/customer-environment path."),
+        role: localizedText(locale, "完整高级面档位。", "Full advanced-surface profile."),
         retrieval: localizedText(
           locale,
-          "混合检索 + 远程 embedding/reranker/LLM providers。",
-          "Hybrid search + remote embedding/reranker/LLM providers.",
+          "混合检索 + 真实 embedding/reranker/LLM providers，可来自本地、内网或远程。",
+          "Hybrid search + real embedding/reranker/LLM providers, whether local, intranet, or remote.",
         ),
         llmOptional: localizedText(
           locale,
@@ -264,8 +264,8 @@ function buildGuide(locale?: string) {
         ),
         boundary: localizedText(
           locale,
-          "当 provider 所在位置或部署边界是远程而不是本地，并且你准备好 embedding、reranker、LLM 三类高级 provider 时使用。",
-          "Use when the provider location or deployment boundary is remote rather than local, and you are ready to supply embedding, reranker, and LLM providers together.",
+          "当你准备好 embedding、reranker、LLM 三类 provider，并且希望默认启用完整高级能力时使用；provider 可以是本地、内网或远程。",
+          "Use when you are ready to supply embedding, reranker, and LLM providers together and want the full advanced suite on by default. Providers can be local, intranet, or remote.",
         ),
       },
     },

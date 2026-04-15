@@ -76,11 +76,11 @@ One more boundary so the two paths do not get conflated:
 
 > **Terminology note (to avoid confusion with evaluation docs)**: Deployment templates for C enable the reranker by default. In the "real A/B/C/D runs" in `docs/EVALUATION.en.md`, `profile_c` disables the reranker as a control group (`profile_d` enables it) to observe the performance gain.
 >
-> **Additional note**: in the current repository, the effective runtime path for C/D is now aligned on `RETRIEVAL_EMBEDDING_BACKEND=api`. The templates still keep a set of `ROUTER_*` fields because many real deployments place a router / gateway in front of an OpenAI-compatible endpoint. If you do not use a unified router, just fill in `RETRIEVAL_EMBEDDING_*`, `RETRIEVAL_RERANKER_*`, and `WRITE_GUARD_LLM_* / COMPACT_GIST_LLM_*` directly.
+> **Additional note**: in the current repository, the effective runtime path for C/D is now aligned on `RETRIEVAL_EMBEDDING_BACKEND=api`. The templates still keep a set of `ROUTER_*` fields because many real deployments place a router / gateway in front of an OpenAI-compatible endpoint. If you do not use a unified router, just fill in `RETRIEVAL_EMBEDDING_*`, `RETRIEVAL_RERANKER_*`, and `WRITE_GUARD_LLM_* / COMPACT_GIST_LLM_* / INTENT_LLM_*` directly.
 >
 > **Why not force everything through router**:
 > - The `embedding`, `reranker`, and `llm` pipelines have different models, addresses, keys, and failure modes. Configuring them separately makes it easier to diagnose and replace.
-> - The repository already supports direct configuration: `RETRIEVAL_EMBEDDING_*`, `RETRIEVAL_RERANKER_*`, `WRITE_GUARD_LLM_* / COMPACT_GIST_LLM_*` can each work independently.
+> - The repository already supports direct configuration: `RETRIEVAL_EMBEDDING_*`, `RETRIEVAL_RERANKER_*`, `WRITE_GUARD_LLM_* / COMPACT_GIST_LLM_* / INTENT_LLM_*` can each work independently.
 > - The primary value of `router` is on the production side: unified entry point, model orchestration, auth, rate limiting, auditing, and future provider switching. It is a common production integration path, but not the first default for ordinary users. Ordinary users should fill `RETRIEVAL_EMBEDDING_* / RETRIEVAL_RERANKER_*` first; only add `ROUTER_*` when there is a real router / gateway in front.
 >
 >
@@ -174,7 +174,7 @@ The most commonly overlooked point in actual usage:
 - The `profile c/d` default templates request `RETRIEVAL_EMBEDDING_DIM=1024`
 - If you switch embedding providers, remember to also check this value
 - If your provider/model requires a different dimension, override it explicitly
-- The most stable approach is to write your final `RETRIEVAL_*`, `WRITE_GUARD_LLM_*`, `COMPACT_GIST_LLM_*` directly into your actual configuration file
+- The most stable approach is to write your final `RETRIEVAL_*`, `WRITE_GUARD_LLM_*`, `COMPACT_GIST_LLM_*`, and `INTENT_LLM_*` directly into your actual configuration file
 
 Many embedding models support multiple output dimensions. The `provider-probe` step will auto-detect the maximum usable dimension for your specific provider and model combination.
 

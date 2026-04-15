@@ -82,11 +82,11 @@
 
 > **口径说明（避免与评测文档混淆）**：部署模板里的 C 默认开启 reranker；`docs/EVALUATION.md` 的“真实 A/B/C/D 运行”里，`profile_c` 作为对照组会关闭 reranker（`profile_d` 才开启），用于观测增益。
 >
-> **补充说明**：当前仓库里，C/D 的最终运行时口径已经统一成 `RETRIEVAL_EMBEDDING_BACKEND=api`。模板里仍然保留了一组 `ROUTER_*` 字段，是为了兼容“前面有 router / gateway，但最终暴露出来仍然是 OpenAI-compatible endpoint”这类常见部署形态；如果你不使用统一 router，就直接填写 `RETRIEVAL_EMBEDDING_*`、`RETRIEVAL_RERANKER_*`、`WRITE_GUARD_LLM_* / COMPACT_GIST_LLM_*` 即可。
+> **补充说明**：当前仓库里，C/D 的最终运行时口径已经统一成 `RETRIEVAL_EMBEDDING_BACKEND=api`。模板里仍然保留了一组 `ROUTER_*` 字段，是为了兼容“前面有 router / gateway，但最终暴露出来仍然是 OpenAI-compatible endpoint”这类常见部署形态；如果你不使用统一 router，就直接填写 `RETRIEVAL_EMBEDDING_*`、`RETRIEVAL_RERANKER_*`、`WRITE_GUARD_LLM_* / COMPACT_GIST_LLM_* / INTENT_LLM_*` 即可。
 >
 > **为什么不强制一切都走 router**：
 > - `embedding`、`reranker`、`llm` 三条链路的模型、地址、密钥和故障模式不同，分开配置更便于定位和替换。
-> - 当前仓库已经支持分别直配：`RETRIEVAL_EMBEDDING_*`、`RETRIEVAL_RERANKER_*`、`WRITE_GUARD_LLM_* / COMPACT_GIST_LLM_*` 均可独立工作。
+> - 当前仓库已经支持分别直配：`RETRIEVAL_EMBEDDING_*`、`RETRIEVAL_RERANKER_*`、`WRITE_GUARD_LLM_* / COMPACT_GIST_LLM_* / INTENT_LLM_*` 均可独立工作。
 > - `router` 的主要价值在生产侧：统一入口、模型编排、鉴权、限流、审计和后续 provider 切换。它是常见的生产接入方式，但不是普通用户先看的默认口径。普通用户先填 `RETRIEVAL_EMBEDDING_* / RETRIEVAL_RERANKER_*`；只有前面真的有 router / gateway 时，再补 `ROUTER_*`。
 >
 >
@@ -180,7 +180,7 @@ RETRIEVAL_RERANKER_WEIGHT=0.30                     # 推荐 0.20 ~ 0.40
 - `profile c/d` 当前默认模板会请求 `RETRIEVAL_EMBEDDING_DIM=1024`
 - 如果你切换了 embedding provider，记得一起检查这个值
 - 如果你的 provider/model 需要别的维度，就显式覆盖
-- 最稳的做法是把最终想用的 `RETRIEVAL_*`、`WRITE_GUARD_LLM_*`、`COMPACT_GIST_LLM_*` 直接写进你的实际配置文件
+- 最稳的做法是把最终想用的 `RETRIEVAL_*`、`WRITE_GUARD_LLM_*`、`COMPACT_GIST_LLM_*`、`INTENT_LLM_*` 直接写进你的实际配置文件
 
 当前更稳的公开口径是：
 

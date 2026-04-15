@@ -263,26 +263,35 @@ openclaw memory-palace smoke --json
 - 不是改 OpenClaw 源码
 - 如果你想自己管理 slot 绑定，wrapper 也支持 `--no-activate`
 
-如果你想验证 **本地打包出来的插件包**，命令链还是下面这一组：
+如果你想验证 **本地打包出来的插件包**，先从打包开始：
 
 ```bash
 cd extensions/memory-palace
 npm pack
-openclaw plugins install --dangerously-force-unsafe-install ./<generated-tgz>
-npm exec --yes --package ./<generated-tgz> memory-palace-openclaw -- setup --mode basic --profile b --transport stdio --json
-openclaw memory-palace verify --json
-openclaw memory-palace doctor --json
-openclaw memory-palace smoke --json
 ```
 
 > 如果你手里已经有受信任的 `tgz`，就直接把上面命令里的
 > `./<generated-tgz>` 替换成那个文件路径，跳过 `npm pack`。
 >
-> 这里的 `--dangerously-force-unsafe-install` 只适用于**你刚从当前仓库打出来的本地 tgz**。`Memory Palace` 会调用受信任的本地 launcher / onboarding / visual helper，`OpenClaw 2026.4.5+` 会把这种本地包默认拦下；不要把这个开关用于来源不明的第三方插件包。
+> 安装本地 `tgz` 时，先执行 `openclaw plugins install ./<generated-tgz>`。如果你这台宿主的当前版本还要求额外 trust flag，就按宿主打印出来的提示补上那一条；有些宿主当前会要求 `--dangerously-force-unsafe-install`，但不要把某一个宿主版本的额外 trust flag 写死成所有宿主都一样的公共命令。
 >
 > 这条源码仓 `npm pack` 路径当前依赖 **Bun** 和一套受支持的 **Python `3.10-3.14`**，因为扩展包的 `prepack` 会执行 `bun build`、`bun test` 和 Python 打包 wrapper。
 >
 > 当前记录在案的 **local tgz / clean-room** 路径仍然按“已验证可走”理解，但这里不再重复抄一遍 session 里的具体版本号和状态细节。更稳的理解是：如果你只是想先把插件跑起来，优先还是走前面的源码仓 `setup --mode basic/full` 路径；如果你要验证本地打包交付物，再走这里。package/tgz 的最新验证状态统一看 `docs/EVALUATION.md`。
+
+安装完成后，用包内入口完成 setup：
+
+```bash
+npm exec --yes --package ./<generated-tgz> memory-palace-openclaw -- setup --mode basic --profile b --transport stdio --json
+```
+
+然后回到稳定用户命令面签收：
+
+```bash
+openclaw memory-palace verify --json
+openclaw memory-palace doctor --json
+openclaw memory-palace smoke --json
+```
 
 ### Step 3：启动后端
 

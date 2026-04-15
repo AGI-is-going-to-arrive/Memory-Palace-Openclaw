@@ -123,8 +123,8 @@ Note:
 - This `--dangerously-force-unsafe-install` form is only for a **local tgz you just built from this repository**
 - Do not reuse it for an untrusted third-party plugin bundle
 - If you already passed this flag but still get stuck at `openclaw plugins install` on the current host version, do not immediately assume your local profile/provider configuration is wrong
-- In the current recorded `OpenClaw 2026.4.9` baseline, this local tgz path is green again; if it still fails on your machine, it is more likely a host-version difference, npm/pip network issue, or another clean-room environment difference that should be debugged on the install path itself
-- Later in the same session, the maintainer-side current-host `CLI / gateway / verify` path was also rechecked on `OpenClaw 2026.4.11`; do not misread the `2026.4.9` tgz note above as “the current host version can only be 4.9”
+- In the current recorded `OpenClaw 2026.4.14` Windows real-machine rerun, this local tgz / clean-room path is green again; if it still fails on your machine, it is more likely a host-version difference, npm/pip network issue, or another clean-room environment difference that should be debugged on the install path itself
+- But “green again” does not mean every host build no longer needs an extra trust flag; for local `tgz` installs, follow the exact hint printed by your current host build
 
 ---
 
@@ -244,7 +244,7 @@ In plain terms:
 - `doctor / smoke=warn`
   - Not unusual on an empty database, empty workspace, or fresh runtime
 
-If the result you are reading is specifically `python3 scripts/test_openclaw_memory_palace_package_install.py`, split the two stdio signals first:
+If the result you are reading is specifically `python3 scripts/test_openclaw_memory_palace_package_install.py`, split the result into separate signals first:
 
 - `smoke_status` + `smoke_mode=seeded_retrieval`
   - This only proves that a seeded durable memory is still retrievable via `search + read`
@@ -252,6 +252,15 @@ If the result you are reading is specifically `python3 scripts/test_openclaw_mem
 - `stdio_capture_verify / doctor / smoke`
   - This is the real profile/capture validation path inside the current package-install script
   - The current recorded baseline for this trio is already `pass`
+- `sse_verify / doctor / smoke`
+  - This is the real capture/profile validation path for the clean-room SSE leg
+  - The current recorded baseline for this leg is also `pass`
+
+There is one easy misread here:
+
+- If the current `stdio` or `sse` turn stores the same stable workflow again, the current implementation may deduplicate it
+- In that case the profile block does not need to be rewritten every time
+- If the capture has been processed and the existing profile block is still readable, do not force-read that as a failure
 
 If you want to resolve these `warn` results, the more effective sequence is:
 

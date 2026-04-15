@@ -1564,7 +1564,7 @@ def perform_uninstall(
     force: bool = False,
     dry_run: bool = False,
 ) -> dict[str, Any]:
-    config_path, config_path_source = detect_config_path_with_source(config)
+    config_path, config_path_source = detect_setup_config_path_with_source(config)
     setup_root_path = Path(setup_root_value).expanduser().resolve() if setup_root_value else default_setup_root()
     env_values = load_env_file(default_runtime_env_path(setup_root_path))
     warnings: list[str] = []
@@ -1921,7 +1921,7 @@ def perform_setup(
     normalized_transport = str(transport or "stdio").strip().lower() or "stdio"
     if normalized_transport not in TRANSPORT_VALUES:
         raise ValueError(f"Unsupported transport: {transport}")
-    config_path, config_path_source = detect_config_path_with_source(config)
+    config_path, config_path_source = detect_setup_config_path_with_source(config)
     setup_root_path = Path(setup_root_value).expanduser().resolve() if setup_root_value else default_setup_root()
     env_file_path = Path(env_file_value).expanduser().resolve() if env_file_value else default_runtime_env_path(setup_root_path)
     existing_env = load_env_file(env_file_path)
@@ -2415,7 +2415,7 @@ def bootstrap_status(
     setup_root_value: str | None = None,
     env_file_value: str | None = None,
 ) -> dict[str, Any]:
-    config_path, config_path_source = detect_config_path_with_source(config)
+    config_path, config_path_source = detect_setup_config_path_with_source(config)
     setup_root_path = Path(setup_root_value).expanduser().resolve() if setup_root_value else default_setup_root()
     env_file_path = Path(env_file_value).expanduser().resolve() if env_file_value else default_runtime_env_path(setup_root_path)
     env_values = load_env_file(env_file_path)
@@ -2500,7 +2500,7 @@ def resolve_bootstrap_runtime(
     setup_root_value: str | None = None,
     env_file_value: str | None = None,
 ) -> tuple[Path, str, Path, Path, dict[str, str], str, str, str]:
-    config_path, config_path_source = detect_config_path_with_source(config)
+    config_path, config_path_source = detect_setup_config_path_with_source(config)
     setup_root_path = (
         Path(setup_root_value).expanduser().resolve()
         if setup_root_value
@@ -3065,7 +3065,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     platform_name = host_platform_name()
-    config_path, config_path_source = detect_config_path_with_source(args.config)
+    config_path, config_path_source = detect_setup_config_path_with_source(args.config)
     if args.print_config_path:
         print(config_path)
         return 0

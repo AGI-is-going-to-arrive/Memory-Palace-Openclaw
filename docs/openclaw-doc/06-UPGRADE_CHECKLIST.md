@@ -88,13 +88,19 @@ openclaw doctor --fix
 ```bash
 cd extensions/memory-palace
 npm pack
-openclaw plugins install --dangerously-force-unsafe-install ./openclaw-memory-palace-<version>.tgz
+openclaw plugins install ./openclaw-memory-palace-<version>.tgz
 openclaw plugins inspect memory-palace --json
 ```
 
 有些宿主也接受 `openclaw plugins info memory-palace`，但这里统一用显式的 `inspect` 命令面。
 
-如果这里安装的是**你刚从当前仓库打出来的本地 tgz**，`OpenClaw 2026.4.5+` 需要显式带上 `--dangerously-force-unsafe-install`；否则宿主会把插件里的本地 launcher / helper 代码当成危险模式直接拦下。
+如果这里安装的是**你刚从当前仓库打出来的本地 tgz**，而当前宿主又明确提示需要额外 trust flag，就按宿主提示把同一条命令重跑一遍。
+
+更稳的理解是：
+
+- 先跑默认的 `openclaw plugins install ./...tgz`
+- 如果当前宿主明确要求 `--dangerously-force-unsafe-install`，再补
+- 不要把某个宿主版本下的一条 trust flag 写成永久公共命令
 
 再补一句边界：
 

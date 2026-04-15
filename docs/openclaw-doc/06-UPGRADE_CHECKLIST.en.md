@@ -63,7 +63,7 @@ If the host itself is broken, stop there and fix the host layer first.
 ```bash
 cd extensions/memory-palace
 npm pack
-openclaw plugins install --dangerously-force-unsafe-install ./openclaw-memory-palace-<version>.tgz
+openclaw plugins install ./openclaw-memory-palace-<version>.tgz
 openclaw plugins inspect memory-palace --json
 openclaw memory-palace verify --json
 openclaw memory-palace doctor --json
@@ -81,6 +81,13 @@ python3 scripts/openclaw_memory_palace.py upgrade --dry-run --json
 
 On Windows PowerShell, use `py -3` for those repo-wrapper dry runs.
 
-For a local `tgz` built from this repository, some host builds may still require
-`--dangerously-force-unsafe-install`.
-Do not generalize that flag to every future installation path.
+If this is a **local tgz you just built from this repository**, and the current
+host explicitly tells you to add an extra trust flag, rerun the same install
+command with exactly that flag.
+
+The safer reading is:
+
+- start with the default `openclaw plugins install ./...tgz`
+- if the current host explicitly asks for `--dangerously-force-unsafe-install`,
+  then add it
+- do not freeze one host-specific trust flag into a permanent public command

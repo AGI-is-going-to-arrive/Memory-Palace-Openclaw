@@ -44,6 +44,8 @@
 | apply（Profile C） | `py -3 scripts/openclaw_memory_palace.py onboarding --profile c --apply --validate --json` | `PASS` |
 | apply（Profile D） | `py -3 scripts/openclaw_memory_palace.py onboarding --profile d --apply --validate --json` | `PASS` |
 | Profile C / D 签收 | `openclaw memory-palace verify / doctor / smoke --json` | `PASS` |
+| local tgz / clean-room package 安装验证 | `py -3 scripts/test_openclaw_memory_palace_package_install.py` | `PASS`，`stdio` / `sse` capture 与 auto-install 都通过 |
+| Windows native validation 全量复跑 | `py -3 scripts/openclaw_memory_palace_windows_native_validation.py --profiles b,c,d --model-env <model-env> --skip-package-install --keep-artifacts` | `PASS`，`windows_native_validation_report.{json,md}` 已刷新 |
 | Windows native validation unittest | `py -3 -m unittest scripts.test_openclaw_memory_palace_windows_native_validation` | `PASS` |
 | installer 回归测试 | `py -3 -m unittest scripts.test_openclaw_memory_palace_installer` | `PASS` |
 | 扩展测试套件 | `cd extensions/memory-palace && bun test` | `488 pass / 2 skip / 0 fail` |
@@ -61,6 +63,10 @@
 - `Profile B` 仍然是最稳的默认起步档。
 - 如果 embedding + reranker + LLM 都已经 ready，`Profile D` 仍然是当前更强的推荐目标。
 - 这轮 Windows 实机已经再次确认：`A / B / C / D` 的 setup / probe / apply / sign-off 主链都能在隔离 target config 上通过。
+- 最新这份 `windows_native_validation_report.{json,md}` 里，`Profile B / C / D` 都已经写成 `PASS`。
+- 这轮也单独把 local `tgz` / clean-room package 路径又实机重跑了一次；当前记录在案的 `stdio` / `sse` capture 都是绿的。
+- 所以如果你正好看到那份 Windows native report 里的 `Package Install: skipped by flag`，不要把它误读成“这轮没验 package”；这里只是把 package-install 拆出去单独实跑了。
+- package-install 里如果重复写进去的还是同一条稳定 workflow，profile block 这次不重写，当前也不再按失败理解；更该看的，是 capture 有没有被处理，以及原来的 profile block 还能不能正常读。
 - 这轮也再次确认了未安装边界：在 plugin 真正装进宿主之前，`memory_onboarding_status / probe / apply` 不存在，不能把未安装和已安装流程揉成一条。
 - 最新这轮文案清理后，又定向复跑了 `cli-uninstalled-zh`、`cli-installed-zh`、`cli-installed-en`；所以当前中英文安装 / 已装主分支，已经有和最新版文案对齐的 Windows 证据。
 

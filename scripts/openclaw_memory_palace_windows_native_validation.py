@@ -245,6 +245,14 @@ def phase23_e2e_supported(env: Mapping[str, str]) -> tuple[bool, str]:
     explicit_config = str(env.get("OPENCLAW_CONFIG_PATH") or "").strip()
     if explicit_config:
         candidate_paths.append(Path(explicit_config).expanduser().resolve())
+    try:
+        detected_host_config, _ = installer.detect_setup_config_path_with_source(
+            openclaw_bin=str(env.get("OPENCLAW_BIN") or "").strip() or DEFAULT_OPENCLAW_BIN,
+        )
+    except Exception:
+        detected_host_config = None
+    if detected_host_config is not None and detected_host_config not in candidate_paths:
+        candidate_paths.append(detected_host_config)
     home_config = Path.home() / ".openclaw" / "openclaw.json"
     if home_config not in candidate_paths:
         candidate_paths.append(home_config)

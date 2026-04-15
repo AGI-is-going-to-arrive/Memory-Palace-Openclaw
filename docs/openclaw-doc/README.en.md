@@ -153,6 +153,7 @@ A simpler way to think about it:
 - The current repo no longer maintains active `.github/workflows/*`
 - The public verification baseline should be understood as local / package / target-environment reproduction, not as hosted CI
 - Complete numbers and reproduction commands are at [../EVALUATION.en.md](../EVALUATION.en.md)
+- The latest public baseline already includes the `2026-04-15` Windows real-machine rerun; for the package/tgz readout, use `../EVALUATION.en.md` together with `04-TROUBLESHOOTING.en.md`
 - This round reconfirmed that:
   - `openclaw plugins inspect memory-palace --json` reports the plugin as loaded; some hosts also accept `openclaw plugins info memory-palace`
   - `openclaw skills list` is not the install gate for the bundled onboarding skill

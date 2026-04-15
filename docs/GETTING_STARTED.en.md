@@ -263,26 +263,35 @@ The most commonly misunderstood boundary here:
 - It does not modify OpenClaw source code
 - If you want to manage slot binding yourself, the wrapper also supports `--no-activate`
 
-If you want to validate a **locally packaged plugin bundle**, the command chain is still the following:
+If you want to validate a **locally packaged plugin bundle**, start with the packaging step:
 
 ```bash
 cd extensions/memory-palace
 npm pack
-openclaw plugins install --dangerously-force-unsafe-install ./<generated-tgz>
-npm exec --yes --package ./<generated-tgz> memory-palace-openclaw -- setup --mode basic --profile b --transport stdio --json
-openclaw memory-palace verify --json
-openclaw memory-palace doctor --json
-openclaw memory-palace smoke --json
 ```
 
 > If you already have a trusted packaged `tgz`, replace `./<generated-tgz>`
 > in the commands above with that tarball path and skip `npm pack`.
 >
-> `--dangerously-force-unsafe-install` here is only for a **local tgz you just built from this repository**. `Memory Palace` legitimately shells out to trusted local launcher / onboarding / visual helpers, and `OpenClaw 2026.4.5+` blocks that local package by default. Do not use this flag for an untrusted third-party plugin bundle.
+> When installing a local `tgz`, start with `openclaw plugins install ./<generated-tgz>`. If your current host build rejects that first command and asks for an extra trust flag, rerun it with the exact flag the host prints out. Some hosts currently ask for `--dangerously-force-unsafe-install`, but do not turn any one host-specific trust-flag combination into a permanent universal command in the public docs.
 >
 > This source-repo `npm pack` path currently depends on **Bun** and a supported **Python `3.10-3.14`**, because the extension's `prepack` runs `bun build`, `bun test`, and the Python packaging wrapper.
 >
 > The current recorded **local tgz / clean-room** path should still be read as “validated and available,” but this page no longer repeats the session-specific version and status details inline. The safer reading is still: if your immediate goal is just to get the plugin running, prefer the source-repo `setup --mode basic/full` path first; use this package path when you specifically want to validate a locally built deliverable. The latest package/tgz status stays in `docs/EVALUATION.en.md`.
+
+After install, finish setup with the package entrypoint:
+
+```bash
+npm exec --yes --package ./<generated-tgz> memory-palace-openclaw -- setup --mode basic --profile b --transport stdio --json
+```
+
+Then return to the stable user command surface for sign-off:
+
+```bash
+openclaw memory-palace verify --json
+openclaw memory-palace doctor --json
+openclaw memory-palace smoke --json
+```
 
 ### Step 3: Start the Backend
 

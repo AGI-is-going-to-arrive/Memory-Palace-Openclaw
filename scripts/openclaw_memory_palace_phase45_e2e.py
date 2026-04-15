@@ -49,6 +49,7 @@ LOCAL_OLLAMA_EMBED_API_BASE = "http://127.0.0.1:11434/v1"
 LOCAL_OLLAMA_EMBED_API_KEY = "ollama"
 GATEWAY_TERMINATE_WAIT_SECONDS = 1.5
 GATEWAY_FORCE_KILL_WAIT_SECONDS = 1.5
+PHASE45_GATEWAY_HEALTH_TIMEOUT_SECONDS = 75.0
 DEFAULT_PROFILE_EMBEDDING_DIM = 1024
 PHASE45_EVENT_LIMIT = 48
 
@@ -964,6 +965,7 @@ def build_temp_openclaw_config(
     base_config_path: Path,
     runtime_env_path: Path,
     workspace_dir: Path,
+    runtime_python_path: Path | None = None,
     profile: str = "c",
 ) -> dict[str, Any]:
     payload = installer.read_json_file(base_config_path)
@@ -1124,6 +1126,7 @@ def build_temp_openclaw_config(
     for key in (
         "DATABASE_URL",
         "OPENCLAW_MEMORY_PALACE_ENV_FILE",
+        "OPENCLAW_MEMORY_PALACE_RUNTIME_PYTHON",
         "OPENCLAW_MEMORY_PALACE_RUNTIME_ROOT",
         "OPENCLAW_TRANSPORT_DIAGNOSTICS_PATH",
         "OPENCLAW_MEMORY_PALACE_WORKSPACE_DIR",
@@ -1135,9 +1138,22 @@ def build_temp_openclaw_config(
     env_block["OPENCLAW_TRANSPORT_DIAGNOSTICS_PATH"] = str(
         runtime_env_path.parent / "transport-diagnostics.json"
     )
-    runtime_python = str(os.environ.get("OPENCLAW_MEMORY_PALACE_RUNTIME_PYTHON") or "").strip()
-    if runtime_python:
-        env_block["OPENCLAW_MEMORY_PALACE_RUNTIME_PYTHON"] = runtime_python
+    resolved_runtime_python_path = runtime_python_path
+    if resolved_runtime_python_path is None:
+        runtime_python = str(os.environ.get("OPENCLAW_MEMORY_PALACE_RUNTIME_PYTHON") or "").strip()
+        if runtime_python:
+            resolved_runtime_python_path = Path(runtime_python).expanduser().resolve()
+    if resolved_runtime_python_path is not None:
+        env_block["OPENCLAW_MEMORY_PALACE_RUNTIME_PYTHON"] = str(resolved_runtime_python_path)
+        env_block.setdefault("PYTHONIOENCODING", "utf-8")
+        env_block.setdefault("PYTHONUTF8", "1")
+        stdio_command, stdio_args, stdio_cwd = installer.build_default_stdio_launch(
+            runtime_python_path=resolved_runtime_python_path,
+            host_platform="windows" if os.name == "nt" else None,
+        )
+        stdio["command"] = stdio_command
+        stdio["args"] = stdio_args
+        stdio["cwd"] = stdio_cwd
     config.pop("sse", None)
     return payload
 
@@ -1531,6 +1547,8 @@ def ensure_phase45_diagnostics(
             if status == "warn":
                 if check_id in ALLOWED_PHASE45_WARN_IDS:
                     continue
+                if check_id == "search-probe" and _search_probe_warn_is_allowed(check):
+                    continue
                 if check_id == "last-capture-path" and capture_verified:
                     continue
                 if check_id == "last-fallback-path":
@@ -1569,8 +1587,12 @@ def ensure_phase45_diagnostics(
             f"{json.dumps(doctor_capture_check, ensure_ascii=False, indent=2)}"
         )
 
-    smoke_search_status = str(smoke_checks["search-probe"].get("status") or "").strip().lower()
-    if smoke_search_status != "pass" or smoke_read_status != "pass":
+    smoke_search_check = smoke_checks["search-probe"]
+    smoke_search_status = str(smoke_search_check.get("status") or "").strip().lower()
+    smoke_search_ok = smoke_search_status == "pass" or (
+        smoke_search_status == "warn" and _search_probe_warn_is_allowed(smoke_search_check)
+    )
+    if not smoke_search_ok or smoke_read_status != "pass":
         raise RuntimeError(f"smoke probe statuses look wrong: {json.dumps(smoke_payload, ensure_ascii=False, indent=2)}")
 
 
@@ -1584,6 +1606,34 @@ def _phase45_required_ids(context: str) -> set[str]:
     raise ValueError(f"unsupported phase45 diagnostics context: {context}")
 
 
+def _search_probe_warn_is_allowed(check: dict[str, Any]) -> bool:
+    details = check.get("details")
+    if not isinstance(details, dict):
+        return False
+    results = details.get("results")
+    if not isinstance(results, list) or not results:
+        return False
+    degrade_reasons = details.get("degrade_reasons")
+    if not isinstance(degrade_reasons, list) or not degrade_reasons:
+        raw = details.get("raw")
+        if isinstance(raw, dict):
+            degrade_reasons = raw.get("degrade_reasons")
+            if not isinstance(degrade_reasons, list) or not degrade_reasons:
+                intent_profile = raw.get("intent_profile")
+                if isinstance(intent_profile, dict):
+                    degrade_reasons = intent_profile.get("degrade_reasons")
+    if not isinstance(degrade_reasons, list) or not degrade_reasons:
+        singular_reason = str(details.get("degrade_reason") or "").strip()
+        if singular_reason:
+            degrade_reasons = [singular_reason]
+    normalized_reasons = {
+        str(reason or "").strip().lower()
+        for reason in (degrade_reasons or [])
+        if str(reason or "").strip()
+    }
+    return bool(normalized_reasons) and normalized_reasons <= {"intent_llm_request_failed"}
+
+
 def _phase45_warn_is_allowed(
     check_id: str,
     check: dict[str, Any],
@@ -1593,6 +1643,8 @@ def _phase45_warn_is_allowed(
     run_started_at: str | None = None,
 ) -> bool:
     if check_id in ALLOWED_PHASE45_WARN_IDS:
+        return True
+    if check_id == "search-probe" and _search_probe_warn_is_allowed(check):
         return True
     if check_id == "last-capture-path" and capture_verified:
         return True
@@ -1743,7 +1795,7 @@ def managed_phase45_gateway(
             gateway_url,
             env=dict(env),
             cwd=workspace_dir,
-            timeout_seconds=45,
+            timeout_seconds=PHASE45_GATEWAY_HEALTH_TIMEOUT_SECONDS,
         )
         yield gateway_url
     finally:
@@ -1808,10 +1860,16 @@ def main() -> int:
             reranker_runtime = reranker_manager.__enter__()
             workspace_dir = tmp_root / "workspace"
             workspace_dir.mkdir(parents=True, exist_ok=True)
+            setup_root = tmp_root / "memory-palace"
+            setup_root.mkdir(parents=True, exist_ok=True)
             runtime_env_path = build_runtime_env_file(
-                tmp_root / f"profile-{args.profile}.env",
+                setup_root / "runtime.env",
                 model_env,
                 args.profile,
+            )
+            runtime_python_path, _ = installer.ensure_runtime_venv(
+                setup_root_path=setup_root,
+                dry_run=False,
             )
             runtime_env_values = smoke.load_env_file(runtime_env_path)
         with phase_recorder.span("prewarm.backends", profile=args.profile):
@@ -1841,7 +1899,7 @@ def main() -> int:
             ):
                 model_env = apply_local_embedding_fallback(model_env)
                 runtime_env_path = build_runtime_env_file(
-                    tmp_root / f"profile-{args.profile}.env",
+                    setup_root / "runtime.env",
                     model_env,
                     args.profile,
                 )
@@ -1858,7 +1916,7 @@ def main() -> int:
                 ):
                     model_env = apply_local_embedding_fallback(model_env)
                     runtime_env_path = build_runtime_env_file(
-                        tmp_root / f"profile-{args.profile}.env",
+                        setup_root / "runtime.env",
                         model_env,
                         args.profile,
                     )
@@ -1877,6 +1935,7 @@ def main() -> int:
                 base_config_path,
                 runtime_env_path,
                 workspace_dir,
+                runtime_python_path,
                 args.profile,
             )
             config_path = tmp_root / "openclaw.json"

@@ -214,6 +214,91 @@ class Phase45E2ETests(unittest.TestCase):
             run_started_at="2026-03-19T01:00:00Z",
         )
 
+    def test_ensure_phase45_diagnostics_allows_search_probe_warning_for_intent_llm_fallback(self) -> None:
+        verify_payload = {
+            "checks": [
+                {"id": "smart-extraction", "status": "pass"},
+                {"id": "reconcile-mode", "status": "pass"},
+                {
+                    "id": "last-capture-path",
+                    "status": "pass",
+                    "message": "Last capture path: core://agents/main/captured/llm-extracted/workflow/current.",
+                },
+                {"id": "last-fallback-path", "status": "pass"},
+            ],
+        }
+        doctor_payload = {
+            "checks": [
+                {"id": "smart-extraction", "status": "pass"},
+                {"id": "reconcile-mode", "status": "pass"},
+                {"id": "capture-layer-distribution", "status": "pass", "message": "llm_extracted=1"},
+                {
+                    "id": "search-probe",
+                    "status": "warn",
+                    "details": {
+                        "results": [{"path": "memory-palace/core/agents/main/profile/workflow.md"}],
+                        "degrade_reasons": ["intent_llm_request_failed"],
+                    },
+                },
+            ],
+        }
+        smoke_payload = {
+            "checks": [
+                {"id": "search-probe", "status": "pass"},
+                {"id": "read-probe", "status": "pass"},
+            ],
+        }
+
+        phase45.ensure_phase45_diagnostics(
+            verify_payload,
+            doctor_payload,
+            smoke_payload,
+            expected_capture_path="core://agents/main/captured/llm-extracted/workflow/current",
+            run_started_at="2026-03-19T01:00:00Z",
+        )
+
+    def test_ensure_phase45_diagnostics_allows_smoke_search_probe_warning_for_intent_llm_fallback(self) -> None:
+        verify_payload = {
+            "checks": [
+                {"id": "smart-extraction", "status": "pass"},
+                {"id": "reconcile-mode", "status": "pass"},
+                {
+                    "id": "last-capture-path",
+                    "status": "pass",
+                    "message": "Last capture path: core://agents/main/captured/llm-extracted/workflow/current.",
+                },
+                {"id": "last-fallback-path", "status": "pass"},
+            ],
+        }
+        doctor_payload = {
+            "checks": [
+                {"id": "smart-extraction", "status": "pass"},
+                {"id": "reconcile-mode", "status": "pass"},
+                {"id": "capture-layer-distribution", "status": "pass", "message": "llm_extracted=1"},
+            ],
+        }
+        smoke_payload = {
+            "checks": [
+                {
+                    "id": "search-probe",
+                    "status": "warn",
+                    "details": {
+                        "results": [{"path": "memory-palace/core/agents/main/profile/workflow.md"}],
+                        "degrade_reasons": ["intent_llm_request_failed"],
+                    },
+                },
+                {"id": "read-probe", "status": "pass"},
+            ],
+        }
+
+        phase45.ensure_phase45_diagnostics(
+            verify_payload,
+            doctor_payload,
+            smoke_payload,
+            expected_capture_path="core://agents/main/captured/llm-extracted/workflow/current",
+            run_started_at="2026-03-19T01:00:00Z",
+        )
+
     def test_normalize_phase45_report_status_returns_pass_for_allowed_warnings(self) -> None:
         payload = {
             "checks": [
@@ -241,6 +326,32 @@ class Phase45E2ETests(unittest.TestCase):
 
         status = phase45.normalize_phase45_report_status(
             "verify",
+            payload,
+            expected_capture_path="core://agents/main/captured/llm-extracted/workflow/current",
+            run_started_at="2026-03-19T01:00:00Z",
+        )
+
+        self.assertEqual(status, "pass")
+
+    def test_normalize_phase45_report_status_allows_search_probe_warning_for_intent_llm_fallback(self) -> None:
+        payload = {
+            "checks": [
+                {"id": "smart-extraction", "status": "pass"},
+                {"id": "reconcile-mode", "status": "pass"},
+                {"id": "capture-layer-distribution", "status": "pass", "message": "llm_extracted=1"},
+                {
+                    "id": "search-probe",
+                    "status": "warn",
+                    "details": {
+                        "results": [{"path": "memory-palace/core/agents/main/profile/workflow.md"}],
+                        "degrade_reasons": ["intent_llm_request_failed"],
+                    },
+                },
+            ],
+        }
+
+        status = phase45.normalize_phase45_report_status(
+            "doctor",
             payload,
             expected_capture_path="core://agents/main/captured/llm-extracted/workflow/current",
             run_started_at="2026-03-19T01:00:00Z",
@@ -598,6 +709,9 @@ class Phase45E2ETests(unittest.TestCase):
             tmp_root = Path(tmp_dir)
             base_config = tmp_root / "base-openclaw.json"
             runtime_env = tmp_root / "runtime.env"
+            runtime_python = tmp_root / "runtime" / "Scripts" / "python.exe"
+            runtime_python.parent.mkdir(parents=True, exist_ok=True)
+            runtime_python.write_text("", encoding="utf-8")
             workspace_dir = tmp_root / "workspace"
             workspace_dir.mkdir(parents=True, exist_ok=True)
             base_config.write_text(
@@ -637,7 +751,17 @@ class Phase45E2ETests(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            payload = phase45.build_temp_openclaw_config(base_config, runtime_env, workspace_dir)
+            with patch.object(
+                phase45.installer,
+                "build_default_stdio_launch",
+                return_value=("python.exe", ["mcp_wrapper.py"], str(tmp_root / "backend")),
+            ):
+                payload = phase45.build_temp_openclaw_config(
+                    base_config,
+                    runtime_env,
+                    workspace_dir,
+                    runtime_python,
+                )
 
         plugins = payload["plugins"]["entries"]["memory-palace"]["config"]
         self.assertEqual(payload["agents"]["defaults"]["workspace"], str(workspace_dir))
@@ -653,6 +777,10 @@ class Phase45E2ETests(unittest.TestCase):
             plugins["stdio"]["env"]["OPENCLAW_MEMORY_PALACE_ENV_FILE"],
             str(runtime_env),
         )
+        self.assertEqual(plugins["stdio"]["env"]["OPENCLAW_MEMORY_PALACE_RUNTIME_PYTHON"], str(runtime_python))
+        self.assertEqual(plugins["stdio"]["command"], "python.exe")
+        self.assertEqual(plugins["stdio"]["args"], ["mcp_wrapper.py"])
+        self.assertEqual(plugins["stdio"]["cwd"], str(tmp_root / "backend"))
         self.assertNotIn("OPENAI_API_KEY", plugins["stdio"]["env"])
         self.assertNotIn("OPENAI_MODEL", plugins["stdio"]["env"])
         self.assertNotIn("DATABASE_URL", plugins["stdio"]["env"])
@@ -674,20 +802,30 @@ class Phase45E2ETests(unittest.TestCase):
                 encoding="utf-8",
             )
             runtime_env.write_text("OPENAI_MODEL=gpt-5.4-mini\n", encoding="utf-8")
+            runtime_python = tmp_root / "runtime-python.exe"
+            runtime_python.write_text("", encoding="utf-8")
 
             with patch.dict(
                 phase45.os.environ,
                 {
-                    "OPENCLAW_MEMORY_PALACE_RUNTIME_PYTHON": "/tmp/runtime-python",
+                    "OPENCLAW_MEMORY_PALACE_RUNTIME_PYTHON": str(runtime_python),
                     "OPENCLAW_MEMORY_PALACE_RUNTIME_ROOT": "/tmp/runtime-root",
                 },
                 clear=False,
+            ), patch.object(
+                phase45.installer,
+                "build_default_stdio_launch",
+                return_value=("runtime-python", ["mcp_wrapper.py"], str(tmp_root / "backend")),
             ):
                 payload = phase45.build_temp_openclaw_config(base_config, runtime_env, workspace_dir)
 
         env_block = payload["plugins"]["entries"]["memory-palace"]["config"]["stdio"]["env"]
-        self.assertEqual(env_block["OPENCLAW_MEMORY_PALACE_RUNTIME_PYTHON"], "/tmp/runtime-python")
+        stdio = payload["plugins"]["entries"]["memory-palace"]["config"]["stdio"]
+        self.assertEqual(env_block["OPENCLAW_MEMORY_PALACE_RUNTIME_PYTHON"], str(runtime_python))
         self.assertEqual(env_block["OPENCLAW_MEMORY_PALACE_RUNTIME_ROOT"], str(tmp_root))
+        self.assertEqual(stdio["command"], "runtime-python")
+        self.assertEqual(stdio["args"], ["mcp_wrapper.py"])
+        self.assertEqual(stdio["cwd"], str(tmp_root / "backend"))
 
     def test_build_temp_openclaw_config_scrubs_inherited_stdio_runtime_paths(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -1820,6 +1958,10 @@ class Phase45E2ETests(unittest.TestCase):
         self.assertIn("--force", argv)
         self.assertNotIn("OPENCLAW_GATEWAY_URL", popen_mock.call_args.kwargs["env"])
         self.assertIn("OPENCLAW_GATEWAY_URL", wait_for_gateway.call_args.kwargs["env"])
+        self.assertEqual(
+            wait_for_gateway.call_args.kwargs["timeout_seconds"],
+            phase45.PHASE45_GATEWAY_HEALTH_TIMEOUT_SECONDS,
+        )
 
     def test_managed_phase45_gateway_omits_force_without_port_tools(self) -> None:
         gateway_process = MagicMock()

@@ -7,6 +7,7 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import openclaw_memory_palace_installer as installer
@@ -22,6 +23,8 @@ PLUGIN_ID = "memory-palace"
 DEFAULT_OPENCLAW_JSON_TIMEOUT_SECONDS = int(
     os.environ.get("OPENCLAW_MEMORY_PALACE_OPENCLAW_JSON_TIMEOUT_SEC", "180")
 )
+SETUP_VALIDATION_RETRY_STEPS = {"doctor", "smoke"}
+SETUP_VALIDATION_RETRY_DELAYS_SECONDS = (2.0, 5.0)
 
 
 def default_openclaw_bin() -> str:
@@ -339,14 +342,28 @@ def parse_args() -> argparse.Namespace:
 
 
 def resolve_config_path(explicit: str | None, *, openclaw_bin: str | None = None) -> Path:
-    return installer.detect_config_path(explicit, openclaw_bin=openclaw_bin)
+    return installer.detect_setup_config_path(explicit, openclaw_bin=openclaw_bin)
+
+
+def _normalize_openclaw_command_binary(command: list[str]) -> list[str]:
+    if not command:
+        return command
+    rendered = str(command[0] or "").strip()
+    if not rendered:
+        return command
+    if Path(rendered).stem.lower() != "openclaw":
+        return command
+    resolved = installer.resolve_openclaw_binary(rendered)
+    if not resolved:
+        return command
+    return [resolved, *command[1:]]
 
 
 def run_process(command: list[str], *, config_path: Path | None = None) -> int:
     env = os.environ.copy()
     if config_path is not None:
         env["OPENCLAW_CONFIG_PATH"] = str(config_path)
-    completed = subprocess.run(command, cwd=REPO_ROOT, env=env, check=False)
+    completed = subprocess.run(_normalize_openclaw_command_binary(command), cwd=REPO_ROOT, env=env, check=False)
     return completed.returncode
 
 
@@ -392,9 +409,10 @@ def run_openclaw_json_command(
     env = os.environ.copy()
     if config_path is not None:
         env["OPENCLAW_CONFIG_PATH"] = str(config_path)
+    normalized_command = _normalize_openclaw_command_binary(command)
     try:
         completed = subprocess.run(
-            command,
+            normalized_command,
             cwd=REPO_ROOT,
             env=env,
             text=True,
@@ -406,7 +424,7 @@ def run_openclaw_json_command(
         )
     except subprocess.TimeoutExpired as exc:
         return {
-            "command": command,
+            "command": normalized_command,
             "exit_code": 124,
             "payload": {
                 "ok": False,
@@ -423,7 +441,7 @@ def run_openclaw_json_command(
             "summary": (completed.stderr or completed.stdout or "").strip() or "command produced no JSON payload",
         }
     return {
-        "command": command,
+        "command": normalized_command,
         "exit_code": completed.returncode,
         "payload": payload,
     }
@@ -444,18 +462,28 @@ def run_setup_validation(
     overall_ok = True
     failed_step = None
     for name, command in step_specs:
-        result = run_openclaw_json_command(
-            command,
-            config_path=config_path,
-            timeout_seconds=timeout_seconds,
-        )
-        payload = result.get("payload") if isinstance(result.get("payload"), dict) else {}
-        ok = bool(result.get("exit_code") == 0 and payload.get("ok", False))
+        result: dict[str, object] | None = None
+        payload: dict[str, object] = {}
+        ok = False
+        attempts = 1 + (len(SETUP_VALIDATION_RETRY_DELAYS_SECONDS) if name in SETUP_VALIDATION_RETRY_STEPS else 0)
+        for attempt_index in range(attempts):
+            result = run_openclaw_json_command(
+                command,
+                config_path=config_path,
+                timeout_seconds=timeout_seconds,
+            )
+            payload = result.get("payload") if isinstance(result.get("payload"), dict) else {}
+            ok = bool(payload.get("ok", False))
+            if ok:
+                break
+            if name not in SETUP_VALIDATION_RETRY_STEPS or attempt_index >= attempts - 1:
+                break
+            time.sleep(float(SETUP_VALIDATION_RETRY_DELAYS_SECONDS[attempt_index]))
         steps.append(
             {
                 "name": name,
                 "ok": ok,
-                "exit_code": int(result.get("exit_code") or 0),
+                "exit_code": int(result.get("exit_code") or 0) if isinstance(result, dict) else 0,
                 "summary": str(payload.get("summary") or ""),
                 "status": str(payload.get("status") or ""),
                 "code": str(payload.get("code") or ""),
@@ -878,8 +906,8 @@ def _profile_strategy_payload(requested_profile: str) -> dict[str, object]:
                 "Strongly recommended long-term profile. Real embedding + reranker, commonly hosted locally or on a private network.",
             ),
             "d": _localized_onboarding_text(
-                "远程 API / 客户环境档位。能力强，但更偏远程边界与时延预算。",
-                "Remote API / customer-environment profile. Strong capability, but more remote-boundary and latency-budget oriented.",
+                "完整高级面档位。能力强，要求 embedding / reranker / LLM 三类 provider 都准备好。",
+                "Full advanced-surface profile. Strong capability, and assumes embedding / reranker / LLM providers are all ready.",
             ),
         }.get(normalized_profile, ""),
         "boundaries": [

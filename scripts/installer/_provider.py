@@ -672,6 +672,7 @@ def runtime_overrides_from_env(env_source: Mapping[str, str] | None = None) -> d
         ),
         "llm_model": _first_non_placeholder_override(
             env_value(env_source, "LLM_MODEL_NAME"),
+            env_value(env_source, "LLM_MODEL"),
             env_value(env_source, "INTENT_LLM_MODEL"),
             env_value(env_source, "OPENAI_MODEL"),
             env_value(env_source, "WRITE_GUARD_LLM_MODEL"),
@@ -693,6 +694,7 @@ def runtime_overrides_from_env(env_source: Mapping[str, str] | None = None) -> d
         "write_guard_llm_model": _first_non_placeholder_override(
             env_value(env_source, "WRITE_GUARD_LLM_MODEL"),
             env_value(env_source, "LLM_MODEL_NAME"),
+            env_value(env_source, "LLM_MODEL"),
             env_value(env_source, "INTENT_LLM_MODEL"),
             env_value(env_source, "OPENAI_MODEL"),
         ),
@@ -713,6 +715,7 @@ def runtime_overrides_from_env(env_source: Mapping[str, str] | None = None) -> d
         "compact_gist_llm_model": _first_non_placeholder_override(
             env_value(env_source, "COMPACT_GIST_LLM_MODEL"),
             env_value(env_source, "LLM_MODEL_NAME"),
+            env_value(env_source, "LLM_MODEL"),
             env_value(env_source, "INTENT_LLM_MODEL"),
             env_value(env_source, "OPENAI_MODEL"),
         ),
@@ -871,6 +874,7 @@ def apply_runtime_field_overrides(
     if llm_model is not None and str(llm_model).strip():
         value = str(llm_model).strip()
         data["LLM_MODEL_NAME"] = value
+        data["LLM_MODEL"] = value
         data["OPENAI_MODEL"] = value
 
     resolved_write_guard_api_base = str(write_guard_llm_api_base or llm_api_base or "").strip()
@@ -1879,6 +1883,7 @@ def prompt_for_shared_llm_values(*, features: list[str]) -> tuple[dict[str, str]
     captured = {
         "LLM_API_BASE": base,
         "LLM_API_KEY": str(api_key).strip(),
+        "LLM_MODEL": model,
         "LLM_MODEL_NAME": model,
     }
     actions = [cli_text("profile_shared_llm_action", features=feature_text)]

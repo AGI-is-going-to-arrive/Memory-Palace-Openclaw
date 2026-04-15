@@ -301,6 +301,19 @@ class InstallerTests(unittest.TestCase):
             self.assertEqual(detected, local_candidate.resolve())
             self.assertEqual(source, f"detected:{local_candidate}")
 
+    def test_detect_host_config_path_prefers_openclaw_cli_over_local_workspace_on_windows(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir, mock.patch.object(installer.os, "name", "nt"):
+            cwd = Path(tmp_dir) / "workspace"
+            home = Path(tmp_dir) / "home"
+            local_candidate = cwd / ".openclaw" / "config.json"
+            local_candidate.parent.mkdir(parents=True, exist_ok=True)
+            local_candidate.write_text("{}", encoding="utf-8")
+            cli_path = (home / "AppData" / "Roaming" / "OpenClaw" / "openclaw.json").resolve()
+            with mock.patch.object(installer, "detect_config_path_from_openclaw", return_value=cli_path):
+                detected, source = installer.detect_setup_config_path_with_source(cwd=cwd, home=home)
+            self.assertEqual(detected, cli_path)
+            self.assertEqual(source, "openclaw config file")
+
     def test_detect_config_path_uses_openclaw_cli_probe_when_candidates_missing(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
             cwd = Path(tmp_dir) / "workspace"
@@ -345,6 +358,10 @@ class InstallerTests(unittest.TestCase):
 
         self.assertEqual(detected, cli_path)
         detect_from_cli.assert_called_once_with(openclaw_bin=None)
+
+    def test_resolve_openclaw_binary_resolves_explicit_command_name(self) -> None:
+        with mock.patch.object(installer.shutil, "which", side_effect=lambda name: "/resolved/openclaw" if name == "openclaw" else None):
+            self.assertEqual(installer.resolve_openclaw_binary("openclaw"), "/resolved/openclaw")
 
     def test_detect_installed_plugin_root_accepts_prefixed_json_output(self) -> None:
         payload = {
@@ -1614,6 +1631,52 @@ class InstallerTests(unittest.TestCase):
         self.assertEqual(payload["missingFields"], [])
         self.assertEqual(payload["providers"]["embedding"]["baseUrl"], "https://embedding.example/v1")
         self.assertEqual(payload["providers"]["reranker"]["baseUrl"], "https://reranker.example/v1")
+
+    def test_preview_provider_probe_status_accepts_llm_model_alias(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_root = Path(tmp_dir)
+            config_path = tmp_root / "openclaw.json"
+            env_file = tmp_root / "runtime.env"
+            config_path.write_text("{}", encoding="utf-8")
+            env_file.write_text("", encoding="utf-8")
+
+            env_overrides = {
+                "RETRIEVAL_EMBEDDING_API_BASE": "https://embedding.example/v1",
+                "RETRIEVAL_EMBEDDING_API_KEY": "embed-secret",
+                "RETRIEVAL_EMBEDDING_MODEL": "embed-large",
+                "RETRIEVAL_EMBEDDING_DIM": "1024",
+                "RETRIEVAL_RERANKER_API_BASE": "https://reranker.example/v1",
+                "RETRIEVAL_RERANKER_API_KEY": "rerank-secret",
+                "RETRIEVAL_RERANKER_MODEL": "rerank-large",
+                "LLM_API_BASE": "https://llm.example/v1",
+                "LLM_API_KEY": "llm-secret",
+                "LLM_MODEL": "gpt-5.4-mini",
+            }
+
+            with mock.patch.dict(os.environ, env_overrides, clear=False), mock.patch.object(
+                installer,
+                "detect_config_path_with_source",
+                return_value=(config_path, "explicit"),
+            ), mock.patch.object(
+                installer,
+                "probe_profile_model_connectivity",
+                return_value=[],
+            ), mock.patch.object(
+                installer,
+                "probe_embedding_dimension_recommendation_with_retries",
+                return_value=(1024, ""),
+            ):
+                payload = installer.preview_provider_probe_status(
+                    config=str(config_path),
+                    setup_root_value=str(tmp_root),
+                    env_file_value=str(env_file),
+                    profile="d",
+                    mode="basic",
+                    transport="stdio",
+                )
+
+        self.assertEqual(payload["summaryStatus"], "pass")
+        self.assertEqual(payload["providers"]["llm"]["model"], "gpt-5.4-mini")
         self.assertEqual(payload["providers"]["llm"]["model"], "gpt-5.4-mini")
 
     def test_preview_provider_probe_status_does_not_adopt_host_llm_hints_for_profile_c_by_default(self) -> None:
@@ -5987,6 +6050,79 @@ class WrapperTests(unittest.TestCase):
         payload = json.loads(print_mock.call_args.args[0])
         self.assertFalse(payload["ok"])
         self.assertFalse(payload["validation"]["ok"])
+
+    def test_run_setup_validation_retries_transient_doctor_failure(self) -> None:
+        responses = [
+            {
+                "command": ["openclaw", "memory-palace", "verify", "--json"],
+                "exit_code": 0,
+                "payload": {"ok": True, "summary": "verify passed", "status": "pass", "code": "verify_pass"},
+            },
+            {
+                "command": ["openclaw", "memory-palace", "doctor", "--json"],
+                "exit_code": 1,
+                "payload": {"ok": False, "summary": "doctor failed", "status": "fail", "code": "doctor_fail"},
+            },
+            {
+                "command": ["openclaw", "memory-palace", "doctor", "--json"],
+                "exit_code": 0,
+                "payload": {"ok": True, "summary": "doctor completed with warnings", "status": "warn", "code": "doctor_warn"},
+            },
+            {
+                "command": ["openclaw", "memory-palace", "smoke", "--json"],
+                "exit_code": 0,
+                "payload": {"ok": True, "summary": "smoke completed with warnings", "status": "warn", "code": "smoke_warn"},
+            },
+        ]
+
+        with mock.patch.object(wrapper, "run_openclaw_json_command", side_effect=responses) as run_json, mock.patch.object(
+            wrapper.time,
+            "sleep",
+        ) as sleep_mock:
+            report = wrapper.run_setup_validation(
+                openclaw_bin="openclaw",
+                config_path=Path("/tmp/openclaw.json"),
+            )
+
+        self.assertTrue(report["ok"])
+        self.assertIsNone(report["failed_step"])
+        self.assertEqual([step["name"] for step in report["steps"]], ["verify", "doctor", "smoke"])
+        self.assertTrue(all(step["ok"] for step in report["steps"]))
+        self.assertEqual(run_json.call_count, 4)
+        sleep_mock.assert_called_once_with(wrapper.SETUP_VALIDATION_RETRY_DELAYS_SECONDS[0])
+
+    def test_run_setup_validation_trusts_payload_ok_when_host_exit_code_is_nonzero(self) -> None:
+        responses = [
+            {
+                "command": ["openclaw", "memory-palace", "verify", "--json"],
+                "exit_code": 0,
+                "payload": {"ok": True, "summary": "verify passed", "status": "pass", "code": "verify_pass"},
+            },
+            {
+                "command": ["openclaw", "memory-palace", "doctor", "--json"],
+                "exit_code": 1,
+                "payload": {"ok": True, "summary": "doctor completed with warnings", "status": "warn", "code": "doctor_warn"},
+            },
+            {
+                "command": ["openclaw", "memory-palace", "smoke", "--json"],
+                "exit_code": 1,
+                "payload": {"ok": True, "summary": "smoke completed with warnings", "status": "warn", "code": "smoke_warn"},
+            },
+        ]
+
+        with mock.patch.object(wrapper, "run_openclaw_json_command", side_effect=responses), mock.patch.object(
+            wrapper.time,
+            "sleep",
+        ) as sleep_mock:
+            report = wrapper.run_setup_validation(
+                openclaw_bin="openclaw",
+                config_path=Path("/tmp/openclaw.json"),
+            )
+
+        self.assertTrue(report["ok"])
+        self.assertIsNone(report["failed_step"])
+        self.assertEqual([step["status"] for step in report["steps"]], ["pass", "warn", "warn"])
+        sleep_mock.assert_not_called()
 
     def test_apply_profile_sh_rejects_placeholder_profile_c_template_values(self) -> None:
         if os.name == "nt":

@@ -27,6 +27,8 @@ The commands below were rerun on the current Windows validation host:
 | Profile C apply | `py -3 scripts/openclaw_memory_palace.py onboarding --profile c --apply --validate --json` | pass |
 | Profile D apply | `py -3 scripts/openclaw_memory_palace.py onboarding --profile d --apply --validate --json` | pass |
 | Profile C / D sign-off | `openclaw memory-palace verify / doctor / smoke --json` | pass after apply |
+| local tgz / clean-room package validation | `py -3 scripts/test_openclaw_memory_palace_package_install.py` | pass, including `stdio` / `sse` capture and auto-install |
+| full Windows native validation rerun | `py -3 scripts/openclaw_memory_palace_windows_native_validation.py --profiles b,c,d --model-env <model-env> --skip-package-install --keep-artifacts` | pass, with refreshed `windows_native_validation_report.{json,md}` |
 | Windows native validation unittest | `py -3 -m unittest scripts.test_openclaw_memory_palace_windows_native_validation` | pass |
 | installer regression | `py -3 -m unittest scripts.test_openclaw_memory_palace_installer` | pass |
 | extension test suite | `cd extensions/memory-palace && bun test` | `488 pass / 2 skip / 0 fail` |
@@ -43,6 +45,17 @@ The commands below were rerun on the current Windows validation host:
   current strong recommendation.
 - On this Windows host, the real-machine `A / B / C / D` path now has passing
   setup / probe / apply / sign-off evidence under isolated target configs.
+- In the latest `windows_native_validation_report.{json,md}`, `Profile B / C / D`
+  are all recorded as `PASS`.
+- This round also reran the local `tgz` / clean-room package path on the real
+  Windows host; the recorded `stdio` / `sse` capture legs are both green again.
+- So if you are reading that Windows native report and see
+  `Package Install: skipped by flag`, do not misread it as “package-install was
+  not validated in this round”; package-install was rerun separately on purpose.
+- In package-install validation, if the same stable workflow is written again,
+  a profile block that stays unchanged is no longer treated as a failure by
+  itself; the more important checks are whether the capture was processed and
+  whether the existing profile block is still readable.
 - The latest wording cleanup was rechecked through targeted doc-chat reruns for
   `cli-uninstalled-zh`, `cli-installed-zh`, and `cli-installed-en`.
 

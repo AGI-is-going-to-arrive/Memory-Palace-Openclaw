@@ -368,7 +368,12 @@ def run_agent_message(
     )
 
 
-def build_temp_openclaw_config(base_config_path: Path, runtime_env_path: Path, workspace_dir: Path) -> dict[str, Any]:
+def build_temp_openclaw_config(
+    base_config_path: Path,
+    runtime_env_path: Path,
+    workspace_dir: Path,
+    runtime_python_path: Path,
+) -> dict[str, Any]:
     payload = installer.read_json_file(base_config_path)
 
     hooks = payload.setdefault("hooks", {})
@@ -449,6 +454,17 @@ def build_temp_openclaw_config(base_config_path: Path, runtime_env_path: Path, w
         raise RuntimeError("plugins.entries.memory-palace.config.stdio.env must be an object")
     env_block["OPENCLAW_MEMORY_PALACE_ENV_FILE"] = str(runtime_env_path)
     env_block["OPENCLAW_MEMORY_PALACE_WORKSPACE_DIR"] = str(workspace_dir)
+    env_block["OPENCLAW_MEMORY_PALACE_RUNTIME_PYTHON"] = str(runtime_python_path)
+    env_block["OPENCLAW_MEMORY_PALACE_RUNTIME_ROOT"] = str(runtime_python_path.parent.parent)
+    env_block.setdefault("PYTHONIOENCODING", "utf-8")
+    env_block.setdefault("PYTHONUTF8", "1")
+    stdio_command, stdio_args, stdio_cwd = installer.build_default_stdio_launch(
+        runtime_python_path=runtime_python_path,
+        host_platform="windows" if os.name == "nt" else None,
+    )
+    stdio["command"] = stdio_command
+    stdio["args"] = stdio_args
+    stdio["cwd"] = stdio_cwd
     config.pop("sse", None)
     return payload
 
@@ -497,10 +513,18 @@ def main() -> int:
         tmp_root = Path(tempfile.mkdtemp(prefix="mp-assistant-derived-e2e-"))
         workspace_dir = tmp_root / "workspace"
         workspace_dir.mkdir(parents=True, exist_ok=True)
-        runtime_env_path = tmp_root / "profile-b.env"
+        setup_root = tmp_root / "memory-palace"
+        setup_root.mkdir(parents=True, exist_ok=True)
+        runtime_env_path = setup_root / "runtime.env"
         smoke.build_profile_env(smoke.local_native_platform_name(), "b", runtime_env_path, {})
+        runtime_python_path, _ = installer.ensure_runtime_venv(setup_root_path=setup_root, dry_run=False)
 
-        config_payload = build_temp_openclaw_config(base_config_path, runtime_env_path, workspace_dir)
+        config_payload = build_temp_openclaw_config(
+            base_config_path,
+            runtime_env_path,
+            workspace_dir,
+            runtime_python_path,
+        )
         config_path = tmp_root / "openclaw.json"
         config_path.write_text(json.dumps(config_payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 

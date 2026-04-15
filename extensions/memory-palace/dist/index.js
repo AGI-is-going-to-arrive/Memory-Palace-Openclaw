@@ -4,25 +4,43 @@ var __getProtoOf = Object.getPrototypeOf;
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
+function __accessProp(key) {
+  return this[key];
+}
+var __toESMCache_node;
+var __toESMCache_esm;
 var __toESM = (mod, isNodeMode, target) => {
+  var canCache = mod != null && typeof mod === "object";
+  if (canCache) {
+    var cache = isNodeMode ? __toESMCache_node ??= new WeakMap : __toESMCache_esm ??= new WeakMap;
+    var cached = cache.get(mod);
+    if (cached)
+      return cached;
+  }
   target = mod != null ? __create(__getProtoOf(mod)) : {};
   const to = isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target;
   for (let key of __getOwnPropNames(mod))
     if (!__hasOwnProp.call(to, key))
       __defProp(to, key, {
-        get: () => mod[key],
+        get: __accessProp.bind(mod, key),
         enumerable: true
       });
+  if (canCache)
+    cache.set(mod, to);
   return to;
 };
 var __commonJS = (cb, mod) => () => (mod || cb((mod = { exports: {} }).exports, mod), mod.exports);
+var __returnValue = (v) => v;
+function __exportSetter(name, newValue) {
+  this[name] = __returnValue.bind(null, newValue);
+}
 var __export = (target, all) => {
   for (var name in all)
     __defProp(target, name, {
       get: all[name],
       enumerable: true,
       configurable: true,
-      set: (newValue) => all[name] = () => newValue
+      set: __exportSetter.bind(all, name)
     });
 };
 var __require = /* @__PURE__ */ createRequire(import.meta.url);
@@ -6286,7 +6304,7 @@ var require_formats = __commonJS((exports) => {
   }
   var TIME = /^(\d\d):(\d\d):(\d\d(?:\.\d+)?)(z|([+-])(\d\d)(?::?(\d\d))?)?$/i;
   function getTime(strictTimeZone) {
-    return function time(str) {
+    return function time3(str) {
       const matches = TIME.exec(str);
       if (!matches)
         return false;
@@ -12020,7 +12038,7 @@ var AssertObjectSchema = custom((v) => v !== null && (typeof v === "object" || t
 var ProgressTokenSchema = union([string2(), number2().int()]);
 var CursorSchema = string2();
 var TaskCreationParamsSchema = looseObject({
-  ttl: union([number2(), _null3()]).optional(),
+  ttl: number2().optional(),
   pollInterval: number2().optional()
 });
 var TaskMetadataSchema = object2({
@@ -12174,7 +12192,8 @@ var ClientCapabilitiesSchema = object2({
   roots: object2({
     listChanged: boolean2().optional()
   }).optional(),
-  tasks: ClientTasksCapabilitySchema.optional()
+  tasks: ClientTasksCapabilitySchema.optional(),
+  extensions: record(string2(), AssertObjectSchema).optional()
 });
 var InitializeRequestParamsSchema = BaseRequestParamsSchema.extend({
   protocolVersion: string2(),
@@ -12199,7 +12218,8 @@ var ServerCapabilitiesSchema = object2({
   tools: object2({
     listChanged: boolean2().optional()
   }).optional(),
-  tasks: ServerTasksCapabilitySchema.optional()
+  tasks: ServerTasksCapabilitySchema.optional(),
+  extensions: record(string2(), AssertObjectSchema).optional()
 });
 var InitializeResultSchema = ResultSchema.extend({
   protocolVersion: string2(),
@@ -12314,6 +12334,7 @@ var ResourceSchema = object2({
   uri: string2(),
   description: optional(string2()),
   mimeType: optional(string2()),
+  size: optional(number2()),
   annotations: AnnotationsSchema.optional(),
   _meta: optional(looseObject({}))
 });
@@ -13077,6 +13098,10 @@ class Protocol {
     this._progressHandlers.clear();
     this._taskProgressTokens.clear();
     this._pendingDebouncedNotifications.clear();
+    for (const info of this._timeoutInfo.values()) {
+      clearTimeout(info.timeoutId);
+    }
+    this._timeoutInfo.clear();
     for (const controller of this._requestHandlerAbortControllers.values()) {
       controller.abort();
     }
@@ -13207,7 +13232,9 @@ class Protocol {
         await capturedTransport?.send(errorResponse);
       }
     }).catch((error2) => this._onerror(new Error(`Failed to send response: ${error2}`))).finally(() => {
-      this._requestHandlerAbortControllers.delete(request.id);
+      if (this._requestHandlerAbortControllers.get(request.id) === abortController) {
+        this._requestHandlerAbortControllers.delete(request.id);
+      }
     });
   }
   _onprogress(notification) {
@@ -14955,11 +14982,11 @@ var AUTHORIZATION_CODE_RESPONSE_TYPE = "code";
 var AUTHORIZATION_CODE_CHALLENGE_METHOD = "S256";
 function selectClientAuthMethod(clientInformation, supportedMethods) {
   const hasClientSecret = clientInformation.client_secret !== undefined;
-  if (supportedMethods.length === 0) {
-    return hasClientSecret ? "client_secret_post" : "none";
-  }
-  if ("token_endpoint_auth_method" in clientInformation && clientInformation.token_endpoint_auth_method && isClientAuthMethod(clientInformation.token_endpoint_auth_method) && supportedMethods.includes(clientInformation.token_endpoint_auth_method)) {
+  if ("token_endpoint_auth_method" in clientInformation && clientInformation.token_endpoint_auth_method && isClientAuthMethod(clientInformation.token_endpoint_auth_method) && (supportedMethods.length === 0 || supportedMethods.includes(clientInformation.token_endpoint_auth_method))) {
     return clientInformation.token_endpoint_auth_method;
+  }
+  if (supportedMethods.length === 0) {
+    return hasClientSecret ? "client_secret_basic" : "none";
   }
   if (hasClientSecret && supportedMethods.includes("client_secret_basic")) {
     return "client_secret_basic";
@@ -15070,6 +15097,7 @@ async function authInternal(provider, { serverUrl, authorizationCode, scope, res
     });
   }
   const resource = await selectResourceURL(serverUrl, provider, resourceMetadata);
+  const resolvedScope = scope || resourceMetadata?.scopes_supported?.join(" ") || provider.clientMetadata.scope;
   let clientInformation = await Promise.resolve(provider.clientInformation());
   if (!clientInformation) {
     if (authorizationCode !== undefined) {
@@ -15093,6 +15121,7 @@ async function authInternal(provider, { serverUrl, authorizationCode, scope, res
       const fullInformation = await registerClient(authorizationServerUrl, {
         metadata,
         clientMetadata: provider.clientMetadata,
+        scope: resolvedScope,
         fetchFn
       });
       await provider.saveClientInformation(fullInformation);
@@ -15135,7 +15164,7 @@ async function authInternal(provider, { serverUrl, authorizationCode, scope, res
     clientInformation,
     state,
     redirectUrl: provider.redirectUrl,
-    scope: scope || resourceMetadata?.scopes_supported?.join(" ") || provider.clientMetadata.scope,
+    scope: resolvedScope,
     resource
   });
   await provider.saveCodeVerifier(codeVerifier);
@@ -15451,7 +15480,7 @@ async function fetchToken(provider, authorizationServerUrl, { metadata, resource
     fetchFn
   });
 }
-async function registerClient(authorizationServerUrl, { metadata, clientMetadata, fetchFn }) {
+async function registerClient(authorizationServerUrl, { metadata, clientMetadata, scope, fetchFn }) {
   let registrationUrl;
   if (metadata) {
     if (!metadata.registration_endpoint) {
@@ -15466,7 +15495,10 @@ async function registerClient(authorizationServerUrl, { metadata, clientMetadata
     headers: {
       "Content-Type": "application/json"
     },
-    body: JSON.stringify(clientMetadata)
+    body: JSON.stringify({
+      ...clientMetadata,
+      ...scope !== undefined ? { scope } : {}
+    })
   });
   if (!response.ok) {
     throw await parseErrorResponse(response);
@@ -15748,7 +15780,7 @@ class StdioClientTransport {
         },
         stdio: ["pipe", "pipe", this._serverParams.stderr ?? "inherit"],
         shell: false,
-        windowsHide: process3.platform === "win32" && isElectron(),
+        windowsHide: process3.platform === "win32",
         cwd: this._serverParams.cwd
       });
       this._process.on("error", (error2) => {
@@ -15839,9 +15871,6 @@ class StdioClientTransport {
       }
     });
   }
-}
-function isElectron() {
-  return "type" in process3;
 }
 
 // src/utils.ts
@@ -18183,7 +18212,17 @@ async function runVisualEnrichmentProvider(providerName, commandConfig, requeste
   const program = command;
   const splitArgs = [...commandConfig.args ?? []];
   const safeEnv = {};
-  const ALLOWED_ENV_KEYS = ["PATH", "HOME", "TMPDIR", "LANG", "NODE_ENV"];
+  const ALLOWED_ENV_KEYS = [
+    "PATH",
+    "HOME",
+    "USERPROFILE",
+    "TMPDIR",
+    "TMP",
+    "TEMP",
+    "LANG",
+    "NODE_ENV",
+    "SystemRoot"
+  ];
   for (const key of ALLOWED_ENV_KEYS) {
     if (process.env[key])
       safeEnv[key] = process.env[key];
@@ -23019,6 +23058,9 @@ async function runLauncherCommand(layout, commandArgs, childEnv) {
     const ALLOWED_ENV_KEYS = [
       "PATH",
       "HOME",
+      "USERPROFILE",
+      "HOMEDRIVE",
+      "HOMEPATH",
       "TMPDIR",
       "TMP",
       "TEMP",
@@ -23026,6 +23068,7 @@ async function runLauncherCommand(layout, commandArgs, childEnv) {
       "NODE_ENV",
       "PYTHONPATH",
       "VIRTUAL_ENV",
+      "OPENCLAW_BIN",
       "OPENCLAW_CONFIG_PATH",
       "OPENCLAW_CONFIG",
       "OPENCLAW_STATE_DIR",
@@ -23061,6 +23104,9 @@ async function runLauncherCommand(layout, commandArgs, childEnv) {
       "XDG_CONFIG_HOME",
       "APPDATA",
       "LOCALAPPDATA",
+      "COMSPEC",
+      "ComSpec",
+      "PATHEXT",
       "SystemRoot"
     ];
     for (const key of ALLOWED_ENV_KEYS) {
@@ -23139,10 +23185,10 @@ function buildGuide(locale) {
         boundary: localizedText(locale, "签收前至少需要 embedding 与 reranker 可用；LLM 仅在你要启用写入增强和 gist 增强时才需要补齐。", "Requires working embedding and reranker settings before signoff. Add LLM settings only when you want write-guard and compact-gist assists enabled.")
       },
       d: {
-        role: localizedText(locale, "高级远程/API 客户环境路径。", "Advanced remote/customer-environment path."),
-        retrieval: localizedText(locale, "混合检索 + 远程 embedding/reranker/LLM providers。", "Hybrid search + remote embedding/reranker/LLM providers."),
+        role: localizedText(locale, "完整高级面档位。", "Full advanced-surface profile."),
+        retrieval: localizedText(locale, "混合检索 + 真实 embedding/reranker/LLM providers，可来自本地、内网或远程。", "Hybrid search + real embedding/reranker/LLM providers, whether local, intranet, or remote."),
         llmOptional: localizedText(locale, "期望启用。Profile D 把 write guard / compact gist LLM 视为完整高级路径的一部分。", "Expected. Profile D treats write guard / compact gist LLM configuration as part of the full advanced path."),
-        boundary: localizedText(locale, "当 provider 所在位置或部署边界是远程而不是本地，并且你准备好 embedding、reranker、LLM 三类高级 provider 时使用。", "Use when the provider location or deployment boundary is remote rather than local, and you are ready to supply embedding, reranker, and LLM providers together.")
+        boundary: localizedText(locale, "当你准备好 embedding、reranker、LLM 三类 provider，并且希望默认启用完整高级能力时使用；provider 可以是本地、内网或远程。", "Use when you are ready to supply embedding, reranker, and LLM providers together and want the full advanced suite on by default. Providers can be local, intranet, or remote.")
       }
     },
     providerFormats: {
@@ -23306,6 +23352,40 @@ function buildCommonArgs(paramsRecord, deps) {
   pushStringArg(args, "--env-file", pickValue(paramsRecord, "envFile", "env_file"), deps);
   return args;
 }
+function needsRuntimeDefaults(paramsRecord, deps) {
+  return !deps.readString(pickValue(paramsRecord, "mode")) || !deps.readString(pickValue(paramsRecord, "transport")) || !deps.readString(pickValue(paramsRecord, "sseUrl", "sse_url"));
+}
+async function mergeCurrentSetupDefaults(layout, paramsRecord, deps, runCommand) {
+  if (!needsRuntimeDefaults(paramsRecord, deps)) {
+    return paramsRecord;
+  }
+  const statusResult = await executeJsonCommand(layout, ["bootstrap-status", ...buildCommonArgs(paramsRecord, deps), "--json"], { ...deps, runLauncherCommand: runCommand });
+  const setup = statusResult.payload?.setup && typeof statusResult.payload.setup === "object" ? statusResult.payload.setup : null;
+  if (!setup) {
+    return paramsRecord;
+  }
+  const merged = { ...paramsRecord };
+  if (!deps.readString(pickValue(paramsRecord, "mode"))) {
+    const inheritedMode = deps.readString(pickValue(setup, "mode"));
+    if (inheritedMode) {
+      merged.mode = inheritedMode;
+    }
+  }
+  if (!deps.readString(pickValue(paramsRecord, "transport"))) {
+    const inheritedTransport = deps.readString(pickValue(setup, "transport"));
+    if (inheritedTransport) {
+      merged.transport = inheritedTransport;
+    }
+  }
+  const effectiveTransport = deps.readString(pickValue(merged, "transport")) || deps.readString(pickValue(setup, "transport"));
+  if (!deps.readString(pickValue(paramsRecord, "sseUrl", "sse_url"))) {
+    const inheritedSseUrl = deps.readString(pickValue(setup, "sseUrl", "sse_url"));
+    if (effectiveTransport === "sse" && inheritedSseUrl) {
+      merged.sseUrl = inheritedSseUrl;
+    }
+  }
+  return merged;
+}
 function collectSecretEnv(paramsRecord, deps) {
   const env = {};
   const secretMappings = [
@@ -23330,7 +23410,6 @@ function buildProviderProbeArgs(paramsRecord, deps) {
   pushStringArg(args, "--profile", pickValue(paramsRecord, "profile"), deps);
   pushStringArg(args, "--transport", pickValue(paramsRecord, "transport"), deps);
   pushStringArg(args, "--sse-url", pickValue(paramsRecord, "sseUrl", "sse_url"), deps);
-  pushStringArg(args, "--mcp-api-key", pickValue(paramsRecord, "mcpApiKey", "mcp_api_key"), deps);
   pushBooleanFlag(args, "--allow-insecure-local", pickValue(paramsRecord, "allowInsecureLocal", "allow_insecure_local"), deps);
   pushStringArg(args, "--embedding-api-base", pickValue(paramsRecord, "embeddingApiBase", "embedding_api_base"), deps);
   pushStringArg(args, "--embedding-model", pickValue(paramsRecord, "embeddingModel", "embedding_model"), deps);
@@ -23356,7 +23435,6 @@ function buildApplyArgs(paramsRecord, deps) {
   pushBooleanFlag(args, "--reconfigure", pickValue(paramsRecord, "reconfigure"), deps);
   pushBooleanFlag(args, "--no-activate", pickValue(paramsRecord, "noActivate", "no_activate"), deps);
   pushStringArg(args, "--sse-url", pickValue(paramsRecord, "sseUrl", "sse_url"), deps);
-  pushStringArg(args, "--mcp-api-key", pickValue(paramsRecord, "mcpApiKey", "mcp_api_key"), deps);
   pushBooleanFlag(args, "--allow-insecure-local", pickValue(paramsRecord, "allowInsecureLocal", "allow_insecure_local"), deps);
   pushBooleanFlag(args, "--allow-generate-remote-api-key", pickValue(paramsRecord, "allowGenerateRemoteApiKey", "allow_generate_remote_api_key"), deps);
   pushStringArg(args, "--embedding-api-base", pickValue(paramsRecord, "embeddingApiBase", "embedding_api_base"), deps);
@@ -23426,7 +23504,8 @@ function createOnboardingTools(options) {
     description: "Probe Profile C/D provider readiness from a chat flow, including embedding dimension detection and fallback-aware guidance.",
     parameters: memoryOnboardingProviderProbeSchema,
     execute: async (_toolCallId, params) => {
-      const paramsRecord = params || {};
+      const rawParamsRecord = params || {};
+      const paramsRecord = await mergeCurrentSetupDefaults(layout, rawParamsRecord, deps, runCommand);
       const locale = deps.readString(pickValue(paramsRecord, "locale")) || undefined;
       const guide = buildGuide(locale);
       const probeCmd = buildProviderProbeArgs(paramsRecord, deps);
@@ -23452,7 +23531,8 @@ function createOnboardingTools(options) {
     description: "Run Memory Palace setup directly from a chat-guided onboarding conversation and return the effective profile, fallback outcome, and next steps.",
     parameters: memoryOnboardingApplySchema,
     execute: async (_toolCallId, params) => {
-      const paramsRecord = params || {};
+      const rawParamsRecord = params || {};
+      const paramsRecord = await mergeCurrentSetupDefaults(layout, rawParamsRecord, deps, runCommand);
       const locale = deps.readString(pickValue(paramsRecord, "locale")) || undefined;
       const guide = buildGuide(locale);
       const applyCmd = buildApplyArgs(paramsRecord, deps);

@@ -11,9 +11,12 @@ import subprocess
 import sys
 import tempfile
 import time
+import unittest
+from datetime import datetime, timezone
 from urllib.request import Request, urlopen
 from pathlib import Path
 from typing import Any
+from unittest import mock
 
 import openclaw_assistant_derived_e2e as assistant_e2e
 import openclaw_memory_palace_installer as installer
@@ -73,6 +76,9 @@ EXPECTED_SMOKE_WARN_IDS = {
     "capture-layer-distribution",
     "host-plugin-split-brain",
 }
+EXPECTED_CAPTURE_VERIFY_WARN_IDS = EXPECTED_VERIFY_WARN_IDS | {"last-rule-capture-decision"}
+EXPECTED_CAPTURE_DOCTOR_WARN_IDS = EXPECTED_DOCTOR_WARN_IDS | {"last-rule-capture-decision", "search-probe"}
+EXPECTED_CAPTURE_SMOKE_WARN_IDS = EXPECTED_SMOKE_WARN_IDS | {"last-rule-capture-decision", "search-probe"}
 FORBIDDEN_TARBALL_PATH_SNIPPETS = (
     "release/frontend/.tmp/",
     "release/frontend/coverage/",
@@ -179,10 +185,21 @@ def run(
         )
     finally:
         for path in (stdout_path, stderr_path):
-            try:
-                os.unlink(path)
-            except FileNotFoundError:
-                pass
+            _unlink_temp_file(path)
+
+
+def _unlink_temp_file(path: str) -> None:
+    attempts = 5 if os.name == "nt" else 1
+    for attempt in range(attempts):
+        try:
+            os.unlink(path)
+            return
+        except FileNotFoundError:
+            return
+        except PermissionError:
+            if os.name != "nt" or attempt >= attempts - 1:
+                raise
+            time.sleep(0.05 * (attempt + 1))
 
 
 def ensure_success(result: subprocess.CompletedProcess[str], *, context: str) -> None:
@@ -315,6 +332,24 @@ def wait_for_http_ready(
 def write_json(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def utc_now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def parse_iso_timestamp(raw: str | None) -> datetime | None:
+    value = str(raw or "").strip()
+    if not value:
+        return None
+    normalized = value.replace("Z", "+00:00")
+    try:
+        parsed = datetime.fromisoformat(normalized)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
 
 
 def load_package_install_model_env() -> tuple[dict[str, str], str | None]:
@@ -528,11 +563,10 @@ def managed_capture_gateway(
         assistant_e2e.stop_gateway_process(gateway)
 
 
-def wait_for_profile_capture_marker(
+def wait_for_profile_fragment(
     *,
     env: dict[str, str],
     cwd: Path,
-    marker: str,
     expected_fragment: str,
     timeout_seconds: float = 120.0,
 ) -> tuple[str, dict[str, Any], dict[str, Any]]:
@@ -560,20 +594,6 @@ def wait_for_profile_capture_marker(
             context="openclaw verify (capture wait)",
         )
         last_verify = verify_payload
-        runtime_state = verify_payload.get("runtimeState") if isinstance(verify_payload, dict) else None
-        last_rule_decision = runtime_state.get("lastRuleCaptureDecision") if isinstance(runtime_state, dict) else None
-        decision = str(last_rule_decision.get("decision") or "").strip().lower() if isinstance(last_rule_decision, dict) else ""
-        search_payload = parse_json_output(
-            run(
-                [OPENCLAW_BIN, "memory-palace", "search", marker, "--json"],
-                env=env,
-                cwd=cwd,
-                timeout=600,
-            ),
-            context="openclaw memory-palace search (capture wait)",
-        )
-        search_results = search_payload.get("results") if isinstance(search_payload, dict) else None
-        has_marker_hit = isinstance(search_results, list) and len(search_results) > 0
         profile_memory_check = find_check(verify_payload, "profile-memory-state")
         profile_details = profile_memory_check.get("details") if isinstance(profile_memory_check, dict) else None
         candidate_paths: list[str] = []
@@ -606,11 +626,11 @@ def wait_for_profile_capture_marker(
             )
             last_payload = payload
             payload_text = str(payload.get("text") or "").strip().lower()
-            if has_marker_hit and normalized_fragment and normalized_fragment in payload_text:
+            if normalized_fragment and normalized_fragment in payload_text:
                 return candidate_path, payload, verify_payload
         time.sleep(0.5)
     raise RuntimeError(
-        "Timed out waiting for clean-room profile block capture marker.\n"
+        "Timed out waiting for clean-room profile block fragment.\n"
         f"last payload: {json.dumps(last_payload or {}, ensure_ascii=False, indent=2)}\n"
         f"last verify: {json.dumps(last_verify or {}, ensure_ascii=False, indent=2)}"
     )
@@ -622,11 +642,15 @@ def wait_for_capture_uri(
     cwd: Path,
     marker: str,
     expected_fragment: str,
+    capture_started_at: str | None = None,
     timeout_seconds: float = 120.0,
 ) -> tuple[str, dict[str, Any]]:
     deadline = time.monotonic() + max(timeout_seconds, 1.0)
     last_verify: Any = None
+    last_payload: Any = None
+    marker_lower = marker.strip().lower()
     normalized_fragment = expected_fragment.strip().lower()
+    capture_started_dt = parse_iso_timestamp(capture_started_at)
     while time.monotonic() < deadline:
         parse_json_output(
             run(
@@ -664,12 +688,47 @@ def wait_for_capture_uri(
         candidate = last_rule_decision if isinstance(last_rule_decision, dict) and str(last_rule_decision.get("uri") or "").strip() else last_capture_path
         candidate_uri = str(candidate.get("uri") or "").strip() if isinstance(candidate, dict) else ""
         candidate_details = str(candidate.get("details") or "").strip().lower() if isinstance(candidate, dict) else ""
+        candidate_at = parse_iso_timestamp(str(candidate.get("at") or "")) if isinstance(candidate, dict) else None
         decision = str(last_rule_decision.get("decision") or "").strip().lower() if isinstance(last_rule_decision, dict) else ""
-        if has_marker_hit and candidate_uri and normalized_fragment in candidate_details and decision in {"captured", "pending"}:
+        decision_ok = decision in {"captured", "pending"} if isinstance(last_rule_decision, dict) else isinstance(last_capture_path, dict)
+        if not candidate_uri or not decision_ok:
+            time.sleep(0.5)
+            continue
+        capture_result = run(
+            [OPENCLAW_BIN, "memory-palace", "get", candidate_uri, "--json"],
+            env=env,
+            cwd=cwd,
+            timeout=600,
+        )
+        if capture_result.returncode != 0:
+            combined = "\n".join(part for part in (capture_result.stdout, capture_result.stderr) if part).lower()
+            if "not found" in combined:
+                time.sleep(0.5)
+                continue
+            ensure_success(capture_result, context=f"openclaw memory-palace get {candidate_uri}")
+        capture_payload = parse_json_output(
+            capture_result,
+            context=f"openclaw memory-palace get {candidate_uri}",
+        )
+        last_payload = capture_payload
+        capture_text = str(capture_payload.get("text") or "").strip().lower()
+        marker_captured = bool(marker_lower) and (
+            marker_lower in candidate_details or marker_lower in capture_text
+        )
+        fragment_captured = bool(normalized_fragment) and (
+            normalized_fragment in candidate_details or normalized_fragment in capture_text
+        )
+        recent_capture = (
+            capture_started_dt is not None
+            and candidate_at is not None
+            and candidate_at >= capture_started_dt
+        )
+        if candidate_uri and fragment_captured and (marker_captured or has_marker_hit or recent_capture):
             return candidate_uri, verify_payload
         time.sleep(0.5)
     raise RuntimeError(
         "Timed out waiting for clean-room capture URI.\n"
+        f"last payload: {json.dumps(last_payload or {}, ensure_ascii=False, indent=2)}\n"
         f"last verify: {json.dumps(last_verify or {}, ensure_ascii=False, indent=2)}"
     )
 
@@ -740,13 +799,239 @@ def resolve_packaged_cli_entry(config_path: Path) -> Path:
     memory_entry = entries.get("memory-palace") if isinstance(entries, dict) else None
     config_block = memory_entry.get("config") if isinstance(memory_entry, dict) else None
     stdio_block = config_block.get("stdio") if isinstance(config_block, dict) else None
-    package_root = Path(str(stdio_block.get("cwd") or "")).expanduser().resolve() if isinstance(stdio_block, dict) else None
-    if package_root is None:
+    if not isinstance(stdio_block, dict):
         raise RuntimeError(f"package config missing stdio cwd: {json.dumps(payload, ensure_ascii=False)}")
-    script_path = package_root / "release" / "scripts" / "openclaw_memory_palace.py"
-    if not script_path.is_file():
-        raise RuntimeError(f"packaged CLI entry missing: {script_path}")
-    return script_path
+    cwd_value = str(stdio_block.get("cwd") or "").strip()
+    if not cwd_value:
+        raise RuntimeError(f"package config missing stdio cwd: {json.dumps(payload, ensure_ascii=False)}")
+    cwd_path = Path(cwd_value).expanduser().resolve()
+    candidate_paths: list[Path] = [
+        cwd_path / "release" / "scripts" / "openclaw_memory_palace.py",
+        cwd_path / "scripts" / "openclaw_memory_palace.py",
+        cwd_path.parent / "scripts" / "openclaw_memory_palace.py",
+    ]
+    args_value = stdio_block.get("args")
+    if isinstance(args_value, list) and args_value:
+        wrapper_raw = str(args_value[0] or "").strip()
+        if wrapper_raw:
+            wrapper_path = Path(wrapper_raw).expanduser()
+            if not wrapper_path.is_absolute():
+                wrapper_path = (cwd_path / wrapper_path).resolve()
+            else:
+                wrapper_path = wrapper_path.resolve()
+            candidate_paths.append(wrapper_path.parent.parent / "scripts" / "openclaw_memory_palace.py")
+    seen: set[Path] = set()
+    for script_path in candidate_paths:
+        normalized = script_path.resolve()
+        if normalized in seen:
+            continue
+        seen.add(normalized)
+        if normalized.is_file():
+            return normalized
+    raise RuntimeError(f"packaged CLI entry missing: {candidate_paths[0]}")
+
+
+class ResolvePackagedCliEntryTests(unittest.TestCase):
+    def _write_packaged_config(self, root: Path, *, cwd: Path, wrapper_path: Path) -> Path:
+        config_path = root / "openclaw.json"
+        payload = {
+            "plugins": {
+                "entries": {
+                    "memory-palace": {
+                        "config": {
+                            "stdio": {
+                                "cwd": str(cwd),
+                                "args": [str(wrapper_path)],
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        config_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+        return config_path
+
+    def test_resolve_packaged_cli_entry_accepts_package_root_cwd(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir) / "memory-palace"
+            scripts_dir = root / "release" / "scripts"
+            backend_dir = root / "release" / "backend"
+            scripts_dir.mkdir(parents=True)
+            backend_dir.mkdir(parents=True)
+            cli_entry = scripts_dir / "openclaw_memory_palace.py"
+            cli_entry.write_text("# test\n", encoding="utf-8")
+            wrapper_path = backend_dir / "mcp_wrapper.py"
+            wrapper_path.write_text("# wrapper\n", encoding="utf-8")
+            config_path = self._write_packaged_config(root, cwd=root, wrapper_path=wrapper_path)
+
+            resolved = resolve_packaged_cli_entry(config_path)
+
+            self.assertEqual(resolved, cli_entry.resolve())
+
+    def test_resolve_packaged_cli_entry_accepts_backend_cwd(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir) / "memory-palace"
+            scripts_dir = root / "release" / "scripts"
+            backend_dir = root / "release" / "backend"
+            scripts_dir.mkdir(parents=True)
+            backend_dir.mkdir(parents=True)
+            cli_entry = scripts_dir / "openclaw_memory_palace.py"
+            cli_entry.write_text("# test\n", encoding="utf-8")
+            wrapper_path = backend_dir / "mcp_wrapper.py"
+            wrapper_path.write_text("# wrapper\n", encoding="utf-8")
+            config_path = self._write_packaged_config(root, cwd=backend_dir, wrapper_path=wrapper_path)
+
+            resolved = resolve_packaged_cli_entry(config_path)
+
+            self.assertEqual(resolved, cli_entry.resolve())
+
+
+class TempLogCleanupTests(unittest.TestCase):
+    def test_unlink_temp_file_retries_windows_permission_error(self) -> None:
+        with mock.patch.object(os, "name", "nt"), mock.patch.object(
+            os,
+            "unlink",
+            side_effect=[PermissionError("busy"), None],
+        ) as unlink_mock, mock.patch.object(time, "sleep") as sleep_mock:
+            _unlink_temp_file("C:\\temp\\busy.log")
+
+        self.assertEqual(unlink_mock.call_count, 2)
+        sleep_mock.assert_called_once()
+
+
+class CaptureWaitTests(unittest.TestCase):
+    def test_wait_for_capture_uri_accepts_last_capture_path_without_rule_decision_when_capture_text_has_marker(self) -> None:
+        verify_payload = {
+            "runtimeState": {
+                "lastCapturePath": {
+                    "uri": "core://agents/main/captured/manual-learn/workflow/1",
+                    "details": "test first, then docs, then final verification",
+                    "pending": False,
+                },
+                "lastRuleCaptureDecision": None,
+            }
+        }
+        capture_payload = {
+            "text": "Stored workflow note: test first, then docs, then final verification. Marker: package-install-sse-abc123.",
+        }
+        run_results = [
+            subprocess.CompletedProcess(["index"], 0, "{}", ""),
+            subprocess.CompletedProcess(["verify"], 0, "{}", ""),
+            subprocess.CompletedProcess(["search"], 0, "{}", ""),
+            subprocess.CompletedProcess(["get"], 0, "{}", ""),
+        ]
+        with mock.patch(
+            f"{__name__}.run",
+            side_effect=run_results,
+        ), mock.patch(
+            f"{__name__}.parse_json_output",
+            side_effect=[
+                {},
+                verify_payload,
+                {"results": []},
+                capture_payload,
+            ],
+        ), mock.patch.object(time, "sleep") as sleep_mock:
+            uri, returned_verify = wait_for_capture_uri(
+                env={},
+                cwd=Path.cwd(),
+                marker="package-install-sse-abc123",
+                expected_fragment="test first, then docs, then final verification",
+                timeout_seconds=1.0,
+            )
+
+        self.assertEqual(uri, "core://agents/main/captured/manual-learn/workflow/1")
+        self.assertIs(returned_verify, verify_payload)
+        sleep_mock.assert_not_called()
+
+    def test_wait_for_capture_uri_accepts_recent_deduped_capture_without_marker_when_timestamp_refreshes(self) -> None:
+        verify_payload = {
+            "runtimeState": {
+                "lastCapturePath": {
+                    "uri": "core://agents/main/captured/workflow/sha256-3263bbaa51fc",
+                    "details": "Stable workflow preference: test first, then docs, then final verification.",
+                    "at": "2026-04-15T11:27:17.282Z",
+                    "pending": False,
+                },
+                "lastRuleCaptureDecision": None,
+            }
+        }
+        capture_payload = {
+            "text": "## Content\nStable workflow preference: test first, then docs, then final verification.\n",
+        }
+        run_results = [
+            subprocess.CompletedProcess(["index"], 0, "{}", ""),
+            subprocess.CompletedProcess(["verify"], 0, "{}", ""),
+            subprocess.CompletedProcess(["search"], 0, "{}", ""),
+            subprocess.CompletedProcess(["get"], 0, "{}", ""),
+        ]
+        with mock.patch(
+            f"{__name__}.run",
+            side_effect=run_results,
+        ), mock.patch(
+            f"{__name__}.parse_json_output",
+            side_effect=[
+                {},
+                verify_payload,
+                {"results": []},
+                capture_payload,
+            ],
+        ), mock.patch.object(time, "sleep") as sleep_mock:
+            uri, returned_verify = wait_for_capture_uri(
+                env={},
+                cwd=Path.cwd(),
+                marker="package-install-sse-abc123",
+                expected_fragment="test first, then docs, then final verification",
+                capture_started_at="2026-04-15T11:27:00.000Z",
+                timeout_seconds=1.0,
+            )
+
+        self.assertEqual(uri, "core://agents/main/captured/workflow/sha256-3263bbaa51fc")
+        self.assertIs(returned_verify, verify_payload)
+        sleep_mock.assert_not_called()
+
+    def test_wait_for_profile_fragment_accepts_existing_canonical_profile_block(self) -> None:
+        verify_payload = {
+            "checks": [
+                {
+                    "id": "profile-memory-state",
+                    "status": "pass",
+                    "details": {
+                        "paths": ["memory-palace/core/agents/main/profile/workflow.md"],
+                    },
+                }
+            ]
+        }
+        profile_payload = {
+            "text": "- default workflow: test first, then docs, then final verification",
+        }
+        run_results = [
+            subprocess.CompletedProcess(["index"], 0, "{}", ""),
+            subprocess.CompletedProcess(["verify"], 0, "{}", ""),
+            subprocess.CompletedProcess(["get"], 0, "{}", ""),
+        ]
+        with mock.patch(
+            f"{__name__}.run",
+            side_effect=run_results,
+        ), mock.patch(
+            f"{__name__}.parse_json_output",
+            side_effect=[
+                {},
+                verify_payload,
+                profile_payload,
+            ],
+        ), mock.patch.object(time, "sleep") as sleep_mock:
+            path, payload, returned_verify = wait_for_profile_fragment(
+                env={},
+                cwd=Path.cwd(),
+                expected_fragment="test first, then docs, then final verification",
+                timeout_seconds=1.0,
+            )
+
+        self.assertEqual(path, "memory-palace/core/agents/main/profile/workflow.md")
+        self.assertIs(payload, profile_payload)
+        self.assertIs(returned_verify, verify_payload)
+        sleep_mock.assert_not_called()
 
 
 def run_packaged_cli(
@@ -1196,6 +1481,7 @@ def main() -> int:
             cwd=stdio_workspace_dir,
             gateway_log_path=stdio_gateway_log_path,
         ):
+            stdio_capture_started_at = utc_now_iso()
             assistant_e2e.run_agent_message(
                 OPENCLAW_BIN,
                 (
@@ -1207,11 +1493,19 @@ def main() -> int:
                 cwd=stdio_workspace_dir,
                 timeout=900,
             )
-            announce("wait for stdio profile block")
-            stdio_profile_path, _, stdio_capture_verify = wait_for_profile_capture_marker(
+            announce("wait for stdio capture uri")
+            _, stdio_capture_verify = wait_for_capture_uri(
                 env=stdio_openclaw_env,
                 cwd=stdio_workspace_dir,
                 marker=stdio_capture_marker,
+                expected_fragment=capture_fragment,
+                capture_started_at=stdio_capture_started_at,
+                timeout_seconds=120,
+            )
+            announce("wait for stdio profile block")
+            stdio_profile_path, _, _ = wait_for_profile_fragment(
+                env=stdio_openclaw_env,
+                cwd=stdio_workspace_dir,
                 expected_fragment=capture_fragment,
                 timeout_seconds=120,
             )
@@ -1232,7 +1526,11 @@ def main() -> int:
             ),
             context="openclaw verify (stdio capture)",
         )
-        assert_pass_diagnostic_status(stdio_verify, context="openclaw verify (stdio capture)")
+        assert_expected_diagnostic_status(
+            stdio_verify,
+            context="openclaw verify (stdio capture)",
+            allowed_warn_ids=EXPECTED_CAPTURE_VERIFY_WARN_IDS,
+        )
 
         announce("openclaw doctor (stdio capture)")
         stdio_doctor = parse_json_output(
@@ -1244,7 +1542,11 @@ def main() -> int:
             ),
             context="openclaw doctor (stdio capture)",
         )
-        assert_pass_diagnostic_status(stdio_doctor, context="openclaw doctor (stdio capture)")
+        assert_expected_diagnostic_status(
+            stdio_doctor,
+            context="openclaw doctor (stdio capture)",
+            allowed_warn_ids=EXPECTED_CAPTURE_DOCTOR_WARN_IDS,
+        )
 
         announce("openclaw smoke (stdio capture)")
         stdio_capture_smoke = parse_json_output(
@@ -1266,7 +1568,11 @@ def main() -> int:
             ),
             context="openclaw smoke (stdio capture)",
         )
-        assert_pass_diagnostic_status(stdio_capture_smoke, context="openclaw smoke (stdio capture)")
+        assert_expected_diagnostic_status(
+            stdio_capture_smoke,
+            context="openclaw smoke (stdio capture)",
+            allowed_warn_ids=EXPECTED_CAPTURE_SMOKE_WARN_IDS,
+        )
 
         if not skip_full_stack:
             backend_api_port = reserve_free_port()
@@ -1429,6 +1735,7 @@ def main() -> int:
                     cwd=sse_workspace_dir,
                     gateway_log_path=sse_gateway_log_path,
                 ):
+                    sse_capture_started_at = utc_now_iso()
                     assistant_e2e.run_agent_message(
                         OPENCLAW_BIN,
                         (
@@ -1440,11 +1747,19 @@ def main() -> int:
                         cwd=sse_workspace_dir,
                         timeout=900,
                     )
-                    announce("wait for SSE profile block")
-                    sse_profile_path, _, sse_capture_verify = wait_for_profile_capture_marker(
+                    announce("wait for SSE capture uri")
+                    _, sse_capture_verify = wait_for_capture_uri(
                         env=sse_openclaw_env,
                         cwd=sse_workspace_dir,
                         marker=sse_capture_marker,
+                        expected_fragment=capture_fragment,
+                        capture_started_at=sse_capture_started_at,
+                        timeout_seconds=120,
+                    )
+                    announce("wait for SSE profile block")
+                    sse_profile_path, _, _ = wait_for_profile_fragment(
+                        env=sse_openclaw_env,
+                        cwd=sse_workspace_dir,
                         expected_fragment=capture_fragment,
                         timeout_seconds=120,
                     )
@@ -1465,7 +1780,11 @@ def main() -> int:
                     ),
                     context="openclaw verify (sse)",
                 )
-                assert_pass_diagnostic_status(sse_verify, context="openclaw verify (sse)")
+                assert_expected_diagnostic_status(
+                    sse_verify,
+                    context="openclaw verify (sse)",
+                    allowed_warn_ids=EXPECTED_CAPTURE_VERIFY_WARN_IDS,
+                )
 
                 announce("openclaw doctor (sse)")
                 sse_doctor = parse_json_output(
@@ -1477,7 +1796,11 @@ def main() -> int:
                     ),
                     context="openclaw doctor (sse)",
                 )
-                assert_pass_diagnostic_status(sse_doctor, context="openclaw doctor (sse)")
+                assert_expected_diagnostic_status(
+                    sse_doctor,
+                    context="openclaw doctor (sse)",
+                    allowed_warn_ids=EXPECTED_CAPTURE_DOCTOR_WARN_IDS,
+                )
 
                 announce("openclaw smoke (sse)")
                 sse_smoke = parse_json_output(
@@ -1499,7 +1822,11 @@ def main() -> int:
                     ),
                     context="openclaw smoke (sse)",
                 )
-                assert_pass_diagnostic_status(sse_smoke, context="openclaw smoke (sse)")
+                assert_expected_diagnostic_status(
+                    sse_smoke,
+                    context="openclaw smoke (sse)",
+                    allowed_warn_ids=EXPECTED_CAPTURE_SMOKE_WARN_IDS,
+                )
             finally:
                 sse_process.terminate()
                 try:

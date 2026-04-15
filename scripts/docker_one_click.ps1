@@ -320,6 +320,10 @@ function Apply-ProfileRuntimeOverrides {
         'RETRIEVAL_RERANKER_API_BASE',
         'RETRIEVAL_RERANKER_API_KEY',
         'RETRIEVAL_RERANKER_MODEL',
+        'LLM_API_BASE',
+        'LLM_API_KEY',
+        'LLM_MODEL',
+        'LLM_MODEL_NAME',
         'WRITE_GUARD_LLM_ENABLED',
         'WRITE_GUARD_LLM_API_BASE',
         'WRITE_GUARD_LLM_API_KEY',
@@ -328,6 +332,10 @@ function Apply-ProfileRuntimeOverrides {
         'COMPACT_GIST_LLM_API_BASE',
         'COMPACT_GIST_LLM_API_KEY',
         'COMPACT_GIST_LLM_MODEL',
+        'INTENT_LLM_ENABLED',
+        'INTENT_LLM_API_BASE',
+        'INTENT_LLM_API_KEY',
+        'INTENT_LLM_MODEL',
         'MCP_API_KEY',
         'MCP_API_KEY_ALLOW_INSECURE_LOCAL'
     )
@@ -337,6 +345,41 @@ function Apply-ProfileRuntimeOverrides {
         if (-not [string]::IsNullOrWhiteSpace($overrideValue)) {
             Set-EnvValueInFile -FilePath $EnvFile -Key $key -Value $overrideValue
             Write-Host "[override] $key applied to $EnvFile"
+        }
+    }
+
+    $sharedLlmApiBase = Get-EnvValueFromFile -FilePath $EnvFile -Key 'LLM_API_BASE'
+    $sharedLlmApiKey = Get-EnvValueFromFile -FilePath $EnvFile -Key 'LLM_API_KEY'
+    $sharedLlmModel = Get-EnvValueFromFile -FilePath $EnvFile -Key 'LLM_MODEL_NAME'
+    if ([string]::IsNullOrWhiteSpace($sharedLlmModel)) {
+        $sharedLlmModel = Get-EnvValueFromFile -FilePath $EnvFile -Key 'LLM_MODEL'
+    }
+    if (-not [string]::IsNullOrWhiteSpace($sharedLlmModel)) {
+        Set-EnvValueInFile -FilePath $EnvFile -Key 'LLM_MODEL' -Value $sharedLlmModel
+        Set-EnvValueInFile -FilePath $EnvFile -Key 'LLM_MODEL_NAME' -Value $sharedLlmModel
+    }
+
+    if ($SelectedProfile -eq 'd' -and -not [string]::IsNullOrWhiteSpace($sharedLlmApiBase) -and -not [string]::IsNullOrWhiteSpace($sharedLlmApiKey) -and -not [string]::IsNullOrWhiteSpace($sharedLlmModel)) {
+        foreach ($flagKey in @('WRITE_GUARD_LLM_ENABLED', 'COMPACT_GIST_LLM_ENABLED', 'INTENT_LLM_ENABLED')) {
+            Set-EnvValueInFile -FilePath $EnvFile -Key $flagKey -Value 'true'
+        }
+        $fanoutMap = @{
+            'WRITE_GUARD_LLM_API_BASE' = $sharedLlmApiBase
+            'WRITE_GUARD_LLM_API_KEY' = $sharedLlmApiKey
+            'WRITE_GUARD_LLM_MODEL' = $sharedLlmModel
+            'COMPACT_GIST_LLM_API_BASE' = $sharedLlmApiBase
+            'COMPACT_GIST_LLM_API_KEY' = $sharedLlmApiKey
+            'COMPACT_GIST_LLM_MODEL' = $sharedLlmModel
+            'INTENT_LLM_API_BASE' = $sharedLlmApiBase
+            'INTENT_LLM_API_KEY' = $sharedLlmApiKey
+            'INTENT_LLM_MODEL' = $sharedLlmModel
+        }
+        foreach ($fanoutKey in $fanoutMap.Keys) {
+            $currentValue = Get-EnvValueFromFile -FilePath $EnvFile -Key $fanoutKey
+            if ([string]::IsNullOrWhiteSpace($currentValue) -or (Test-UnresolvedPlaceholder -Value $currentValue)) {
+                Set-EnvValueInFile -FilePath $EnvFile -Key $fanoutKey -Value $fanoutMap[$fanoutKey]
+                Write-Host "[override] $fanoutKey derived from shared LLM settings."
+            }
         }
     }
 
@@ -410,6 +453,20 @@ function Assert-ProfileExternalSettingsReady {
     if (Test-TruthyValue -Value $rerankerEnabled) {
         $requiredKeys.Add('RETRIEVAL_RERANKER_API_BASE')
         $requiredKeys.Add('RETRIEVAL_RERANKER_API_KEY')
+    }
+    if ($SelectedProfile -eq 'd') {
+        $requiredKeys.Add('LLM_API_BASE')
+        $requiredKeys.Add('LLM_API_KEY')
+        $requiredKeys.Add('LLM_MODEL_NAME')
+        $requiredKeys.Add('WRITE_GUARD_LLM_API_BASE')
+        $requiredKeys.Add('WRITE_GUARD_LLM_API_KEY')
+        $requiredKeys.Add('WRITE_GUARD_LLM_MODEL')
+        $requiredKeys.Add('COMPACT_GIST_LLM_API_BASE')
+        $requiredKeys.Add('COMPACT_GIST_LLM_API_KEY')
+        $requiredKeys.Add('COMPACT_GIST_LLM_MODEL')
+        $requiredKeys.Add('INTENT_LLM_API_BASE')
+        $requiredKeys.Add('INTENT_LLM_API_KEY')
+        $requiredKeys.Add('INTENT_LLM_MODEL')
     }
 
     $hasIssue = $false

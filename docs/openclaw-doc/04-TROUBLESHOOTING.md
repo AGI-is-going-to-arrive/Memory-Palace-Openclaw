@@ -123,8 +123,8 @@ openclaw plugins install --dangerously-force-unsafe-install ./openclaw-memory-pa
 - 这条 `--dangerously-force-unsafe-install` 只给**你刚从当前仓库打出来的本地 tgz**用
 - 不要拿它去安装来源不明的第三方插件包
 - 如果你已经带了这条参数，但当前宿主版本上仍卡在 `openclaw plugins install`，先不要硬把它理解成你本地 profile/provider 配错了
-- 当前记录在案的 `OpenClaw 2026.4.9` 基线里，这条 local tgz 路径已经重新转绿；所以如果你自己环境里仍失败，更像是宿主版本差异、npm/pip 网络、或本机 clean-room 环境差异，需要按 install 路径单独排
-- 同一轮后段，维护者当前宿主的 `CLI / gateway / verify` 也又按 `OpenClaw 2026.4.11` 重新复核过一次；不要把上面的 `2026.4.9` tgz 结果误读成“当前宿主版本只能是 4.9”
+- 当前记录在案的 `OpenClaw 2026.4.14` Windows 实机复跑里，这条 local tgz / clean-room 路径已经再次转绿；所以如果你自己环境里仍失败，更像是宿主版本差异、npm/pip 网络、或本机 clean-room 环境差异，需要按 install 路径单独排
+- 但这条“转绿”不等于“所有宿主都不需要额外 trust flag”；本地 `tgz` 到底要不要补参数，还是以你当前宿主自己打印出来的提示为准
 
 ---
 
@@ -244,7 +244,7 @@ docker compose version
 - `doctor / smoke=warn`
   - 在空库、空工作区、fresh runtime 下并不稀奇
 
-如果你看的正好是 `python3 scripts/test_openclaw_memory_palace_package_install.py` 这条 package-install 结果，还要先把两条 `stdio` 结果分开读：
+如果你看的正好是 `python3 scripts/test_openclaw_memory_palace_package_install.py` 这条 package-install 结果，还要先把几段结果分开读：
 
 - `smoke_status` + `smoke_mode=seeded_retrieval`
   - 这条只证明 seeded durable memory 还能被 `search + read`
@@ -252,6 +252,15 @@ docker compose version
 - `stdio_capture_verify / doctor / smoke`
   - 这条才是当前 package-install 里的真实 profile/capture 验证
   - 当前记录在案的基线已经是 `pass`
+- `sse_verify / doctor / smoke`
+  - 这条是 clean-room SSE 下的真实 capture/profile 验证
+  - 当前记录在案的基线也已经是 `pass`
+
+这里还有一个很容易误读的点：
+
+- 如果 `stdio` 或 `sse` 这次写进去的还是同一条稳定 workflow，当前实现可能直接走去重
+- 这时 profile block 不一定每次都重写
+- 只要 capture 已经被处理，而且原来的 profile block 还能正常读出来，就不要把它硬判成失败
 
 如果你想把这类 `warn` 收敛掉，当前更有效的顺序是：
 
