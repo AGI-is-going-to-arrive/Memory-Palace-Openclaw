@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License" />
+  <img src="https://img.shields.io/badge/license-AGPLv3-blue.svg" alt="License" />
   <img src="https://img.shields.io/badge/python-3.10--3.14-3776ab.svg?logo=python&logoColor=white" alt="Python" />
   <img src="https://img.shields.io/badge/FastAPI-009688.svg?logo=fastapi&logoColor=white" alt="FastAPI" />
   <img src="https://img.shields.io/badge/React-18-61dafb.svg?logo=react&logoColor=black" alt="React" />
@@ -308,4 +308,4 @@ INTENT_LLM_MODEL=your-llm-model
 
 ## License
 
-MIT
+GNU AGPLv3
