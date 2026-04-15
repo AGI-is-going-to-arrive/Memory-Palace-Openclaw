@@ -161,6 +161,7 @@ flowchart TD
   - `openclaw skills list` 不是 bundled onboarding skill 的安装判断条件
   - 同一份 onboarding 文档已经验证过可以在 CLI / WebUI、未安装 / 已安装、中英文这些主分支里给出正确下一步
   - 最新一轮 profile-matrix 记录里，已经复现当前实验性 `A / B / C / D + ACL` 行为
+- 对 `Profile D` 来说，一组 shared `LLM_*` 可以作为 setup/onboarding 输入，但最终解析后的 `WRITE_GUARD_*`、`COMPACT_GIST_*`、`INTENT_*` 仍然必须都不是占位值，才能把真实检查说成 ready
 - `15 / 16 / 18 / 23 / 24` 这些用户页，现在统一按“当前公开用户证据页”理解
 - 如果某页保留了旧素材或历史截图，它只是仓库里的补充材料，不再作为单独的“版本基线”叙事
 - `Profile C / D` 的边界统一不变：不是“填了 env 就算配好”，而是 `probe / verify / doctor / smoke` 在目标环境里真实通过才算 ready

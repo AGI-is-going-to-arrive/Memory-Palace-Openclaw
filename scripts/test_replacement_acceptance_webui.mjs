@@ -17,6 +17,9 @@
  * Environment variables:
  *   OPENCLAW_ACL_CONTROL_UI_URL  – dashboard base URL (default: http://127.0.0.1:48231/#token=status-probe-local-only)
  *   OPENCLAW_ONBOARDING_USE_CURRENT_HOST – "true" to skip scenario setup and use the running host
+ *   OPENCLAW_ACCEPTANCE_DASHBOARD_URL_SOURCE – "cli" (default) to resolve isolated dashboard URLs
+ *                                  through `openclaw dashboard --no-open`, or "scenario" to
+ *                                  fall back to the known scenario port
  *   OPENCLAW_ACCEPTANCE_STRICT_UI – "true" to require UI-visible evidence for V2/V4/V5/V6
  *                                  in current-host Profile C/D runs (default: off)
  */
@@ -59,6 +62,9 @@ const strictUiRequested =
   String(process.env.OPENCLAW_ACCEPTANCE_STRICT_UI || "")
     .trim()
     .toLowerCase() === "true";
+const dashboardUrlSource =
+  String(process.env.OPENCLAW_ACCEPTANCE_DASHBOARD_URL_SOURCE || "").trim().toLowerCase()
+  || "cli";
 const includeHighValueShortSession =
   String(process.env.OPENCLAW_ACCEPTANCE_INCLUDE_HIGH_VALUE_SHORT_SESSION || "")
     .trim()
@@ -1883,6 +1889,7 @@ async function main() {
     requestedProfile,
     strictUiRequested,
     strictCurrentHostUiMode,
+    dashboardUrlSource,
     includeHighValueShortSession,
     setupArgs,
     ok: false,
@@ -1942,8 +1949,22 @@ async function main() {
           setupArgs,
         });
         gateway = await startGateway(scenario);
-        dashboardBaseUrl = `http://127.0.0.1:${SCENARIO_PORT}/#token=status-probe-local-only`;
+        dashboardBaseUrl = await getDashboardUrl(scenario, {
+          source: dashboardUrlSource === "scenario" ? "scenario-port" : "cli",
+        });
+        if (dashboardUrlSource !== "scenario") {
+          const resolvedDashboardPort = Number.parseInt(
+            new URL(dashboardBaseUrl.replace(/#.*$/, "")).port || "80",
+            10,
+          );
+          if (resolvedDashboardPort !== SCENARIO_PORT) {
+            throw new Error(
+              `Dashboard URL port mismatch for isolated scenario: expected ${SCENARIO_PORT}, got ${resolvedDashboardPort} from ${dashboardBaseUrl}`,
+            );
+          }
+        }
         console.log("[acceptance] Isolated gateway started on port", SCENARIO_PORT);
+        console.log("[acceptance] Dashboard URL source:", dashboardUrlSource, "->", dashboardBaseUrl);
       } catch (err) {
         console.warn(
           `[acceptance] Could not start gateway: ${err.message}\n` +

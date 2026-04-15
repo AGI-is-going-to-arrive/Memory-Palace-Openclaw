@@ -624,31 +624,39 @@ def build_profile_seed(
     return merged
 
 
+def _first_non_placeholder_override(*values: str | None) -> str | None:
+    for value in values:
+        rendered = str(value or "").strip()
+        if not is_placeholder_profile_value(rendered):
+            return rendered
+    return None
+
+
 def runtime_overrides_from_env(env_source: Mapping[str, str] | None = None) -> dict[str, str | None]:
     return {
-        "embedding_api_base": first_non_blank(
+        "embedding_api_base": _first_non_placeholder_override(
             env_value_with_aliases(env_source, "RETRIEVAL_EMBEDDING_API_BASE"),
             env_value(env_source, "ROUTER_API_BASE"),
         ),
-        "embedding_api_key": first_non_blank(
+        "embedding_api_key": _first_non_placeholder_override(
             env_value_with_aliases(env_source, "RETRIEVAL_EMBEDDING_API_KEY"),
             env_value(env_source, "ROUTER_API_KEY"),
         ),
-        "embedding_model": first_non_blank(
+        "embedding_model": _first_non_placeholder_override(
             env_value_with_aliases(env_source, "RETRIEVAL_EMBEDDING_MODEL"),
             env_value(env_source, "ROUTER_EMBEDDING_MODEL"),
         ),
-        "embedding_dim": first_non_blank(env_value(env_source, "RETRIEVAL_EMBEDDING_DIM")),
-        "reranker_api_base": first_non_blank(
+        "embedding_dim": _first_non_placeholder_override(env_value(env_source, "RETRIEVAL_EMBEDDING_DIM")),
+        "reranker_api_base": _first_non_placeholder_override(
             env_value_with_aliases(env_source, "RETRIEVAL_RERANKER_API_BASE"),
             env_value(env_source, "ROUTER_API_BASE"),
         ),
-        "reranker_api_key": first_non_blank(
+        "reranker_api_key": _first_non_placeholder_override(
             env_value_with_aliases(env_source, "RETRIEVAL_RERANKER_API_KEY"),
             env_value(env_source, "ROUTER_API_KEY"),
         ),
-        "reranker_model": first_non_blank(env_value_with_aliases(env_source, "RETRIEVAL_RERANKER_MODEL")),
-        "llm_api_base": first_non_blank(
+        "reranker_model": _first_non_placeholder_override(env_value_with_aliases(env_source, "RETRIEVAL_RERANKER_MODEL")),
+        "llm_api_base": _first_non_placeholder_override(
             env_value(env_source, "LLM_API_BASE"),
             env_value(env_source, "INTENT_LLM_API_BASE"),
             env_value(env_source, "LLM_RESPONSES_URL"),
@@ -656,19 +664,19 @@ def runtime_overrides_from_env(env_source: Mapping[str, str] | None = None) -> d
             env_value(env_source, "OPENAI_API_BASE"),
             env_value(env_source, "WRITE_GUARD_LLM_API_BASE"),
         ),
-        "llm_api_key": first_non_blank(
+        "llm_api_key": _first_non_placeholder_override(
             env_value(env_source, "LLM_API_KEY"),
             env_value(env_source, "INTENT_LLM_API_KEY"),
             env_value(env_source, "OPENAI_API_KEY"),
             env_value(env_source, "WRITE_GUARD_LLM_API_KEY"),
         ),
-        "llm_model": first_non_blank(
+        "llm_model": _first_non_placeholder_override(
             env_value(env_source, "LLM_MODEL_NAME"),
             env_value(env_source, "INTENT_LLM_MODEL"),
             env_value(env_source, "OPENAI_MODEL"),
             env_value(env_source, "WRITE_GUARD_LLM_MODEL"),
         ),
-        "write_guard_llm_api_base": first_non_blank(
+        "write_guard_llm_api_base": _first_non_placeholder_override(
             env_value(env_source, "WRITE_GUARD_LLM_API_BASE"),
             env_value(env_source, "LLM_API_BASE"),
             env_value(env_source, "INTENT_LLM_API_BASE"),
@@ -676,19 +684,19 @@ def runtime_overrides_from_env(env_source: Mapping[str, str] | None = None) -> d
             env_value(env_source, "OPENAI_BASE_URL"),
             env_value(env_source, "OPENAI_API_BASE"),
         ),
-        "write_guard_llm_api_key": first_non_blank(
+        "write_guard_llm_api_key": _first_non_placeholder_override(
             env_value(env_source, "WRITE_GUARD_LLM_API_KEY"),
             env_value(env_source, "LLM_API_KEY"),
             env_value(env_source, "INTENT_LLM_API_KEY"),
             env_value(env_source, "OPENAI_API_KEY"),
         ),
-        "write_guard_llm_model": first_non_blank(
+        "write_guard_llm_model": _first_non_placeholder_override(
             env_value(env_source, "WRITE_GUARD_LLM_MODEL"),
             env_value(env_source, "LLM_MODEL_NAME"),
             env_value(env_source, "INTENT_LLM_MODEL"),
             env_value(env_source, "OPENAI_MODEL"),
         ),
-        "compact_gist_llm_api_base": first_non_blank(
+        "compact_gist_llm_api_base": _first_non_placeholder_override(
             env_value(env_source, "COMPACT_GIST_LLM_API_BASE"),
             env_value(env_source, "LLM_API_BASE"),
             env_value(env_source, "INTENT_LLM_API_BASE"),
@@ -696,13 +704,13 @@ def runtime_overrides_from_env(env_source: Mapping[str, str] | None = None) -> d
             env_value(env_source, "OPENAI_BASE_URL"),
             env_value(env_source, "OPENAI_API_BASE"),
         ),
-        "compact_gist_llm_api_key": first_non_blank(
+        "compact_gist_llm_api_key": _first_non_placeholder_override(
             env_value(env_source, "COMPACT_GIST_LLM_API_KEY"),
             env_value(env_source, "LLM_API_KEY"),
             env_value(env_source, "INTENT_LLM_API_KEY"),
             env_value(env_source, "OPENAI_API_KEY"),
         ),
-        "compact_gist_llm_model": first_non_blank(
+        "compact_gist_llm_model": _first_non_placeholder_override(
             env_value(env_source, "COMPACT_GIST_LLM_MODEL"),
             env_value(env_source, "LLM_MODEL_NAME"),
             env_value(env_source, "INTENT_LLM_MODEL"),

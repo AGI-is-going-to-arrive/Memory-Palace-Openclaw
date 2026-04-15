@@ -4,7 +4,12 @@ import os from "node:os";
 import path from "node:path";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 
-import { loadMainConfigSnapshot } from "./openclaw_onboarding_doc_test_lib.mjs";
+import {
+  buildDashboardUrlForPort,
+  getDashboardUrl,
+  loadMainConfigSnapshot,
+  parseDashboardUrlOutput,
+} from "./openclaw_onboarding_doc_test_lib.mjs";
 
 test("loadMainConfigSnapshot prefers OPENCLAW_CONFIG_PATH over host config lookup", async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), "openclaw-main-config-"));
@@ -106,4 +111,64 @@ test("loadMainConfigSnapshot prefers OPENCLAW_ONBOARDING_BASE_CONFIG_PATH over O
     }
     await rm(root, { recursive: true, force: true });
   }
+});
+
+test("buildDashboardUrlForPort renders tokenized local dashboard url", () => {
+  assert.equal(
+    buildDashboardUrlForPort(18951),
+    "http://127.0.0.1:18951/#token=status-probe-local-only",
+  );
+});
+
+test("parseDashboardUrlOutput extracts dashboard url from command output", () => {
+  const output = [
+    "Dashboard URL: http://127.0.0.1:18951/#token=status-probe-local-only",
+    "Copy to clipboard unavailable.",
+    "Browser launch disabled (--no-open). Use the URL above.",
+  ].join("\n");
+
+  assert.equal(
+    parseDashboardUrlOutput(output),
+    "http://127.0.0.1:18951/#token=status-probe-local-only",
+  );
+});
+
+test("getDashboardUrl prefers cli dashboard output even when scenario has a port", async () => {
+  const calls = [];
+  const scenario = {
+    env: { OPENCLAW_CONFIG_PATH: "/tmp/demo-openclaw.json" },
+    port: 48231,
+  };
+
+  const url = await getDashboardUrl(scenario, {
+    commandRunner: async (command, args, options) => {
+      calls.push({ command, args, options });
+      return {
+        code: 0,
+        stdout: "Dashboard URL: http://127.0.0.1:18951/#token=status-probe-local-only\n",
+        stderr: "",
+      };
+    },
+  });
+
+  assert.equal(url, "http://127.0.0.1:18951/#token=status-probe-local-only");
+  assert.equal(calls.length, 1);
+  assert.deepEqual(calls[0].args, ["dashboard", "--no-open"]);
+  assert.equal(calls[0].options?.env, scenario.env);
+});
+
+test("getDashboardUrl can still use the scenario port fallback explicitly", async () => {
+  const scenario = {
+    env: { OPENCLAW_CONFIG_PATH: "/tmp/demo-openclaw.json" },
+    port: 18951,
+  };
+
+  const url = await getDashboardUrl(scenario, {
+    source: "scenario-port",
+    commandRunner: async () => {
+      throw new Error("dashboard cli should not be invoked for explicit scenario-port mode");
+    },
+  });
+
+  assert.equal(url, "http://127.0.0.1:18951/#token=status-probe-local-only");
 });

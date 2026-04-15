@@ -71,6 +71,18 @@ const SCENARIO_SETUP_TIMEOUT_MS = Number.parseInt(
 );
 const sharedPipCacheDir = path.join(tempRoot, ".pip-cache");
 
+export function buildDashboardUrlForPort(port, token = CONTROL_TOKEN) {
+  return `http://127.0.0.1:${port}/#token=${token}`;
+}
+
+export function parseDashboardUrlOutput(text) {
+  const match = String(text || "").match(/Dashboard URL:\s+(https?:\/\/\S+)/);
+  if (!match) {
+    throw new Error(`Could not parse dashboard URL from output:\n${text}`);
+  }
+  return match[1];
+}
+
 function expandHome(value) {
   if (!(value.startsWith("~/") || value.startsWith("~\\"))) {
     return value;
@@ -960,11 +972,20 @@ export async function runGatewayAgent({
   return { payload, text };
 }
 
-export async function getDashboardUrl(scenario) {
-  if (scenario?.port) {
-    return `http://127.0.0.1:${scenario.port}/#token=${CONTROL_TOKEN}`;
+export async function getDashboardUrl(
+  scenario,
+  {
+    source = "cli",
+    commandRunner = runCommand,
+  } = {},
+) {
+  if (source === "scenario-port") {
+    if (!scenario?.port) {
+      throw new Error("Scenario port fallback requested but scenario.port is missing");
+    }
+    return buildDashboardUrlForPort(scenario.port);
   }
-  const result = await runCommand(
+  const result = await commandRunner(
     OPENCLAW_BIN,
     ["dashboard", "--no-open"],
     {
@@ -972,11 +993,7 @@ export async function getDashboardUrl(scenario) {
       timeoutMs: 30_000,
     },
   );
-  const match = result.stdout.match(/Dashboard URL:\s+(https?:\/\/\S+)/);
-  if (!match) {
-    throw new Error(`Could not parse dashboard URL from output:\n${result.stdout}`);
-  }
-  return match[1];
+  return parseDashboardUrlOutput(result.stdout);
 }
 
 export async function startGateway(scenario) {

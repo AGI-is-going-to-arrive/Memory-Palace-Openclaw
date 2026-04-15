@@ -156,6 +156,12 @@ openclaw memory-palace verify --json
 - 当前是不是直连本机 loopback
 - backend 有没有配置 `MCP_API_KEY`
 - 失败的是不是 `/bootstrap/apply`
+- 如果这次是用自定义 gateway 端口启动宿主，再确认这个端口有没有一起写回宿主 config。当前有些宿主在“端口只存在于运行时启动参数里”时，`dashboard --no-open` / `gateway.controlUi.allowedOrigins` 仍可能落回默认端口
+
+这最后一种情况要保守理解：
+
+- 这是宿主限制，不是 `Memory Palace` 插件要修补的目标
+- 更稳的恢复方式是：把端口写回宿主 config、显式补齐需要的 allowed origins，或者先退回默认本机 loopback 端口
 
 ---
 

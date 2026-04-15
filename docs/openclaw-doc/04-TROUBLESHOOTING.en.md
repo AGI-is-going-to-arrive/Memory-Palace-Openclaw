@@ -156,6 +156,12 @@ Then confirm:
 - Whether you are directly connected via localhost loopback
 - Whether the backend has `MCP_API_KEY` configured
 - Whether the failure is on `/bootstrap/apply`
+- If you started the host on a custom gateway port, whether that same port was also written back into the host config. On some current hosts, `dashboard --no-open` / `gateway.controlUi.allowedOrigins` can still fall back to the default port when the custom port only exists in the runtime launch arguments.
+
+Treat that last case conservatively:
+
+- It is a host limitation, not a Memory Palace plugin patch target
+- The safer recovery is to persist the port in the host config, explicitly set the required allowed origins, or go back to the default local loopback port first
 
 ---
 

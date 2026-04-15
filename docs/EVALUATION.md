@@ -64,6 +64,26 @@
 - 这轮也再次确认了未安装边界：在 plugin 真正装进宿主之前，`memory_onboarding_status / probe / apply` 不存在，不能把未安装和已安装流程揉成一条。
 - 最新这轮文案清理后，又定向复跑了 `cli-uninstalled-zh`、`cli-installed-zh`、`cli-installed-en`；所以当前中英文安装 / 已装主分支，已经有和最新版文案对齐的 Windows 证据。
 
+### 1.2A 这轮补记的 macOS / Linux 维护者复跑
+
+下面这些结果是补充性的维护者复跑，不替换上面那张 Windows 主基线表。
+
+- 在 macOS 验证主机上，shared-LLM 的 `Profile D` 路径已经按
+  `OpenClaw 2026.4.14` 再次复跑。修掉 placeholder override 之后，
+  留档的 `setup --profile d` 和
+  `onboarding --profile d --strict-profile --apply --validate`
+  都保持了 `effective_profile=d`，没有再 fallback。
+- 在 Docker Linux userspace 里，这轮也补跑了 `linux/aarch64` 和
+  `linux/amd64` 两套环境；两边都通过了 shared-LLM 的
+  `setup --profile b`、`setup --profile d`、以及
+  `onboarding --profile d --strict-profile --apply --validate`。
+- Docker 侧的 WebUI 复跑也再次确认：默认 gateway 端口链路是通的，
+  bundled onboarding skill 仍然可见。
+- 但有一条更窄的宿主限制也继续被看到：如果宿主用自定义 gateway 端口启动，
+  却没有把端口写回 config，`dashboard --no-open` /
+  `gateway.controlUi.allowedOrigins` 仍可能落回默认端口。
+  这条在本仓库里按 OpenClaw 宿主限制记录，不按插件保证或宿主热修补丁目标来写。
+
 ### 1.3 当前公开口径
 
 - `Profile C / D` 仍然是 provider-backed 路径，不是零配置承诺。

@@ -102,7 +102,8 @@ The safer user-facing wording is:
 
 Keep the platform boundary explicit:
 
-- the current recorded full end-to-end rerun was executed on **macOS**
+- the current recorded **real-host** full end-to-end rerun was executed on **macOS**
+- this round also added recorded **Linux userspace** reruns in Docker on both `linux/aarch64` and `linux/amd64` for `setup --profile b`, `setup --profile d`, and `onboarding --profile d --strict-profile --apply --validate`
 - the repository still provides supported templates and validation paths for **Linux / Windows**
 - but if you want to state that a target machine is really ready, rerun in that target environment
 - for **Windows native** specifically, rerun the same `setup -> verify -> doctor -> smoke` chain on the target Windows host before treating it as ready

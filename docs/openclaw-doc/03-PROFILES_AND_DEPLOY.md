@@ -102,7 +102,8 @@
 
 平台边界也要说清：
 
-- 当前完整闭环的真实复跑主机是 **macOS**
+- 当前完整闭环的**真实宿主**复跑主机是 **macOS**
+- 这轮也补上了 Docker 里的 **Linux userspace** 复跑：`linux/aarch64` 和 `linux/amd64` 都已经实际跑过 `setup --profile b`、`setup --profile d`、`onboarding --profile d --strict-profile --apply --validate`
 - 仓库本身仍然提供 **Linux / Windows** 的模板和验证路径
 - 但如果你要把“现在可用”写成某台目标机器上的事实，还是应该在那个目标环境再跑一次
 - 特别是 **Windows native**，更稳的做法是在目标 Windows 主机上直接重跑同一条

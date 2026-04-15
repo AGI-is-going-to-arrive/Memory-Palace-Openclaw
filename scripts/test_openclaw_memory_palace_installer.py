@@ -2185,6 +2185,58 @@ class InstallerTests(unittest.TestCase):
             )
         )
 
+    def test_apply_setup_defaults_profile_d_shared_llm_overrides_existing_placeholders(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir, mock.patch.dict(installer.os.environ, {}, clear=True):
+            env_values, effective_profile, warnings, fallback_applied, missing_fields = installer.apply_setup_defaults(
+                profile="d",
+                mode="basic",
+                transport="stdio",
+                setup_root_path=Path(tmp_dir),
+                existing_env={
+                    "WRITE_GUARD_LLM_API_BASE": "",
+                    "WRITE_GUARD_LLM_API_KEY": "",
+                    "WRITE_GUARD_LLM_MODEL": "replace-with-your-llm-model",
+                    "COMPACT_GIST_LLM_API_BASE": "",
+                    "COMPACT_GIST_LLM_API_KEY": "",
+                    "COMPACT_GIST_LLM_MODEL": "replace-with-your-llm-model",
+                    "INTENT_LLM_API_BASE": "",
+                    "INTENT_LLM_API_KEY": "",
+                    "INTENT_LLM_MODEL": "replace-with-your-llm-model",
+                },
+                embedding_api_base="https://router.local/v1/embeddings",
+                embedding_api_key="embedding-key",
+                embedding_model="embed-model",
+                embedding_dim="1024",
+                reranker_api_base="https://rerank.local/v1/rerank",
+                reranker_api_key="reranker-key",
+                reranker_model="reranker-model",
+                llm_api_base="https://llm.local/v1",
+                llm_api_key="llm-key",
+                llm_model="gpt-5.4-mini",
+                strict_profile=True,
+            )
+
+        self.assertEqual(effective_profile, "d")
+        self.assertFalse(fallback_applied)
+        self.assertEqual(missing_fields, [])
+        self.assertEqual(env_values["WRITE_GUARD_LLM_API_BASE"], "https://llm.local/v1")
+        self.assertEqual(env_values["WRITE_GUARD_LLM_API_KEY"], "llm-key")
+        self.assertEqual(env_values["WRITE_GUARD_LLM_MODEL"], "gpt-5.4-mini")
+        self.assertEqual(env_values["COMPACT_GIST_LLM_API_BASE"], "https://llm.local/v1")
+        self.assertEqual(env_values["COMPACT_GIST_LLM_MODEL"], "gpt-5.4-mini")
+        self.assertEqual(env_values["INTENT_LLM_API_BASE"], "https://llm.local/v1")
+        self.assertEqual(env_values["INTENT_LLM_MODEL"], "gpt-5.4-mini")
+        self.assertEqual(env_values["WRITE_GUARD_LLM_ENABLED"], "true")
+        self.assertEqual(env_values["COMPACT_GIST_LLM_ENABLED"], "true")
+        self.assertEqual(env_values["INTENT_LLM_ENABLED"], "true")
+        self.assertFalse(
+            any(
+                installer._localized_onboarding_text("回退到 Profile B", "fell back to Profile B")
+                in item
+                for item in warnings
+            )
+        )
+
     def test_finalize_profile_env_sets_default_embedding_dim_for_profile_c(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
             payload, _warnings, _fallback = installer.finalize_profile_env(
@@ -6433,6 +6485,81 @@ class OnboardingWrapperTests(unittest.TestCase):
             ),
             " ".join(payload["nextSteps"]),
         )
+
+    def test_build_apply_preview_profile_d_shared_llm_ignores_existing_placeholders(self) -> None:
+        args = self._make_args(
+            profile="d",
+            strict_profile=True,
+            embedding_api_base="https://embedding.example/v1",
+            embedding_api_key="embed-key",
+            embedding_model="embed-large",
+            embedding_dim="1024",
+            reranker_api_base="https://reranker.example/v1",
+            reranker_api_key="rerank-key",
+            reranker_model="rerank-large",
+            llm_api_base="https://llm.example/v1/chat/completions",
+            llm_api_key="llm-key",
+            llm_model="gpt-5.4-mini",
+        )
+        existing_env = {
+            "WRITE_GUARD_LLM_API_BASE": "",
+            "WRITE_GUARD_LLM_API_KEY": "",
+            "WRITE_GUARD_LLM_MODEL": "replace-with-your-llm-model",
+            "COMPACT_GIST_LLM_API_BASE": "",
+            "COMPACT_GIST_LLM_API_KEY": "",
+            "COMPACT_GIST_LLM_MODEL": "replace-with-your-llm-model",
+            "INTENT_LLM_API_BASE": "",
+            "INTENT_LLM_API_KEY": "",
+            "INTENT_LLM_MODEL": "replace-with-your-llm-model",
+        }
+
+        with mock.patch.object(wrapper, "_load_existing_env_for_onboarding", return_value=existing_env), mock.patch.object(
+            wrapper.installer,
+            "host_config_runtime_overrides",
+            return_value={key: None for key in (
+                "embedding_api_base",
+                "embedding_api_key",
+                "embedding_model",
+                "embedding_dim",
+                "reranker_api_base",
+                "reranker_api_key",
+                "reranker_model",
+                "llm_api_base",
+                "llm_api_key",
+                "llm_model",
+            )},
+        ), mock.patch.object(
+            wrapper.installer,
+            "current_process_runtime_overrides",
+            return_value={key: None for key in (
+                "embedding_api_base",
+                "embedding_api_key",
+                "embedding_model",
+                "embedding_dim",
+                "reranker_api_base",
+                "reranker_api_key",
+                "reranker_model",
+                "llm_api_base",
+                "llm_api_key",
+                "llm_model",
+                "write_guard_llm_api_base",
+                "write_guard_llm_api_key",
+                "write_guard_llm_model",
+                "compact_gist_llm_api_base",
+                "compact_gist_llm_api_key",
+                "compact_gist_llm_model",
+            )},
+        ):
+            payload = wrapper._build_apply_preview(args)
+
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["status"], "ready")
+        self.assertEqual(payload["effectiveProfile"], "d")
+        self.assertFalse(payload["fallbackApplied"])
+        self.assertEqual(payload["missingFields"], [])
+        self.assertTrue(payload["currentFlags"]["writeGuardEnabled"])
+        self.assertTrue(payload["currentFlags"]["compactGistEnabled"])
+        self.assertTrue(payload["currentFlags"]["intentLlmEnabled"])
 
     def test_command_onboarding_predicts_cd_fallback_when_probe_fails(self) -> None:
         args = self._make_args(profile="c")

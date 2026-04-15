@@ -46,6 +46,26 @@ The commands below were rerun on the current Windows validation host:
 - The latest wording cleanup was rechecked through targeted doc-chat reruns for
   `cli-uninstalled-zh`, `cli-installed-zh`, and `cli-installed-en`.
 
+## Additional macOS / Linux Maintainer Reruns After The Windows Baseline
+
+These reruns are additive maintainer evidence. They do **not** replace the
+Windows top baseline above.
+
+- On the macOS validation host, the shared-LLM `Profile D` path was rerun
+  against `OpenClaw 2026.4.14` after the placeholder-override fix. The recorded
+  `setup --profile d` and `onboarding --profile d --strict-profile --apply --validate`
+  runs kept `effective_profile=d` and `fallback_applied=false`.
+- In Docker Linux userspace reruns, both `linux/aarch64` and `linux/amd64`
+  passed the same shared-LLM `Profile D` path: `setup --profile b`,
+  `setup --profile d`, and `onboarding --profile d --strict-profile --apply --validate`.
+- The Docker WebUI reruns also reconfirmed that the default gateway port path
+  stayed reachable and that the bundled onboarding skill remained visible.
+- A narrower host limitation still remained visible: if the host is started on
+  a custom gateway port without persisting that port back into config,
+  `dashboard --no-open` / `gateway.controlUi.allowedOrigins` may still fall
+  back to the default port. This repository records that as an OpenClaw host
+  limitation rather than a plugin-side promise or host patch target.
+
 ## Stable Public Boundaries
 
 - `Profile C / D` are provider-backed paths, not zero-config promises.

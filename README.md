@@ -57,7 +57,7 @@ Recommended install flow:
 Prompt to paste into OpenClaw:
 
 ```text
-I want to install Memory Palace for OpenClaw through the recommended chat-first path. First determine whether this machine already has a checked-out copy of https://github.com/AGI-is-going-to-arrive/Memory-Palace-Openclaw. If it is already cloned, start with docs/openclaw-doc/18-CONVERSATIONAL_ONBOARDING.en.md from that local repo. If it is not cloned yet, tell me to clone the repo first and then continue from docs/openclaw-doc/18-CONVERSATIONAL_ONBOARDING.en.md. If you can also open repo links, use this page only as the matching reference: https://github.com/AGI-is-going-to-arrive/Memory-Palace-Openclaw/blob/main/docs/openclaw-doc/18-CONVERSATIONAL_ONBOARDING.en.md. Once the local repo exists, prefer the local doc path over the GitHub page. Then determine whether the memory-palace plugin is already installed and loaded. If it is not installed yet, give me the shortest install chain first. If it is already installed, continue with memory_onboarding_status -> memory_onboarding_probe -> memory_onboarding_apply. Reuse any provider settings already present on the host, do not push me to the dashboard by default, start with Profile B when no provider stack is ready yet, and if embedding + reranker + LLM are already ready, recommend Profile D directly. Only after apply remind me to run openclaw memory-palace verify / doctor / smoke.
+I want to install Memory Palace for OpenClaw through the recommended chat-first path. First determine whether this machine already has a checked-out copy of https://github.com/AGI-is-going-to-arrive/Memory-Palace-Openclaw. If it is already cloned, start with docs/openclaw-doc/18-CONVERSATIONAL_ONBOARDING.en.md from that local repo. If it is not cloned yet, tell me to clone the repo first and then continue from docs/openclaw-doc/18-CONVERSATIONAL_ONBOARDING.en.md. If you can also open repo links, use this page only as the matching reference: https://github.com/AGI-is-going-to-arrive/Memory-Palace-Openclaw/blob/main/docs/openclaw-doc/18-CONVERSATIONAL_ONBOARDING.en.md. Once the local repo exists, prefer the local doc path over the GitHub page. Then determine whether the memory-palace plugin is already installed and loaded. If it is not installed yet, give me the shortest install chain first. If it is already installed, continue with memory_onboarding_status -> memory_onboarding_probe -> memory_onboarding_apply. Reuse any provider settings already present on the host, do not push me to the dashboard by default, start with Profile B when no provider stack is ready yet, and if embedding + reranker + LLM are already ready, recommend Profile D directly. If I provide one shared LLM API base + key + model during onboarding/setup, fan that tuple out to WRITE_GUARD / COMPACT_GIST / INTENT by default. Do not call Profile D ready until the final resolved WRITE_GUARD_* / COMPACT_GIST_* / INTENT_* fields are all non-placeholder and probe / verify / doctor / smoke pass in the target environment. Only after apply remind me to run openclaw memory-palace verify / doctor / smoke.
 ```
 
 ```bash
@@ -118,7 +118,8 @@ Current downgraded install shapes:
 - start with **Profile B** for the zero-config bootstrap
 - use **Profile C** when you only want the provider-backed retrieval upgrade first
 - if you already have embedding, reranker, and LLM settings ready, strongly prefer **Profile D** for the full advanced suite
-- treat `Profile C / D` as ready only after the real probe and verification commands pass in your environment
+- when onboarding/setup receives one shared LLM tuple (`LLM_API_BASE`, `LLM_API_KEY`, `LLM_MODEL`), it should fan that tuple out to `WRITE_GUARD_*`, `COMPACT_GIST_*`, and `INTENT_*` by default
+- treat `Profile C / D` as ready only after the real probe and verification commands pass in your environment; for `Profile D`, the final resolved `WRITE_GUARD_*`, `COMPACT_GIST_*`, and `INTENT_*` fields must also all be non-placeholder
 
 If the plugin is already installed in OpenClaw, prefer the in-chat onboarding tools
 first: `memory_onboarding_status -> memory_onboarding_probe -> memory_onboarding_apply`.
@@ -147,10 +148,16 @@ On Windows PowerShell, run the same repo-wrapper fallback with `py -3`.
 
 Profile C requires an embedding provider and reranker. On Profile C, the LLM
 assist suite remains optional and should be enabled explicitly in onboarding.
-Profile D treats `write_guard + compact_gist + intent_llm` as part of the full
-advanced target. Profile B itself does not require external embedding /
-reranker services, but optional LLM settings can still be reused when they
-already exist on the host.
+On Profile D, `setup` / `onboarding` accept one shared LLM tuple
+(`LLM_API_BASE`, `LLM_API_KEY`, `LLM_MODEL`) and fan it out to
+`write_guard + compact_gist + intent_llm` by default. Profile D is only ready
+after those final resolved `WRITE_GUARD_*`, `COMPACT_GIST_*`, and `INTENT_*`
+fields are all non-placeholder and the real `probe / verify / doctor / smoke`
+checks pass. If you edit a static env file manually instead of using
+onboarding/setup, explicitly fill the resolved fields below as well so
+placeholder values do not trigger downgrade / fallback. Profile B itself does
+not require external embedding / reranker services, but optional LLM settings
+can still be reused when they already exist on the host.
 
 Use the following environment variables, or let the repo wrapper generate a
 chat-friendly readiness report first:
@@ -171,11 +178,25 @@ RETRIEVAL_RERANKER_API_KEY=your-reranker-api-key
 RETRIEVAL_RERANKER_API_BASE=https://your-reranker-provider/v1/rerank
 RETRIEVAL_RERANKER_MODEL=your-reranker-model
 
+# Shared LLM input accepted by onboarding/setup (auto-fanned out on apply)
+LLM_API_BASE=https://your-llm-provider/v1
+LLM_API_KEY=your-llm-api-key
+LLM_MODEL=your-llm-model
+
 # Optional on Profile C. Expected on Profile D.
+# For manual static env editing, fill these resolved runtime fields explicitly.
 WRITE_GUARD_LLM_ENABLED=true
 WRITE_GUARD_LLM_API_BASE=https://your-llm-provider/v1
 WRITE_GUARD_LLM_API_KEY=your-llm-api-key
 WRITE_GUARD_LLM_MODEL=your-llm-model
+COMPACT_GIST_LLM_ENABLED=true
+COMPACT_GIST_LLM_API_BASE=https://your-llm-provider/v1
+COMPACT_GIST_LLM_API_KEY=your-llm-api-key
+COMPACT_GIST_LLM_MODEL=your-llm-model
+INTENT_LLM_ENABLED=true
+INTENT_LLM_API_BASE=https://your-llm-provider/v1
+INTENT_LLM_API_KEY=your-llm-api-key
+INTENT_LLM_MODEL=your-llm-model
 ```
 
 `setup` and `onboarding` probe providers and report detected dimensions. See
@@ -250,6 +271,7 @@ Use this section as a boundary, not as a marketing claim.
 
 - `Profile B` remains the safest first-run path.
 - `Profile C / D` remain provider-dependent and should be treated as ready only after real checks pass in your environment.
+- `Profile D` additionally requires the final resolved `WRITE_GUARD_*`, `COMPACT_GIST_*`, and `INTENT_*` fields to be non-placeholder; manual static env users should fill those fields explicitly instead of relying on template placeholders.
 - the stable user command surface is still `openclaw memory-palace ...`
 - the repo wrapper remains useful for readiness reports and guided setup, but it is not the stable user CLI surface
 - the current public chat-first claim covers handing the checked-out local document page or local doc path to OpenClaw; it does not claim that every host can fetch arbitrary public GitHub URLs on its own

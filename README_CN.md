@@ -57,7 +57,7 @@
 直接贴给 OpenClaw 的 prompt：
 
 ```text
-我想按当前默认推荐的 chat-first 路径给 OpenClaw 安装 Memory Palace。请先判断这台机器上是否已经 clone 了 https://github.com/AGI-is-going-to-arrive/Memory-Palace-Openclaw。 如果已经 clone 了，就优先读取本地仓库里的 docs/openclaw-doc/18-CONVERSATIONAL_ONBOARDING.md；如果还没 clone，就先告诉我把仓库 clone 下来，再继续从 docs/openclaw-doc/18-CONVERSATIONAL_ONBOARDING.md 往下走。 如果你也能打开仓库链接，可以把这个 GitHub 页面当成对应参考页：https://github.com/AGI-is-going-to-arrive/Memory-Palace-Openclaw/blob/main/docs/openclaw-doc/18-CONVERSATIONAL_ONBOARDING.md；但一旦本地仓库已经存在，就优先按本地文档路径执行。 然后请先判断 memory-palace plugin 是否已经安装并加载；如果还没装，先给我最短安装链路；如果已经装好，就继续按 memory_onboarding_status -> memory_onboarding_probe -> memory_onboarding_apply 帮我往下走。先检查宿主里是否已有可复用的 provider 配置，不要默认把我推去 dashboard；如果当前还没有完整 provider 栈，就先按 Profile B 起步；如果 embedding + reranker + LLM 都已经就绪，就直接把 Profile D 当成推荐目标。只有 apply 完成后，再提醒我跑 openclaw memory-palace verify / doctor / smoke。
+我想按当前默认推荐的 chat-first 路径给 OpenClaw 安装 Memory Palace。请先判断这台机器上是否已经 clone 了 https://github.com/AGI-is-going-to-arrive/Memory-Palace-Openclaw。 如果已经 clone 了，就优先读取本地仓库里的 docs/openclaw-doc/18-CONVERSATIONAL_ONBOARDING.md；如果还没 clone，就先告诉我把仓库 clone 下来，再继续从 docs/openclaw-doc/18-CONVERSATIONAL_ONBOARDING.md 往下走。 如果你也能打开仓库链接，可以把这个 GitHub 页面当成对应参考页：https://github.com/AGI-is-going-to-arrive/Memory-Palace-Openclaw/blob/main/docs/openclaw-doc/18-CONVERSATIONAL_ONBOARDING.md；但一旦本地仓库已经存在，就优先按本地文档路径执行。 然后请先判断 memory-palace plugin 是否已经安装并加载；如果还没装，先给我最短安装链路；如果已经装好，就继续按 memory_onboarding_status -> memory_onboarding_probe -> memory_onboarding_apply 帮我往下走。先检查宿主里是否已有可复用的 provider 配置，不要默认把我推去 dashboard；如果当前还没有完整 provider 栈，就先按 Profile B 起步；如果 embedding + reranker + LLM 都已经就绪，就直接把 Profile D 当成推荐目标。如果我在 onboarding/setup 里只提供一套共享 LLM 的 API base + key + model，请默认把它扇出到 WRITE_GUARD / COMPACT_GIST / INTENT。不要只因为“填了 LLM”就把 Profile D 说成 ready；只有最终解析后的 WRITE_GUARD_* / COMPACT_GIST_* / INTENT_* 字段都不是占位值，并且 probe / verify / doctor / smoke 在目标环境里真实通过，Profile D 才算 ready。只有 apply 完成后，再提醒我跑 openclaw memory-palace verify / doctor / smoke。
 ```
 
 ```bash
@@ -118,7 +118,8 @@ openclaw memory-palace smoke --json
 - 先用 **Profile B** 完成零配置起步
 - 如果你只是先把检索升级到 provider-backed，走 **Profile C**
 - 如果你已经准备好 embedding / reranker / LLM 三类配置，并且希望默认打开完整高级能力，强烈建议直接升级到 **Profile D**
-- `Profile C / D` 只有在你自己的环境里真实 probe 和验证通过后，才算真正就绪
+- 如果 onboarding/setup 里只提供一套共享 LLM（`LLM_API_BASE`、`LLM_API_KEY`、`LLM_MODEL`），默认应该把它扇出到 `WRITE_GUARD_*`、`COMPACT_GIST_*`、`INTENT_*`
+- `Profile C / D` 只有在你自己的环境里真实 probe 和验证通过后，才算真正就绪；其中 `Profile D` 还要求最终解析后的 `WRITE_GUARD_*`、`COMPACT_GIST_*`、`INTENT_*` 字段都不是占位值
 
 如果宿主 OpenClaw 里已经装好了 plugin，优先留在聊天里走
 `memory_onboarding_status -> memory_onboarding_probe -> memory_onboarding_apply`。
@@ -146,10 +147,16 @@ python3 scripts/openclaw_memory_palace.py setup --mode basic --profile d --trans
 <summary><strong>Profile C/D provider 配置示例</strong></summary>
 
 Profile C 需要 embedding 服务和 reranker。Profile C 上的 LLM 辅助套件
-仍然是可选增强，应该在 onboarding 里显式开启；Profile D 则把
+仍然是可选增强，应该在 onboarding 里显式开启；Profile D 默认把
 `write_guard + compact_gist + intent_llm` 视为完整高级目标的一部分。
-Profile B 本身不要求外部 embedding / reranker，但如果宿主已经有可复用的
-可选 LLM 配置，仍可能被继续复用。
+在 `setup` / `onboarding` 里，如果你只提供一套共享 LLM
+（`LLM_API_BASE`、`LLM_API_KEY`、`LLM_MODEL`），安装器会默认把它扇出到
+这三组 resolved 字段。`Profile D` 只有在最终解析后的
+`WRITE_GUARD_*`、`COMPACT_GIST_*`、`INTENT_*` 都不是占位值，并且真实
+`probe / verify / doctor / smoke` 通过后，才算 ready。如果你不是走
+onboarding/setup，而是手工编辑静态 env 文件，最好也把下面这些 resolved
+字段显式填满，避免 placeholder 触发降级 / 回退。Profile B 本身不要求外部
+embedding / reranker，但如果宿主已经有可复用的可选 LLM 配置，仍可能被继续复用。
 
 可以直接设置这些环境变量，或者先让仓库 wrapper 生成一份对话友好的 readiness
 报告：
@@ -170,11 +177,25 @@ RETRIEVAL_RERANKER_API_KEY=your-reranker-api-key
 RETRIEVAL_RERANKER_API_BASE=https://your-reranker-provider/v1/rerank
 RETRIEVAL_RERANKER_MODEL=your-reranker-model
 
+# onboarding/setup 接受这组 shared LLM 输入，并在 apply 时自动扇出
+LLM_API_BASE=https://your-llm-provider/v1
+LLM_API_KEY=your-llm-api-key
+LLM_MODEL=your-llm-model
+
 # Profile C 可选；Profile D 期望启用
+# 如果是手工静态 env 配置，请显式填这几组 resolved runtime 字段。
 WRITE_GUARD_LLM_ENABLED=true
 WRITE_GUARD_LLM_API_BASE=https://your-llm-provider/v1
 WRITE_GUARD_LLM_API_KEY=your-llm-api-key
 WRITE_GUARD_LLM_MODEL=your-llm-model
+COMPACT_GIST_LLM_ENABLED=true
+COMPACT_GIST_LLM_API_BASE=https://your-llm-provider/v1
+COMPACT_GIST_LLM_API_KEY=your-llm-api-key
+COMPACT_GIST_LLM_MODEL=your-llm-model
+INTENT_LLM_ENABLED=true
+INTENT_LLM_API_BASE=https://your-llm-provider/v1
+INTENT_LLM_API_KEY=your-llm-api-key
+INTENT_LLM_MODEL=your-llm-model
 ```
 
 `setup` 和 `onboarding` 会探测 provider 并回报维度。常用参数看
@@ -253,6 +274,7 @@ WRITE_GUARD_LLM_MODEL=your-llm-model
 
 - `Profile B` 仍然是最稳的第一次安装路径。
 - `Profile C / D` 仍然依赖你自己的 provider，必须在你的目标环境真实转绿才算 ready。
+- `Profile D` 还额外要求最终解析后的 `WRITE_GUARD_*`、`COMPACT_GIST_*`、`INTENT_*` 都不是占位值；手工静态 env 用户最好显式填这些字段，不要依赖模板占位值。
 - 稳定用户命令面仍然是 `openclaw memory-palace ...`
 - 仓库 wrapper 适合生成 readiness 报告和辅助 setup，但它不是长期用户命令面
 - 当前公开“对话式 onboarding”口径，验证的是把当前仓库里的文档页面或文档路径交给 OpenClaw；这页不把“任意公开 GitHub URL 都能直接抓取并走通”写成默认承诺

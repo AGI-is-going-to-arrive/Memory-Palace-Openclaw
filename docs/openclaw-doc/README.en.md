@@ -158,6 +158,7 @@ A simpler way to think about it:
   - `openclaw skills list` is not the install gate for the bundled onboarding skill
   - the same onboarding document can drive the correct next step in CLI / WebUI, in installed / uninstalled states, in both Chinese and English
   - the latest profile-matrix record reproduced the current experimental `A / B / C / D + ACL` behavior
+- for `Profile D`, one shared `LLM_*` tuple is an accepted setup/onboarding input, but the final resolved `WRITE_GUARD_*`, `COMPACT_GIST_*`, and `INTENT_*` fields still have to be non-placeholder before the real checks can be called ready
 - Read `15 / 16 / 18 / 23 / 24` as the current public user-evidence pages
 - If a page still keeps an older screenshot or video asset, treat it as repository history or supplemental evidence rather than as a separate “version baseline”
 - The `Profile C / D` boundary stays the same everywhere: “env is filled” does not mean “ready”; `probe / verify / doctor / smoke` still have to pass in the target environment

@@ -200,13 +200,13 @@ Before that, OpenClaw should also do one more quick check:
 If you want OpenClaw to start the flow directly from this page, this is the safest first sentence to paste:
 
 ```text
-First determine whether this machine already has a checked-out copy of this repository and prefer the local doc path if it does. If I am already handing you the checked-out local doc path for this page, do not tell me to clone again. If the repo is not cloned yet, tell me to clone it first and then continue from the local doc page. Then determine whether the memory-palace plugin is already installed and loaded. If it is not installed yet, give me the shortest install chain first. For a checked-out repo, that shortest terminal fallback is `python3 scripts/openclaw_memory_palace.py setup --mode basic --profile b --transport stdio --json`; on Windows PowerShell, use `py -3 scripts/openclaw_memory_palace.py setup --mode basic --profile b --transport stdio --json`; then `openclaw memory-palace verify / doctor / smoke`. If it is already installed, continue with memory_onboarding_status -> memory_onboarding_probe -> memory_onboarding_apply. Reuse any provider settings already present on the host, do not push me to the dashboard by default, start with Profile B when no full provider stack is ready yet, and if embedding + reranker + LLM are already ready, strongly recommend Profile D. Only after apply remind me to run openclaw memory-palace verify / doctor / smoke.
+First determine whether this machine already has a checked-out copy of this repository and prefer the local doc path if it does. If I am already handing you the checked-out local doc path for this page, do not tell me to clone again. If the repo is not cloned yet, tell me to clone it first and then continue from the local doc page. Then determine whether the memory-palace plugin is already installed and loaded. If it is not installed yet, give me the shortest install chain first. For a checked-out repo, that shortest terminal fallback is `python3 scripts/openclaw_memory_palace.py setup --mode basic --profile b --transport stdio --json`; on Windows PowerShell, use `py -3 scripts/openclaw_memory_palace.py setup --mode basic --profile b --transport stdio --json`; then `openclaw memory-palace verify / doctor / smoke`. If it is already installed, continue with memory_onboarding_status -> memory_onboarding_probe -> memory_onboarding_apply. Reuse any provider settings already present on the host, do not push me to the dashboard by default, start with Profile B when no full provider stack is ready yet, and if embedding + reranker + LLM are already ready, strongly recommend Profile D. If I provide one shared LLM API base + key + model during onboarding/setup, treat that tuple as the default source for WRITE_GUARD / COMPACT_GIST / INTENT and show the resolved fields before apply. Do not call Profile D ready until those final resolved fields are all non-placeholder and the real checks pass. Only after apply remind me to run openclaw memory-palace verify / doctor / smoke.
 ```
 
 If you also want it to stay aligned with the current public validation language, add this:
 
 ```text
-Do not call the setup ready just because env values exist. Only describe Profile C / D as ready after probe / verify / doctor / smoke actually pass. If provider probe fails, explain the failed provider in plain language, ask me to fix it, rerun provider-probe / memory_onboarding_probe, and only apply after the probe passes.
+Do not call the setup ready just because env values exist. Only describe Profile C / D as ready after probe / verify / doctor / smoke actually pass. For Profile D, the final resolved WRITE_GUARD_* / COMPACT_GIST_* / INTENT_* fields must also all be non-placeholder. If provider probe fails, explain the failed provider in plain language, ask me to fix it, rerun provider-probe / memory_onboarding_probe, and only apply after the probe passes.
 ```
 
 ---
@@ -387,6 +387,29 @@ If the user asks what the optional LLM assists do, OpenClaw should explain:
 - `compact_gist`: makes `compact_context` output more stable and more reusable as a summary
 - `intent_llm`: improves ambiguous-query intent classification and routing
 
+### Shared LLM fan-out and Profile D readiness
+
+When the user provides one shared LLM configuration during `setup` or
+conversational onboarding, OpenClaw should explain that this tuple is the
+default source for the resolved runtime fields:
+
+- `WRITE_GUARD_*`
+- `COMPACT_GIST_*`
+- `INTENT_*`
+
+OpenClaw should only describe `Profile D` as ready after **both** conditions
+are true:
+
+- the final resolved `WRITE_GUARD_*`, `COMPACT_GIST_*`, and `INTENT_*` fields
+  are all non-placeholder
+- the real `probe / verify / doctor / smoke` checks pass in the target
+  environment
+
+If the user is editing a static env template manually instead of using
+`setup` / `onboarding`, OpenClaw should recommend explicitly filling those
+resolved fields rather than leaving placeholders in place, because placeholder
+values can still force downgrade / fallback.
+
 ### LLM endpoint boundary
 
 When this page talks about provider inputs, the safer public wording is:
@@ -424,9 +447,11 @@ The stable public wording for this page is:
 
 - `Profile B`: default zero-config first-run path
 - `Profile C`: provider-backed retrieval step, with embedding + reranker enabled by default
-- `Profile D`: full advanced path when embedding + reranker + the LLM assist suite are all part of the target
+- `Profile D`: full advanced path when embedding + reranker + the LLM assist suite are all part of the target; a shared LLM tuple provided in onboarding/setup should fan out to `WRITE_GUARD_*`, `COMPACT_GIST_*`, and `INTENT_*`
 - “ready” does not mean “env is filled”
 - the real threshold is still whether `probe / verify / doctor / smoke` pass in the target environment
+- for `Profile D`, the final resolved `WRITE_GUARD_*`, `COMPACT_GIST_*`, and `INTENT_*` fields must also all be non-placeholder
+- if the user is editing a static env file manually instead of using onboarding/setup, recommend filling those resolved fields explicitly instead of relying on placeholders
 
 If you want the full WebUI page and video proof, go back to:
 

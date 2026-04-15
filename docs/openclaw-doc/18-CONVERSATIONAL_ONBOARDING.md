@@ -200,13 +200,13 @@ OpenClaw 应该先判断用户当前属于哪一类：
 如果你想让 OpenClaw 直接按这页规则开始做，可以直接贴这句：
 
 ```text
-请先判断这台机器上是否已经有这个仓库的本地 checkout，并且优先走本地文档路径；如果我现在已经把这页的本地 checkout 文档路径交给你，就不要再让我重复 clone。只有在仓库还没 clone 时，才先告诉我 clone，再继续从本地文档页往下走。然后判断 memory-palace plugin 是否已经安装并加载；如果还没装，先给我最短安装链路。对于已经 checkout 到本地的源码仓，这条最短终端 fallback 就是 `python3 scripts/openclaw_memory_palace.py setup --mode basic --profile b --transport stdio --json`；如果是在 Windows PowerShell 里，就直接改成 `py -3 scripts/openclaw_memory_palace.py setup --mode basic --profile b --transport stdio --json`；然后再跑 `openclaw memory-palace verify / doctor / smoke`。如果已经装好，就继续按 memory_onboarding_status -> memory_onboarding_probe -> memory_onboarding_apply 帮我往下走。先检查宿主里是否已有可复用的 provider 配置或线索，不要默认把我推去 dashboard；如果当前没有完整 provider 栈，就先按 Profile B 起步；如果 embedding + reranker + LLM 都已经就绪，就强烈建议直接走 Profile D；apply 之后再提醒我跑 openclaw memory-palace verify / doctor / smoke。
+请先判断这台机器上是否已经有这个仓库的本地 checkout，并且优先走本地文档路径；如果我现在已经把这页的本地 checkout 文档路径交给你，就不要再让我重复 clone。只有在仓库还没 clone 时，才先告诉我 clone，再继续从本地文档页往下走。然后判断 memory-palace plugin 是否已经安装并加载；如果还没装，先给我最短安装链路。对于已经 checkout 到本地的源码仓，这条最短终端 fallback 就是 `python3 scripts/openclaw_memory_palace.py setup --mode basic --profile b --transport stdio --json`；如果是在 Windows PowerShell 里，就直接改成 `py -3 scripts/openclaw_memory_palace.py setup --mode basic --profile b --transport stdio --json`；然后再跑 `openclaw memory-palace verify / doctor / smoke`。如果已经装好，就继续按 memory_onboarding_status -> memory_onboarding_probe -> memory_onboarding_apply 帮我往下走。先检查宿主里是否已有可复用的 provider 配置或线索，不要默认把我推去 dashboard；如果当前没有完整 provider 栈，就先按 Profile B 起步；如果 embedding + reranker + LLM 都已经就绪，就强烈建议直接走 Profile D。如果我在 onboarding/setup 里只提供一套共享 LLM 的 API base + key + model，请默认把它当成 WRITE_GUARD / COMPACT_GIST / INTENT 的来源，并在 apply 之前把最终解析后的字段说明白。不要在这些 resolved 字段还是占位值时就把 Profile D 说成 ready。apply 之后再提醒我跑 openclaw memory-palace verify / doctor / smoke。
 ```
 
 如果你想明确要求它按“当前公开验证口径”说话，再补一句：
 
 ```text
-不要把“填了 env”说成“已经配好”；只有 probe / verify / doctor / smoke 真正通过，才算 Profile C / D 已就绪。如果 provider probe fail，要先用人话说明是哪条 provider 出问题，再让我修正后重跑 provider-probe / memory_onboarding_probe；只有 probe 通过后再 apply。
+不要把“填了 env”说成“已经配好”；只有 probe / verify / doctor / smoke 真正通过，才算 Profile C / D 已就绪。对 Profile D 来说，还要求最终解析后的 WRITE_GUARD_* / COMPACT_GIST_* / INTENT_* 都不是占位值。如果 provider probe fail，要先用人话说明是哪条 provider 出问题，再让我修正后重跑 provider-probe / memory_onboarding_probe；只有 probe 通过后再 apply。
 ```
 
 ---
@@ -389,6 +389,25 @@ OpenClaw 后续对 profile 的解释应该统一成下面这套：
 - `compact_gist`：把 `compact_context` 压缩结果做得更稳定、更像可复用摘要
 - `intent_llm`：补强模糊查询的 intent 分类与路由判断
 
+### shared LLM 自动扇出与 Profile D ready 边界
+
+如果用户在 `setup` 或对话式 onboarding 里只提供一套共享 LLM 配置，
+OpenClaw 后续应该明确解释：这套输入会作为下面三组 resolved runtime
+字段的默认来源：
+
+- `WRITE_GUARD_*`
+- `COMPACT_GIST_*`
+- `INTENT_*`
+
+只有同时满足下面两条，OpenClaw 才应该把 `Profile D` 说成 ready：
+
+- 最终解析后的 `WRITE_GUARD_*`、`COMPACT_GIST_*`、`INTENT_*` 都不是占位值
+- 目标环境里的真实 `probe / verify / doctor / smoke` 都通过
+
+如果用户不是走 `setup` / `onboarding`，而是手工改静态 env 模板，
+OpenClaw 应该明确建议：把这些 resolved 字段也显式填满，不要留 placeholder，
+否则仍可能触发降级 / 回退。
+
 ### LLM endpoint 边界
 
 这页讲 provider 输入时，更稳的公开说法是：
@@ -426,9 +445,11 @@ OpenClaw 后续应该用人话把下一步说清楚：
 
 - `Profile B`：默认零配置起步档
 - `Profile C`：先升级到 provider-backed retrieval，embedding + reranker 默认开启
-- `Profile D`：embedding + reranker + LLM 辅助套件都要开的全功能高级档
+- `Profile D`：embedding + reranker + LLM 辅助套件都要开的全功能高级档；如果 onboarding/setup 只收到一套 shared LLM，就默认扇出到 `WRITE_GUARD_*`、`COMPACT_GIST_*`、`INTENT_*`
 - “ready” 不等于“env 填了”
 - 只有 `probe / verify / doctor / smoke` 在你的目标环境真实通过，才算真正就绪
+- 对 `Profile D` 来说，最终解析后的 `WRITE_GUARD_*`、`COMPACT_GIST_*`、`INTENT_*` 还必须都不是占位值
+- 如果用户是手工改静态 env 文件，而不是走 onboarding/setup，应该建议他显式填写这些 resolved 字段，不要依赖模板占位值
 
 如果你想看完整用户页面和视频，回到：
 

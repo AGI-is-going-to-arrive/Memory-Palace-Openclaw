@@ -35,6 +35,12 @@
 - `C/D` 仍然依赖用户自己的模型服务
 - fresh runtime 下的 `warn but ok=true` 不能直接等价为失败
 - 当前 repo 不再把 active `.github/workflows/*` 当公开验证主入口
+- 当前 repo 不修 OpenClaw 宿主本体；如果宿主在 `gateway run --port ...` 但未把端口写回 config 的窄场景里，出现 `dashboard --no-open` / `gateway.controlUi.allowedOrigins` 仍落回默认端口，这应记录为宿主限制，不应在本仓库做宿主侧热修补丁
+
+再补一条维护者约束：
+
+- 隔离场景里的 WebUI / gateway 回归，默认应通过真实 `openclaw dashboard --no-open` 取 Control UI URL
+- 不要在测试里手写 `http://127.0.0.1:<port>` 去掩盖宿主自己的端口 / origin 一致性问题
 
 ---
 

@@ -33,6 +33,12 @@ Positioning first:
 - Windows / macOS / Linux conclusions do not substitute for each other
 - `Profile C/D` still depend on user-provided model services
 - `warn but ok=true` should not be flattened into “hard failure” without context
+- this repository does not patch the OpenClaw host itself; if the host hits the narrow case where `gateway run --port ...` does not persist the port back into config and `dashboard --no-open` / `gateway.controlUi.allowedOrigins` still fall back to the default port, treat that as a host limitation rather than a plugin-side fix target
+
+Add one maintainer rule:
+
+- isolated WebUI / gateway regressions should resolve the Control UI URL through the real `openclaw dashboard --no-open` path by default
+- do not hard-code `http://127.0.0.1:<port>` in tests in a way that hides host-side port / origin consistency problems
 
 ---
 
