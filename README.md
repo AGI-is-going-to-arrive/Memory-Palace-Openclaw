@@ -21,6 +21,7 @@
   <img src="https://img.shields.io/badge/SQLite-003b57.svg?logo=sqlite&logoColor=white" alt="SQLite" />
   <img src="https://img.shields.io/badge/protocol-MCP-orange.svg" alt="MCP" />
   <img src="https://img.shields.io/badge/OpenClaw-plugin-green.svg" alt="OpenClaw plugin" />
+  <a href="https://deepwiki.com/AGI-is-going-to-arrive/Memory-Palace-Openclaw"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki" /></a>
 </p>
 
 <p align="center">
@@ -291,15 +292,7 @@ Thanks to the [linux.do community](https://linux.do/).
 
 ## Star History
 
-<a href="https://www.star-history.com/?repos=AGI-is-going-to-arrive%2FMemory-Palace-Openclaw&type=date&legend=top-left">
-
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=AGI-is-going-to-arrive/Memory-Palace-Openclaw&type=date&theme=dark&logscale&legend=top-left" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=AGI-is-going-to-arrive/Memory-Palace-Openclaw&type=date&logscale&legend=top-left" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=AGI-is-going-to-arrive/Memory-Palace-Openclaw&type=date&logscale&legend=top-left" />
- </picture>
-
-</a>
+[![Star History Chart](https://api.star-history.com/svg?repos=AGI-is-going-to-arrive/Memory-Palace-Openclaw&type=Date)](https://www.star-history.com/?repos=AGI-is-going-to-arrive%2FMemory-Palace-Openclaw&type=Date)
 
 ---
 
