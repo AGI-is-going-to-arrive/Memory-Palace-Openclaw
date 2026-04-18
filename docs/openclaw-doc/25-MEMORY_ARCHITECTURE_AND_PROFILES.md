@@ -327,10 +327,16 @@ flowchart TD
 默认顺序大体是：
 
 1. 先放 profile block
-2. 再查 durable memory
-3. 再按配置查 reflection
+2. 再查 durable memory（当前会把本 session 一起纳入检索合并）
+3. 再按配置查 reflection（当前也会把本 session 一起纳入检索合并）
 4. 如果还需要，再扫 host bridge
 5. 最后把这些内容拼成 prompt 前缀
+
+这里再补一个现在的保守边界：
+
+- `command:new` reflection 和 smart extraction 如果找不到目标 session transcript
+- 当前会直接跳过这次 transcript 读取
+- 不再回退去读 sessions 目录里“最新但无关”的 transcript
 
 ### 5.2 host bridge 的角色
 

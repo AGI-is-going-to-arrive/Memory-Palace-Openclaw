@@ -329,10 +329,16 @@ The main recall hook is `before_prompt_build`.
 The practical order is:
 
 1. inject profile block
-2. recall durable memory
-3. optionally recall reflection entries
+2. recall durable memory (the current path also merges the current session into recall scope)
+3. optionally recall reflection entries (the current path also merges the current session into recall scope)
 4. scan host bridge if needed
 5. assemble prompt prefix
+
+One conservative boundary is worth keeping explicit:
+
+- if `command:new` reflection or smart extraction cannot identify the target session transcript
+- the current behavior is to skip that transcript read
+- it no longer falls back to scanning the latest unrelated transcript under the sessions directory
 
 ### 5.2 What host bridge is for
 

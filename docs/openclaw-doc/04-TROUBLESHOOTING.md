@@ -539,3 +539,71 @@ openclaw models status --json --probe --agent main
 3. 如果持续复现，再去查是不是有长时间占锁的流程
 
 只有在你频繁复现、而且明显不是正常并发时，才值得继续往更深的锁竞争去排。
+
+---
+
+## 18. `memory-core/runtime-api.js: not in allowlist`
+
+先说结论：
+
+- 这更像**宿主配置漂移**
+- 不像 `Memory Palace` 自己把 durable memory / session 数据写坏了
+
+最容易走偏的点是：
+
+- 不要先查另一台机器上的 `~/.openclaw/openclaw.json`
+- 要先查**真正报错那台环境**正在用的配置文件
+- 如果报错环境是 Linux / Docker，优先看：
+
+```bash
+cat /root/.openclaw/openclaw.json
+```
+
+先核对这 4 件事是不是同时成立：
+
+- `plugins.allow` 里同时有 `"memory-palace"` 和 `"memory-core"`
+- `plugins.slots.memory` 还是 `"memory-palace"`
+- `plugins.entries.memory-palace.enabled` 是 `true`
+- `plugins.entries.memory-core.enabled` 是 `true`
+
+更稳的排法是：
+
+```bash
+openclaw config validate
+openclaw status --json
+openclaw plugins inspect memory-palace --json
+openclaw plugins inspect memory-core --json
+cat /root/.openclaw/openclaw.json
+```
+
+如果你现在只是想先定位，不想顺手动掉当前 gateway / service，先跑：
+
+```bash
+openclaw doctor --non-interactive
+```
+
+再决定要不要：
+
+- 手工改 config
+- 或再跑 `openclaw doctor --fix`
+
+这里补一句当前更稳的理解：
+
+- `memory-core` 在这条链路里是 compat shim
+- 只要 `plugins.slots.memory` 还指向 `memory-palace`
+- active memory slot 就还是 `memory-palace`
+
+还有一个很容易混淆的报错要分开看：
+
+- 如果你看到的是 `plugins.allow excludes "memory"`
+- 这说的是宿主原生 `openclaw memory ...` surface 没放开
+- 不是这条 `memory-core/runtime-api.js not in allowlist`
+
+如果确认就是 config drift，修完后再重启并复查：
+
+```bash
+openclaw gateway restart
+openclaw status --json
+openclaw plugins inspect memory-palace --json
+openclaw plugins inspect memory-core --json
+```

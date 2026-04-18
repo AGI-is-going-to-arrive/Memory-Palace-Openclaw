@@ -136,23 +136,64 @@ export function registerLifecycleHooks(
     event: Record<string, unknown>,
     ctx: Record<string, unknown>,
   ): string => {
+    const sessionFileCandidates = [
+      deps.readString(ctx.sessionFile),
+      deps.readString(event.sessionFile),
+      isRecord(ctx.sessionEntry) ? deps.readString(ctx.sessionEntry.sessionFile) : undefined,
+      isRecord(event.context) && isRecord(event.context.sessionEntry)
+        ? deps.readString(event.context.sessionEntry.sessionFile)
+        : undefined,
+      isRecord(ctx.previousSessionEntry) ? deps.readString(ctx.previousSessionEntry.sessionFile) : undefined,
+      isRecord(event.context) && isRecord(event.context.previousSessionEntry)
+        ? deps.readString(event.context.previousSessionEntry.sessionFile)
+        : undefined,
+    ];
     const messageText = deps.normalizeText(
       deps.extractMessageTexts(
         Array.isArray(event.messages) ? event.messages : [],
         ["user", "assistant"],
       ).join("\n"),
     );
-    return (
-      deps.readString(ctx.sessionKey) ??
-      deps.readString(ctx.sessionId) ??
-      deps.readString(event.sessionKey) ??
-      deps.readString(event.sessionId) ??
-      deps.readString(ctx.agentId) ??
-      deps.readString(event.agentId) ??
-      messageText ??
-      deps.normalizeText(deps.readString(event.prompt)) ??
-      "unknown-session"
-    );
+    const taggedCandidates: Array<string | undefined> = [
+      deps.readString(ctx.sessionKey)
+        ? `sessionKey:${deps.readString(ctx.sessionKey)}`
+        : undefined,
+      deps.readString(ctx.sessionId)
+        ? `sessionId:${deps.readString(ctx.sessionId)}`
+        : undefined,
+      deps.readString(event.sessionKey)
+        ? `sessionKey:${deps.readString(event.sessionKey)}`
+        : undefined,
+      deps.readString(event.sessionId)
+        ? `sessionId:${deps.readString(event.sessionId)}`
+        : undefined,
+      sessionFileCandidates.find((entry): entry is string => Boolean(entry))
+        ? `sessionFile:${sessionFileCandidates.find((entry): entry is string => Boolean(entry))}`
+        : undefined,
+      deps.readString(ctx.agentId) && (messageText ?? deps.normalizeText(deps.readString(event.prompt)))
+        ? `agentPrompt:${deps.readString(ctx.agentId)}::${
+            messageText ?? deps.normalizeText(deps.readString(event.prompt))
+          }`
+        : undefined,
+      deps.readString(event.agentId) && (messageText ?? deps.normalizeText(deps.readString(event.prompt)))
+        ? `agentPrompt:${deps.readString(event.agentId)}::${
+            messageText ?? deps.normalizeText(deps.readString(event.prompt))
+          }`
+        : undefined,
+      deps.readString(ctx.agentId)
+        ? `agent:${deps.readString(ctx.agentId)}`
+        : undefined,
+      deps.readString(event.agentId)
+        ? `agent:${deps.readString(event.agentId)}`
+        : undefined,
+      messageText
+        ? `message:${messageText}`
+        : undefined,
+      deps.normalizeText(deps.readString(event.prompt))
+        ? `prompt:${deps.normalizeText(deps.readString(event.prompt))}`
+        : undefined,
+    ];
+    return taggedCandidates.find((entry): entry is string => Boolean(entry)) ?? "unknown-session";
   };
   const pruneTimedMap = (
     entries: Map<string, number>,

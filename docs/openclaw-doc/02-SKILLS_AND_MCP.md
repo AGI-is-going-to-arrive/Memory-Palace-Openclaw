@@ -127,8 +127,10 @@ OpenClaw
 
 - 上面三条 visual harvest hook 即使宿主缺少 `ctx`，插件也会先归一成空对象再继续跑
 - `agent_end` auto-capture 遇到预期的 `write_guard` 碰撞时，当前语义是 skip，不是失败 warning
+- 默认 durable / reflection recall 现在会把本 session 一起纳入检索合并，不再那么容易把“当前会话里刚提过的上下文”漏掉
 - `before_prompt_build` 和旧版 `before_agent_start` 之间，当前会按 session 做一次性标记，避免同一轮重复 recall
 - `command:new` reflection 现在也会按 session 做去重，并带 TTL 和容量上限，避免长会话里重复写入或缓存越跑越大
+- 如果 `command:new` reflection 或 smart extraction 找不到目标 session transcript，当前会直接跳过，不再回退去读“最新但无关”的 transcript
 
 但要把另一个边界也一起记住：
 

@@ -193,7 +193,7 @@ export async function runAutoRecallHook(
       let payload = await session.withClient(async (client) =>
         deps.runScopedSearch(client, prompt, config, policy, {
           maxResults: config.autoRecall.maxResults,
-          includeSession: false,
+          includeSession: true,
           includeReflection: false,
           filters: config.query.filters,
         }),
@@ -203,7 +203,7 @@ export async function runAutoRecallHook(
           payload = await session.withClient(async (client) =>
             deps.runScopedSearch(client, variant, config, policy, {
               maxResults: config.autoRecall.maxResults,
-              includeSession: false,
+              includeSession: true,
               includeReflection: false,
               filters: config.query.filters,
             }),
@@ -240,7 +240,7 @@ export async function runAutoRecallHook(
       const reflectionPayload = await session.withClient(async (client) =>
         deps.runScopedSearch(client, prompt, config, policy, {
           maxResults: config.reflection.maxResults,
-          includeSession: false,
+          includeSession: true,
           includeReflection: true,
           filters: {
             path_prefix: deps.parseReflectionSearchPrefix(config, policy),

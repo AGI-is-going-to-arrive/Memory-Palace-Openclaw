@@ -6553,7 +6553,7 @@ function resolvePreviousSessionFile(
     } catch {
       // Ignore transcript fallback discovery failures and keep scanning candidates.
     }
-    return trimmed;
+    return undefined;
   }
 
   function resolveSessionsDir(): string | undefined {
@@ -6696,20 +6696,6 @@ function resolvePreviousSessionFile(
         if (topicVariant) {
           return path.join(sessionsDir, topicVariant);
         }
-      }
-      const latestReset = files
-        .filter((name) => name.includes(".jsonl.reset."))
-        .sort()
-        .at(-1);
-      if (latestReset) {
-        return path.join(sessionsDir, latestReset);
-      }
-      const latestCanonical = files
-        .filter((name) => name.endsWith(".jsonl") && !name.includes(".reset."))
-        .sort()
-        .at(-1);
-      if (latestCanonical) {
-        return path.join(sessionsDir, latestCanonical);
       }
     } catch {
       // Ignore directory scanning failures and fall through.

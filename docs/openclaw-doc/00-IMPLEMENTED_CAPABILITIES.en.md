@@ -32,7 +32,9 @@ These should no longer be described as “planned”:
 - visual memory is a real product surface
 - experimental multi-agent ACL is inside the current product boundary
 - `before_prompt_build` is the primary lifecycle hook
+- durable / reflection auto recall now merge the current session into recall scope, so “the current chat context did not come back” is less likely on the default path
 - command:new reflection dedupe has session/TTL/budget protection
+- command:new reflection and smart extraction now fail closed when the target session transcript cannot be identified, instead of scanning the latest unrelated transcript
 - onboarding tools avoid passing secrets on the command line
 - current installer accepts legacy env aliases and maps them forward
 
@@ -43,6 +45,7 @@ These should no longer be described as “planned”:
 - `memory-palace` can take over the active OpenClaw memory slot
 - that does **not** replace the host's own file-based memory
 - automatic recall / capture / visual harvest still depend on hook-capable hosts
+- newer hosts may also keep a compatibility shim such as `memory-core`, but as long as `plugins.slots.memory` still points at `memory-palace`, the active slot has not changed
 - visual context harvest is not the same thing as long-term visual storage
 
 ---

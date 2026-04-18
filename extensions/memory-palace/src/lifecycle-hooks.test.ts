@@ -263,6 +263,46 @@ describe("registerLifecycleHooks", () => {
     }
   });
 
+  it("keeps command:new reflection dedupe session-scoped when agentId and prompt match", async () => {
+    const originalNow = Date.now;
+    const now = 10_000;
+    Date.now = () => now;
+
+    try {
+      const harness = createHarness();
+      const commandNewHook = harness.internalHooks.get("command:new");
+      expect(commandNewHook).toBeDefined();
+
+      const sharedEvent = {
+        agentId: "shared-agent",
+        prompt: "shared prompt",
+      };
+      const sharedCtx = {
+        agentId: "shared-agent",
+      };
+
+      await commandNewHook?.(
+        { ...sharedEvent, sessionKey: "session-a" },
+        sharedCtx,
+      );
+      await commandNewHook?.(
+        { ...sharedEvent, sessionKey: "session-b" },
+        sharedCtx,
+      );
+      await commandNewHook?.(
+        { ...sharedEvent, sessionKey: "session-a" },
+        sharedCtx,
+      );
+
+      expect(harness.reflectionCalls).toEqual([
+        "session-a",
+        "session-b",
+      ]);
+    } finally {
+      Date.now = originalNow;
+    }
+  });
+
   it("consumes prompt-build recall markers only for the matching session", async () => {
     const harness = createHarness();
     const beforePromptBuild = harness.typedHooks.get("before_prompt_build");
@@ -288,6 +328,39 @@ describe("registerLifecycleHooks", () => {
     expect(harness.recallCalls).toEqual(["session-a", "session-b"]);
   });
 
+  it("keeps prompt-build recall markers session-scoped when agentId and prompt match", async () => {
+    const harness = createHarness();
+    const beforePromptBuild = harness.typedHooks.get("before_prompt_build");
+    const beforeAgentStart = harness.typedHooks.get("before_agent_start");
+    expect(beforePromptBuild).toBeDefined();
+    expect(beforeAgentStart).toBeDefined();
+
+    const sharedEvent = {
+      agentId: "shared-agent",
+      prompt: "shared prompt",
+    };
+    const sharedCtx = {
+      agentId: "shared-agent",
+    };
+
+    await beforePromptBuild?.(
+      sharedEvent,
+      { ...sharedCtx, sessionId: "session-a" },
+    );
+    const otherSessionExecuted = await beforeAgentStart?.(
+      sharedEvent,
+      { ...sharedCtx, sessionId: "session-b" },
+    );
+    const originalSessionSkipped = await beforeAgentStart?.(
+      sharedEvent,
+      { ...sharedCtx, sessionId: "session-a" },
+    );
+
+    expect(otherSessionExecuted).toEqual({ sessionRef: "session-b" });
+    expect(originalSessionSkipped).toBeUndefined();
+    expect(harness.recallCalls).toEqual(["session-a", "session-b"]);
+  });
+
   it("clears prompt-build recall markers after completion when before_agent_start never fires", async () => {
     const harness = createHarness();
     const beforePromptBuild = harness.typedHooks.get("before_prompt_build");
@@ -310,6 +383,32 @@ describe("registerLifecycleHooks", () => {
       "session-repeat",
       "session-repeat",
     ]);
+  });
+
+  it("does not let a different sessionFile consume the prompt-build recall marker when session ids are missing", async () => {
+    const recallCalls: string[] = [];
+    const harness = createHarness({
+      async runAutoRecallHook() {
+        recallCalls.push("called");
+        return { ok: true };
+      },
+    });
+    const beforePromptBuild = harness.typedHooks.get("before_prompt_build");
+    const beforeAgentStart = harness.typedHooks.get("before_agent_start");
+    expect(beforePromptBuild).toBeDefined();
+    expect(beforeAgentStart).toBeDefined();
+
+    await beforePromptBuild?.(
+      { prompt: "same prompt", agentId: "agent-alpha", sessionFile: "/tmp/session-a.jsonl" },
+      { agentId: "agent-alpha", sessionFile: "/tmp/session-a.jsonl" },
+    );
+    const fallbackResult = await beforeAgentStart?.(
+      { prompt: "same prompt", agentId: "agent-alpha", sessionFile: "/tmp/session-b.jsonl" },
+      { agentId: "agent-alpha", sessionFile: "/tmp/session-b.jsonl" },
+    );
+
+    expect(fallbackResult).toEqual({ ok: true });
+    expect(recallCalls).toHaveLength(2);
   });
 
   it("clears prompt-build recall markers after exceptions so later fallback is not poisoned", async () => {

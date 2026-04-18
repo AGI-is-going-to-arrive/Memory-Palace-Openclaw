@@ -13,7 +13,9 @@ Use this skill inside OpenClaw when the active memory plugin is `memory-palace`.
 On a hook-capable OpenClaw host, the default path is:
 
 - the active memory plugin is already `memory-palace`
-- durable memory recall is attempted automatically before the agent starts
+- `before_prompt_build` is the primary automatic recall hook
+- older hosts fall back to `before_agent_start`
+- durable / reflection recall now search with the current session included, so recent in-thread context is less likely to be dropped
 - a subset of user messages may be auto-captured after a successful turn
 - visual context may be auto-harvested during the current turn
 
@@ -35,6 +37,7 @@ Important boundary:
 - visual context may be auto-harvested
 - visual memory is **not** auto-stored as a long-term record unless you explicitly use `memory_store_visual`
 - the stable user-facing entry is the memory slot plus `openclaw memory-palace ...`, not raw MCP tools
+- if `command:new` reflection or smart extraction cannot identify the target session transcript, the current behavior is to skip that transcript fallback instead of scanning the latest unrelated transcript
 
 Onboarding boundary:
 

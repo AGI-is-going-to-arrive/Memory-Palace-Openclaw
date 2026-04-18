@@ -124,8 +124,10 @@ Additional implementation notes:
 
 - Even if the host lacks `ctx` for the three visual harvest hooks, the plugin normalizes it to an empty object and continues
 - When `agent_end` auto-capture encounters an expected `write_guard` collision, the current semantics are skip, not a failure warning
+- durable / reflection recall on the default path now merge the current session into recall scope, so recent in-thread context is less likely to be dropped
 - Between `before_prompt_build` and the legacy `before_agent_start` path, the plugin now uses a session-scoped marker so the same turn does not recall twice
 - `command:new` reflection is now also deduped per session, with TTL and cache bounds, so long-running hosts do not keep rewriting the same reflection or growing the cache without limit
+- if `command:new` reflection or smart extraction cannot identify the target session transcript, the current behavior is to skip that read rather than scanning the latest unrelated transcript
 
 But keep this boundary in mind as well:
 

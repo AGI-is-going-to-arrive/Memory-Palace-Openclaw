@@ -539,3 +539,71 @@ Handle it by:
 3. If it keeps recurring, then investigate whether there is a long-held lock
 
 Only when you see frequent recurrence -- and it is clearly not normal concurrency -- is it worth investigating deeper lock contention.
+
+---
+
+## 18. `memory-core/runtime-api.js: not in allowlist`
+
+The key point:
+
+- this is usually **host configuration drift**
+- it is not the same thing as Memory Palace corrupting its own durable memory or session data
+
+The easiest way to go wrong here is:
+
+- do not start by checking `~/.openclaw/openclaw.json` on some other machine
+- check the config file used by the environment that is actually failing
+- if the failing environment is Linux / Docker, start with:
+
+```bash
+cat /root/.openclaw/openclaw.json
+```
+
+Confirm that all 4 of these are true at the same time:
+
+- `plugins.allow` contains both `"memory-palace"` and `"memory-core"`
+- `plugins.slots.memory` is still `"memory-palace"`
+- `plugins.entries.memory-palace.enabled` is `true`
+- `plugins.entries.memory-core.enabled` is `true`
+
+The safer diagnostic sequence is:
+
+```bash
+openclaw config validate
+openclaw status --json
+openclaw plugins inspect memory-palace --json
+openclaw plugins inspect memory-core --json
+cat /root/.openclaw/openclaw.json
+```
+
+If you only want to diagnose first and do not want to restart the current gateway / service as a side effect, start with:
+
+```bash
+openclaw doctor --non-interactive
+```
+
+Then decide whether you want to:
+
+- patch the config manually
+- or run `openclaw doctor --fix`
+
+One boundary is worth keeping explicit:
+
+- `memory-core` is a compatibility shim on this path
+- as long as `plugins.slots.memory` still points at `memory-palace`
+- the active memory slot is still `memory-palace`
+
+There is another easily confused error that should be read separately:
+
+- if you see `plugins.allow excludes "memory"`
+- that is the host's built-in `openclaw memory ...` surface not being allowed
+- it is not the same as `memory-core/runtime-api.js not in allowlist`
+
+If this really is config drift, restart and recheck only after the config is fixed:
+
+```bash
+openclaw gateway restart
+openclaw status --json
+openclaw plugins inspect memory-palace --json
+openclaw plugins inspect memory-core --json
+```

@@ -6650,6 +6650,241 @@ describe("memory-palace plugin helpers", () => {
     expect(storedContent).toContain("- summary_method: transcript_rollup_v1");
   });
 
+  it("fails closed when command:new previous session id is missing instead of reading an unrelated latest transcript", async () => {
+    const tempDir = createRepoTempDir("memory-palace-command-new-missing-session");
+    const sessionsDir = join(tempDir, "state", "agents", "agent-alpha", "sessions");
+    mkdirSync(sessionsDir, { recursive: true });
+    writeFileSync(
+      join(sessionsDir, "session-unrelated.jsonl.reset.2026-03-15T09-13-32.891Z"),
+      [
+        JSON.stringify({ type: "session", version: 3, id: "session-unrelated", timestamp: new Date().toISOString() }),
+        JSON.stringify({
+          type: "message",
+          id: "u1",
+          timestamp: new Date().toISOString(),
+          message: {
+            role: "user",
+            content: [{ type: "text", text: "Unrelated transcript token." }],
+          },
+        }),
+        JSON.stringify({
+          type: "message",
+          id: "a1",
+          timestamp: new Date().toISOString(),
+          message: {
+            role: "assistant",
+            content: [{ type: "text", text: "Lesson: this unrelated transcript must not be read." }],
+          },
+        }),
+      ].join("\n"),
+      "utf8",
+    );
+
+    const calls: string[] = [];
+    const config = __testing.parsePluginConfig({
+      acl: { enabled: true },
+      reflection: {
+        enabled: true,
+        source: "command_new",
+        rootUri: "core://reflection",
+      },
+    });
+    const fakeClient = {
+      async readMemory() {
+        return "Error: URI missing";
+      },
+      async createMemory({ content }: { content: string }) {
+        calls.push(`content:${content}`);
+        return {
+          ok: true,
+          created: true,
+          uri: "core://reflection/agent-alpha/2026/03/15/item",
+        };
+      },
+      async updateMemory() {
+        throw new Error("updateMemory should not run when the target session transcript is missing");
+      },
+    };
+
+    try {
+      const originalStateDir = process.env.OPENCLAW_STATE_DIR;
+      process.env.OPENCLAW_STATE_DIR = join(tempDir, "state");
+      try {
+        await __testing.runReflectionFromCommandNew(
+          { logger: { warn() {}, error() {}, info() {}, debug() {} } } as never,
+          config,
+          {
+            withClient: async <T>(run: (client: typeof fakeClient) => Promise<T>) => run(fakeClient),
+            close: async () => undefined,
+          },
+          {
+            context: {
+              previousSessionEntry: {
+                sessionId: "session-missing",
+              },
+            },
+          },
+          {
+            agentId: "agent-alpha",
+          },
+        );
+      } finally {
+        if (originalStateDir === undefined) {
+          delete process.env.OPENCLAW_STATE_DIR;
+        } else {
+          process.env.OPENCLAW_STATE_DIR = originalStateDir;
+        }
+      }
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+
+    expect(calls).toEqual([]);
+  });
+
+  it("fails closed when command:new lacks session identity instead of reading an unrelated latest transcript", async () => {
+    const tempDir = createRepoTempDir("memory-palace-command-new-no-session-id");
+    const sessionsDir = join(tempDir, "state", "agents", "agent-alpha", "sessions");
+    mkdirSync(sessionsDir, { recursive: true });
+    writeFileSync(
+      join(sessionsDir, "session-unrelated.jsonl"),
+      [
+        JSON.stringify({ type: "session", version: 3, id: "session-unrelated", timestamp: new Date().toISOString() }),
+        JSON.stringify({
+          type: "message",
+          id: "u1",
+          timestamp: new Date().toISOString(),
+          message: {
+            role: "user",
+            content: [{ type: "text", text: "Unrelated transcript token." }],
+          },
+        }),
+        JSON.stringify({
+          type: "message",
+          id: "a1",
+          timestamp: new Date().toISOString(),
+          message: {
+            role: "assistant",
+            content: [{ type: "text", text: "Lesson: a missing session id must not scan the latest transcript." }],
+          },
+        }),
+      ].join("\n"),
+      "utf8",
+    );
+
+    const calls: string[] = [];
+    const config = __testing.parsePluginConfig({
+      acl: { enabled: true },
+      reflection: {
+        enabled: true,
+        source: "command_new",
+        rootUri: "core://reflection",
+      },
+    });
+    const fakeClient = {
+      async readMemory() {
+        return "Error: URI missing";
+      },
+      async createMemory({ content }: { content: string }) {
+        calls.push(`content:${content}`);
+        return {
+          ok: true,
+          created: true,
+          uri: "core://reflection/agent-alpha/2026/03/15/item",
+        };
+      },
+      async updateMemory() {
+        throw new Error("updateMemory should not run when session identity is missing");
+      },
+    };
+
+    try {
+      const originalStateDir = process.env.OPENCLAW_STATE_DIR;
+      process.env.OPENCLAW_STATE_DIR = join(tempDir, "state");
+      try {
+        await __testing.runReflectionFromCommandNew(
+          { logger: { warn() {}, error() {}, info() {}, debug() {} } } as never,
+          config,
+          {
+            withClient: async <T>(run: (client: typeof fakeClient) => Promise<T>) => run(fakeClient),
+            close: async () => undefined,
+          },
+          {},
+          {
+            agentId: "agent-alpha",
+          },
+        );
+      } finally {
+        if (originalStateDir === undefined) {
+          delete process.env.OPENCLAW_STATE_DIR;
+        } else {
+          process.env.OPENCLAW_STATE_DIR = originalStateDir;
+        }
+      }
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+
+    expect(calls).toEqual([]);
+  });
+
+  it("passes includeSession to durable and reflection auto recall searches", async () => {
+    const searchCalls: Array<Record<string, unknown>> = [];
+    const config = __testing.parsePluginConfig({
+      profileMemory: {
+        enabled: false,
+        injectBeforeAgentStart: false,
+      },
+      autoRecall: {
+        enabled: true,
+        maxResults: 2,
+      },
+      reflection: {
+        enabled: true,
+        autoRecall: true,
+        maxResults: 2,
+      },
+      hostBridge: {
+        enabled: false,
+      },
+    });
+    const session = __testing.createSharedClientSession(
+      config,
+      () =>
+        ({
+          async searchMemory(args: Record<string, unknown>) {
+            searchCalls.push(args);
+            return { results: [] };
+          },
+          async readMemory() {
+            return "Error: not found";
+          },
+          async close() {
+            return undefined;
+          },
+        }) as unknown as MemoryPalaceMcpClient,
+    );
+
+    try {
+      await __testing.runAutoRecallHook(
+        { logger: { warn() {}, error() {}, info() {}, debug() {} } } as never,
+        config,
+        session,
+        {
+          prompt: "What is my default workflow and recent reflection summary?",
+        },
+        {
+          agentId: "main",
+        },
+      );
+    } finally {
+      await session.close();
+    }
+
+    expect(searchCalls.length).toBeGreaterThanOrEqual(2);
+    expect(searchCalls.every((entry) => entry.include_session === true)).toBe(true);
+  });
+
   it("skips command:new reflection when no usable summary exists", async () => {
     const calls: string[] = [];
     const config = __testing.parsePluginConfig({
@@ -8884,7 +9119,7 @@ describe("memory-palace plugin helpers", () => {
 
   it("redacts sensitive fields before sending visual adapter payloads", async () => {
     const visualMemorySource = readFileSync(
-      resolve(process.cwd(), "src/visual-memory.ts"),
+      new URL("./src/visual-memory.ts", import.meta.url),
       "utf8",
     );
 
@@ -15972,13 +16207,14 @@ describe("memory-palace plugin helpers", () => {
     }
   });
 
-  it("falls back to the latest canonical session transcript when smart extraction lacks session identifiers", async () => {
-    const tempDir = createRepoTempDir("memory-palace-smart-extraction-latest-session");
+  it("fails closed when smart extraction lacks session identifiers instead of reading the latest unrelated transcript", async () => {
+    const tempDir = createRepoTempDir("memory-palace-smart-extraction-no-session-id");
     const stored = new Map<string, string>();
     const stateDir = join(tempDir, "state");
     const sessionDir = join(stateDir, "agents", "main", "sessions");
     const previousStateDir = process.env.OPENCLAW_STATE_DIR;
     const previousFetch = globalThis.fetch;
+    let fetchCalls = 0;
     mkdirSync(sessionDir, { recursive: true });
     writeFileSync(
       join(sessionDir, "latest-session.jsonl"),
@@ -16008,8 +16244,9 @@ describe("memory-palace plugin helpers", () => {
       "utf8",
     );
     process.env.OPENCLAW_STATE_DIR = stateDir;
-    globalThis.fetch = async () =>
-      new Response(
+    globalThis.fetch = async () => {
+      fetchCalls += 1;
+      return new Response(
         JSON.stringify({
           choices: [
             {
@@ -16032,6 +16269,7 @@ describe("memory-palace plugin helpers", () => {
           headers: { "Content-Type": "application/json" },
         },
       );
+    };
     try {
       __testing.resetPluginRuntimeState();
       const config = __testing.parsePluginConfig({
@@ -16098,9 +16336,150 @@ describe("memory-palace plugin helpers", () => {
         { agentId: "main" },
       );
 
-      expect(stored.get("core://agents/main/captured/llm-extracted/workflow/current")).toContain(
-        "source_mode: llm_extracted",
+      expect(fetchCalls).toBe(0);
+      expect(stored.size).toBe(0);
+    } finally {
+      globalThis.fetch = previousFetch;
+      if (previousStateDir === undefined) {
+        delete process.env.OPENCLAW_STATE_DIR;
+      } else {
+        process.env.OPENCLAW_STATE_DIR = previousStateDir;
+      }
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it("fails closed when smart extraction session id is missing from disk instead of reading the latest unrelated transcript", async () => {
+    const tempDir = createRepoTempDir("memory-palace-smart-extraction-missing-session-file");
+    const stored = new Map<string, string>();
+    const stateDir = join(tempDir, "state");
+    const sessionDir = join(stateDir, "agents", "main", "sessions");
+    const previousStateDir = process.env.OPENCLAW_STATE_DIR;
+    const previousFetch = globalThis.fetch;
+    let fetchCalls = 0;
+    mkdirSync(sessionDir, { recursive: true });
+    writeFileSync(
+      join(sessionDir, "latest-session.jsonl"),
+      [
+        JSON.stringify({
+          type: "message",
+          message: {
+            role: "user",
+            content: [{ type: "text", text: "以后默认工作流是先做代码改动。" }],
+          },
+        }),
+        JSON.stringify({
+          type: "message",
+          message: {
+            role: "assistant",
+            content: [{ type: "text", text: "收到，默认先做代码改动。" }],
+          },
+        }),
+        JSON.stringify({
+          type: "message",
+          message: {
+            role: "user",
+            content: [{ type: "text", text: "然后马上跑测试，文档最后再补。" }],
+          },
+        }),
+      ].join("\n"),
+      "utf8",
+    );
+    process.env.OPENCLAW_STATE_DIR = stateDir;
+    globalThis.fetch = async () => {
+      fetchCalls += 1;
+      return new Response(
+        JSON.stringify({
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  candidates: [
+                    {
+                      category: "workflow",
+                      summary: "默认工作流：先做代码改动，再跑测试，文档最后再补",
+                      confidence: 0.91,
+                    },
+                  ],
+                }),
+              },
+            },
+          ],
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        },
       );
+    };
+    try {
+      __testing.resetPluginRuntimeState();
+      const config = __testing.parsePluginConfig({
+        stdio: {
+          env: {
+            OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "c",
+            OPENAI_BASE_URL: "http://127.0.0.1:8317/v1",
+            OPENAI_MODEL: "gpt-5.4",
+            OPENAI_API_KEY: "sk-" + "12345678",
+            WRITE_GUARD_LLM_API_BASE: "http://127.0.0.1:8317/v1",
+            WRITE_GUARD_LLM_MODEL: "gpt-5.4",
+            WRITE_GUARD_LLM_API_KEY: "sk-" + "12345678",
+          },
+        },
+        observability: {
+          transportDiagnosticsPath: join(tempDir, "transport.json"),
+        },
+        autoCapture: {
+          enabled: false,
+        },
+        capturePipeline: {
+          captureAssistantDerived: false,
+        },
+        profileMemory: {
+          enabled: true,
+          blocks: ["workflow"],
+        },
+        smartExtraction: {
+          enabled: true,
+          mode: "local",
+        },
+      });
+      const fakeClient = {
+        async readMemory(args: Record<string, unknown>) {
+          const uri = String(args.uri ?? "");
+          return stored.has(uri) ? { text: stored.get(uri) } : "Error: not found";
+        },
+        async createMemory(args: Record<string, unknown>) {
+          const parentUri = String(args.parent_uri ?? "");
+          const title = String(args.title ?? "");
+          const uri = parentUri.endsWith("://") ? `${parentUri}${title}` : `${parentUri}/${title}`;
+          stored.set(uri, String(args.content ?? ""));
+          return { ok: true, created: true, uri };
+        },
+        async updateMemory(args: Record<string, unknown>) {
+          const uri = String(args.uri ?? "");
+          stored.set(uri, String(args.new_string ?? ""));
+          return { ok: true, updated: true, uri };
+        },
+      };
+      const fakeSession = {
+        client: fakeClient,
+        withClient: async <T>(run: (client: Record<string, unknown>) => Promise<T>) => run(fakeClient),
+        close: async () => undefined,
+      };
+
+      await __testing.runSmartExtractionCaptureHook(
+        { logger: { warn() {}, error() {}, info() {}, debug() {} } } as never,
+        config,
+        fakeSession as never,
+        {
+          isError: false,
+        },
+        { agentId: "main", sessionId: "session-missing" },
+      );
+
+      expect(fetchCalls).toBe(0);
+      expect(stored.size).toBe(0);
     } finally {
       globalThis.fetch = previousFetch;
       if (previousStateDir === undefined) {

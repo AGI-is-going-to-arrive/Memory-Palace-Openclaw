@@ -38,7 +38,9 @@
 - visual memory 已在当前产品面里成立
 - 实验性多 Agent ACL 已进入当前产品边界，但后端 / 直连 API 这一层仍待继续硬化
 - `before_prompt_build` 已作为主 lifecycle hook；`before_agent_start` 只保留兼容 fallback，当前还补上了按 session 的去重标记，避免同一轮重复 recall
+- durable / reflection auto recall 当前会把本 session 一起纳入检索合并，不再那么容易出现“当前会话里的上下文没带回来”
 - `command:new` reflection 去重现在带 session 边界、TTL 和容量上限，不再容易在长会话里重复写入或把缓存越跑越大
+- `command:new` reflection 和 smart extraction 在找不到目标 session transcript 时，当前会直接跳过（fail-closed），不再偷读“最新但无关”的 transcript
 - WAL 模式已默认启用（解决并发 FTS 锁冲突）
 - intent 分类支持中英文隐式模式匹配（causal/temporal/exploratory/factual 四类）
 - vitality 检索排序已集成时间衰减（stale 记忆自动降权）
@@ -76,6 +78,7 @@
 - 这不等于替代宿主自己的文件记忆
 - 自动 recall / auto-capture / visual auto-harvest 依赖支持 hooks 的宿主
 - 当前自动链路的支持下限按代码和现有口径是 `OpenClaw >= 2026.3.2`
+- 新宿主里可能还会一起挂上 `memory-core` 这类 compat shim，但只要 `plugins.slots.memory` 还是 `memory-palace`，active memory slot 就没有变
 - visual context 可以自动 harvest
 - 长期 visual memory 仍然是显式 `memory_store_visual`
 - 当前 repo 不再把 active `.github/workflows/*` 当公开验证主入口
