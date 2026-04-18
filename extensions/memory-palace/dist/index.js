@@ -4,43 +4,25 @@ var __getProtoOf = Object.getPrototypeOf;
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
-function __accessProp(key) {
-  return this[key];
-}
-var __toESMCache_node;
-var __toESMCache_esm;
 var __toESM = (mod, isNodeMode, target) => {
-  var canCache = mod != null && typeof mod === "object";
-  if (canCache) {
-    var cache = isNodeMode ? __toESMCache_node ??= new WeakMap : __toESMCache_esm ??= new WeakMap;
-    var cached = cache.get(mod);
-    if (cached)
-      return cached;
-  }
   target = mod != null ? __create(__getProtoOf(mod)) : {};
   const to = isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target;
   for (let key of __getOwnPropNames(mod))
     if (!__hasOwnProp.call(to, key))
       __defProp(to, key, {
-        get: __accessProp.bind(mod, key),
+        get: () => mod[key],
         enumerable: true
       });
-  if (canCache)
-    cache.set(mod, to);
   return to;
 };
 var __commonJS = (cb, mod) => () => (mod || cb((mod = { exports: {} }).exports, mod), mod.exports);
-var __returnValue = (v) => v;
-function __exportSetter(name, newValue) {
-  this[name] = __returnValue.bind(null, newValue);
-}
 var __export = (target, all) => {
   for (var name in all)
     __defProp(target, name, {
       get: all[name],
       enumerable: true,
       configurable: true,
-      set: __exportSetter.bind(all, name)
+      set: (newValue) => all[name] = () => newValue
     });
 };
 var __require = /* @__PURE__ */ createRequire(import.meta.url);
@@ -6304,7 +6286,7 @@ var require_formats = __commonJS((exports) => {
   }
   var TIME = /^(\d\d):(\d\d):(\d\d(?:\.\d+)?)(z|([+-])(\d\d)(?::?(\d\d))?)?$/i;
   function getTime(strictTimeZone) {
-    return function time3(str) {
+    return function time(str) {
       const matches = TIME.exec(str);
       if (!matches)
         return false;
@@ -12038,7 +12020,7 @@ var AssertObjectSchema = custom((v) => v !== null && (typeof v === "object" || t
 var ProgressTokenSchema = union([string2(), number2().int()]);
 var CursorSchema = string2();
 var TaskCreationParamsSchema = looseObject({
-  ttl: number2().optional(),
+  ttl: union([number2(), _null3()]).optional(),
   pollInterval: number2().optional()
 });
 var TaskMetadataSchema = object2({
@@ -12192,8 +12174,7 @@ var ClientCapabilitiesSchema = object2({
   roots: object2({
     listChanged: boolean2().optional()
   }).optional(),
-  tasks: ClientTasksCapabilitySchema.optional(),
-  extensions: record(string2(), AssertObjectSchema).optional()
+  tasks: ClientTasksCapabilitySchema.optional()
 });
 var InitializeRequestParamsSchema = BaseRequestParamsSchema.extend({
   protocolVersion: string2(),
@@ -12218,8 +12199,7 @@ var ServerCapabilitiesSchema = object2({
   tools: object2({
     listChanged: boolean2().optional()
   }).optional(),
-  tasks: ServerTasksCapabilitySchema.optional(),
-  extensions: record(string2(), AssertObjectSchema).optional()
+  tasks: ServerTasksCapabilitySchema.optional()
 });
 var InitializeResultSchema = ResultSchema.extend({
   protocolVersion: string2(),
@@ -12334,7 +12314,6 @@ var ResourceSchema = object2({
   uri: string2(),
   description: optional(string2()),
   mimeType: optional(string2()),
-  size: optional(number2()),
   annotations: AnnotationsSchema.optional(),
   _meta: optional(looseObject({}))
 });
@@ -13098,10 +13077,6 @@ class Protocol {
     this._progressHandlers.clear();
     this._taskProgressTokens.clear();
     this._pendingDebouncedNotifications.clear();
-    for (const info of this._timeoutInfo.values()) {
-      clearTimeout(info.timeoutId);
-    }
-    this._timeoutInfo.clear();
     for (const controller of this._requestHandlerAbortControllers.values()) {
       controller.abort();
     }
@@ -13232,9 +13207,7 @@ class Protocol {
         await capturedTransport?.send(errorResponse);
       }
     }).catch((error2) => this._onerror(new Error(`Failed to send response: ${error2}`))).finally(() => {
-      if (this._requestHandlerAbortControllers.get(request.id) === abortController) {
-        this._requestHandlerAbortControllers.delete(request.id);
-      }
+      this._requestHandlerAbortControllers.delete(request.id);
     });
   }
   _onprogress(notification) {
@@ -14982,11 +14955,11 @@ var AUTHORIZATION_CODE_RESPONSE_TYPE = "code";
 var AUTHORIZATION_CODE_CHALLENGE_METHOD = "S256";
 function selectClientAuthMethod(clientInformation, supportedMethods) {
   const hasClientSecret = clientInformation.client_secret !== undefined;
-  if ("token_endpoint_auth_method" in clientInformation && clientInformation.token_endpoint_auth_method && isClientAuthMethod(clientInformation.token_endpoint_auth_method) && (supportedMethods.length === 0 || supportedMethods.includes(clientInformation.token_endpoint_auth_method))) {
-    return clientInformation.token_endpoint_auth_method;
-  }
   if (supportedMethods.length === 0) {
-    return hasClientSecret ? "client_secret_basic" : "none";
+    return hasClientSecret ? "client_secret_post" : "none";
+  }
+  if ("token_endpoint_auth_method" in clientInformation && clientInformation.token_endpoint_auth_method && isClientAuthMethod(clientInformation.token_endpoint_auth_method) && supportedMethods.includes(clientInformation.token_endpoint_auth_method)) {
+    return clientInformation.token_endpoint_auth_method;
   }
   if (hasClientSecret && supportedMethods.includes("client_secret_basic")) {
     return "client_secret_basic";
@@ -15097,7 +15070,6 @@ async function authInternal(provider, { serverUrl, authorizationCode, scope, res
     });
   }
   const resource = await selectResourceURL(serverUrl, provider, resourceMetadata);
-  const resolvedScope = scope || resourceMetadata?.scopes_supported?.join(" ") || provider.clientMetadata.scope;
   let clientInformation = await Promise.resolve(provider.clientInformation());
   if (!clientInformation) {
     if (authorizationCode !== undefined) {
@@ -15121,7 +15093,6 @@ async function authInternal(provider, { serverUrl, authorizationCode, scope, res
       const fullInformation = await registerClient(authorizationServerUrl, {
         metadata,
         clientMetadata: provider.clientMetadata,
-        scope: resolvedScope,
         fetchFn
       });
       await provider.saveClientInformation(fullInformation);
@@ -15164,7 +15135,7 @@ async function authInternal(provider, { serverUrl, authorizationCode, scope, res
     clientInformation,
     state,
     redirectUrl: provider.redirectUrl,
-    scope: resolvedScope,
+    scope: scope || resourceMetadata?.scopes_supported?.join(" ") || provider.clientMetadata.scope,
     resource
   });
   await provider.saveCodeVerifier(codeVerifier);
@@ -15480,7 +15451,7 @@ async function fetchToken(provider, authorizationServerUrl, { metadata, resource
     fetchFn
   });
 }
-async function registerClient(authorizationServerUrl, { metadata, clientMetadata, scope, fetchFn }) {
+async function registerClient(authorizationServerUrl, { metadata, clientMetadata, fetchFn }) {
   let registrationUrl;
   if (metadata) {
     if (!metadata.registration_endpoint) {
@@ -15495,10 +15466,7 @@ async function registerClient(authorizationServerUrl, { metadata, clientMetadata
     headers: {
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({
-      ...clientMetadata,
-      ...scope !== undefined ? { scope } : {}
-    })
+    body: JSON.stringify(clientMetadata)
   });
   if (!response.ok) {
     throw await parseErrorResponse(response);
@@ -15780,7 +15748,7 @@ class StdioClientTransport {
         },
         stdio: ["pipe", "pipe", this._serverParams.stderr ?? "inherit"],
         shell: false,
-        windowsHide: process3.platform === "win32",
+        windowsHide: process3.platform === "win32" && isElectron(),
         cwd: this._serverParams.cwd
       });
       this._process.on("error", (error2) => {
@@ -15871,6 +15839,9 @@ class StdioClientTransport {
       }
     });
   }
+}
+function isElectron() {
+  return "type" in process3;
 }
 
 // src/utils.ts
@@ -16484,7 +16455,7 @@ class MemoryPalaceMcpClient {
     };
     this.config = {
       clientName: config2.clientName ?? "openclaw-memory-palace",
-      clientVersion: config2.clientVersion ?? "1.0.0",
+      clientVersion: config2.clientVersion ?? "1.0.1",
       transport: config2.transport,
       timeoutMs: normalizePositiveInteger(config2.timeoutMs, DEFAULT_OPERATION_TIMEOUT_MS),
       stdio: config2.stdio,
@@ -20152,9 +20123,30 @@ function registerLifecycleHooks(api2, options) {
     return text.includes("openclaw-control-ui");
   };
   const resolveLifecycleSessionRef = (event, ctx) => {
+    const sessionFileCandidates = [
+      deps.readString(ctx.sessionFile),
+      deps.readString(event.sessionFile),
+      isRecord2(ctx.sessionEntry) ? deps.readString(ctx.sessionEntry.sessionFile) : undefined,
+      isRecord2(event.context) && isRecord2(event.context.sessionEntry) ? deps.readString(event.context.sessionEntry.sessionFile) : undefined,
+      isRecord2(ctx.previousSessionEntry) ? deps.readString(ctx.previousSessionEntry.sessionFile) : undefined,
+      isRecord2(event.context) && isRecord2(event.context.previousSessionEntry) ? deps.readString(event.context.previousSessionEntry.sessionFile) : undefined
+    ];
     const messageText = deps.normalizeText(deps.extractMessageTexts(Array.isArray(event.messages) ? event.messages : [], ["user", "assistant"]).join(`
 `));
-    return deps.readString(ctx.sessionKey) ?? deps.readString(ctx.sessionId) ?? deps.readString(event.sessionKey) ?? deps.readString(event.sessionId) ?? deps.readString(ctx.agentId) ?? deps.readString(event.agentId) ?? messageText ?? deps.normalizeText(deps.readString(event.prompt)) ?? "unknown-session";
+    const taggedCandidates = [
+      deps.readString(ctx.sessionKey) ? `sessionKey:${deps.readString(ctx.sessionKey)}` : undefined,
+      deps.readString(ctx.sessionId) ? `sessionId:${deps.readString(ctx.sessionId)}` : undefined,
+      deps.readString(event.sessionKey) ? `sessionKey:${deps.readString(event.sessionKey)}` : undefined,
+      deps.readString(event.sessionId) ? `sessionId:${deps.readString(event.sessionId)}` : undefined,
+      sessionFileCandidates.find((entry) => Boolean(entry)) ? `sessionFile:${sessionFileCandidates.find((entry) => Boolean(entry))}` : undefined,
+      deps.readString(ctx.agentId) && (messageText ?? deps.normalizeText(deps.readString(event.prompt))) ? `agentPrompt:${deps.readString(ctx.agentId)}::${messageText ?? deps.normalizeText(deps.readString(event.prompt))}` : undefined,
+      deps.readString(event.agentId) && (messageText ?? deps.normalizeText(deps.readString(event.prompt))) ? `agentPrompt:${deps.readString(event.agentId)}::${messageText ?? deps.normalizeText(deps.readString(event.prompt))}` : undefined,
+      deps.readString(ctx.agentId) ? `agent:${deps.readString(ctx.agentId)}` : undefined,
+      deps.readString(event.agentId) ? `agent:${deps.readString(event.agentId)}` : undefined,
+      messageText ? `message:${messageText}` : undefined,
+      deps.normalizeText(deps.readString(event.prompt)) ? `prompt:${deps.normalizeText(deps.readString(event.prompt))}` : undefined
+    ];
+    return taggedCandidates.find((entry) => Boolean(entry)) ?? "unknown-session";
   };
   const pruneTimedMap = (entries, now, maxAgeMs, maxEntries) => {
     for (const [key, seenAt] of entries) {
@@ -20445,7 +20437,7 @@ async function runAutoRecallHook(api2, options) {
     if (durableRecallEnabled && decision.shouldRecall) {
       let payload = await session.withClient(async (client) => deps.runScopedSearch(client, prompt, config2, policy, {
         maxResults: config2.autoRecall.maxResults,
-        includeSession: false,
+        includeSession: true,
         includeReflection: false,
         filters: config2.query.filters
       }));
@@ -20453,7 +20445,7 @@ async function runAutoRecallHook(api2, options) {
         for (const variant of deps.buildRecallQueryVariants(prompt).slice(1)) {
           payload = await session.withClient(async (client) => deps.runScopedSearch(client, variant, config2, policy, {
             maxResults: config2.autoRecall.maxResults,
-            includeSession: false,
+            includeSession: true,
             includeReflection: false,
             filters: config2.query.filters
           }));
@@ -20475,7 +20467,7 @@ async function runAutoRecallHook(api2, options) {
     if (reflectionRecallEnabled && decision.shouldRecall) {
       const reflectionPayload = await session.withClient(async (client) => deps.runScopedSearch(client, prompt, config2, policy, {
         maxResults: config2.reflection.maxResults,
-        includeSession: false,
+        includeSession: true,
         includeReflection: true,
         filters: {
           path_prefix: deps.parseReflectionSearchPrefix(config2, policy)
@@ -28448,7 +28440,7 @@ function persistTransportDiagnosticsSnapshot2(config2, client, report) {
     buildPluginRuntimeSignature,
     getTransportFallbackOrder,
     instanceId: transportSnapshotInstanceId,
-    pluginVersion: "1.0.0",
+    pluginVersion: "1.0.1",
     sanitizeText: redactVisualSensitiveText2,
     snapshotPluginRuntimeState,
     processId: process.pid
@@ -29563,7 +29555,7 @@ function resolvePreviousSessionFile(event, ctx, options) {
         return path8.join(directory, resetCandidates[resetCandidates.length - 1]);
       }
     } catch {}
-    return trimmed;
+    return;
   }
   function resolveSessionsDir() {
     const sessionFileCandidates = [
@@ -29663,14 +29655,6 @@ function resolvePreviousSessionFile(event, ctx, options) {
         if (topicVariant) {
           return path8.join(sessionsDir2, topicVariant);
         }
-      }
-      const latestReset = files.filter((name) => name.includes(".jsonl.reset.")).sort().at(-1);
-      if (latestReset) {
-        return path8.join(sessionsDir2, latestReset);
-      }
-      const latestCanonical = files.filter((name) => name.endsWith(".jsonl") && !name.includes(".reset.")).sort().at(-1);
-      if (latestCanonical) {
-        return path8.join(sessionsDir2, latestCanonical);
       }
     } catch {}
     return;

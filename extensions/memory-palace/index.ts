@@ -5050,7 +5050,7 @@ function persistTransportDiagnosticsSnapshot(
     buildPluginRuntimeSignature,
     getTransportFallbackOrder,
     instanceId: transportSnapshotInstanceId,
-    pluginVersion: "1.0.0",
+    pluginVersion: "1.0.1",
     sanitizeText: redactVisualSensitiveText,
     snapshotPluginRuntimeState,
     processId: process.pid,
