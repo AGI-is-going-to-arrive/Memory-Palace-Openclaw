@@ -22,8 +22,102 @@ const ASSISTANT_DERIVED_SUMMARY_PATTERNS = [
   /\b(prefer|preference|likes?|wants?|default delivery preference)\b/iu,
   /(默认工作流|默认流程|固定流程|工作流|默认交付习惯|默认顺序|交付顺序|协作顺序|偏好|习惯)/u,
 ] as const;
+const WORKFLOW_SEQUENCE_PATTERNS = [
+  /\b(first|then|after|finally|next|before|last)\b/iu,
+  /(先|然后|再|最后|之前|之后|立刻|立即|优先)/u,
+] as const;
+const WORKFLOW_DOC_REFERENCE_PATTERNS = [
+  /\b(doc|docs?|documentation|runbook|guide|manual|readme|onboarding)\b/iu,
+  /(文档|手册|指南|README|runbook|onboarding)/u,
+] as const;
+const WORKFLOW_DOC_EXAMPLE_PATTERNS = [
+  /\b(example|sample|template|snippet|quote|quoted|reference|referenced)\b/iu,
+  /\b(?:according to|from)\b.{0,40}\b(doc|docs?|documentation|runbook|guide|manual|readme|onboarding)\b/iu,
+  /\b(doc|docs?|documentation|runbook|guide|manual|readme|onboarding)\b.{0,40}\b(?:say|says|said|show|shows|showed|list|lists|listed|describe|describes|document|documents|documented|use|uses|used)\b/iu,
+  /(示例|样例|模板|片段|引用|转述|根据文档|按文档示例|文档示例|文档里写|文档中写|手册里写|指南里写)/u,
+] as const;
+const WORKFLOW_NOISE_PATTERNS = [
+  /\b(read|open)\b.{0,80}\b(doc|docs?|documentation|runbook|guide|manual|readme|onboarding)\b.{0,80}\b(answer|reply|respond|output)\b/iu,
+  /(请阅读|按文档规则回答|只回答|只回复|只输出)/u,
+  /\b(answer|reply|respond|output)\b.{0,80}\b(exactly|only)\b/iu,
+  /\b(provider probe fail|session file locked|confirmation code)\b/iu,
+  /(provider probe fail|session file locked|确认代号|运行标记|不要打开.{0,12}dashboard)/u,
+  /(?:^|[\s[])(?:\/|~\/|[A-Za-z]:[\\/]|file:|core:\/\/|memory-palace\/)/u,
+  /\bmemory-palace-openclaw-onboarding\b/iu,
+  /^examples?:/iu,
+  /(^|[\s[(])(?:vendor-pitch|api-design|bug-fix)(?=$|[\s)\].,:;!?])/iu,
+  /(?:^|\s)(?:#\s*Memory Palace Durable Fact|source_mode:|capture_layer:)/u,
+] as const;
 
 type WorkflowSummarySegment = { userIndex: number; text: string };
+
+function hasWorkflowActionSignal(text: string): boolean {
+  return ASSISTANT_DERIVED_WORKFLOW_PATTERNS.some((pattern) => pattern.test(text));
+}
+
+function hasWorkflowStableHint(
+  text: string,
+  deps: Pick<AssistantDerivedDeps, "workflowStableHintPatterns">,
+): boolean {
+  return deps.workflowStableHintPatterns.some((pattern) => pattern.test(text));
+}
+
+function hasWorkflowSequenceSignal(text: string): boolean {
+  return WORKFLOW_SEQUENCE_PATTERNS.some((pattern) => pattern.test(text));
+}
+
+function looksLikeWorkflowNoise(text: string): boolean {
+  return WORKFLOW_NOISE_PATTERNS.some((pattern) => pattern.test(text));
+}
+
+function looksLikeQuotedWorkflowExample(text: string): boolean {
+  return (
+    WORKFLOW_DOC_REFERENCE_PATTERNS.some((pattern) => pattern.test(text)) &&
+    WORKFLOW_DOC_EXAMPLE_PATTERNS.some((pattern) => pattern.test(text))
+  );
+}
+
+function getUserMessageText(
+  messages: unknown[],
+  userIndex: number,
+  deps: Pick<
+    AssistantDerivedDeps,
+    "cleanMessageTextForReasoning" | "extractTextBlocks" | "isRecord" | "normalizeText"
+  >,
+): string {
+  let currentUserIndex = 0;
+  for (const message of messages) {
+    if (!deps.isRecord(message) || message.role !== "user") {
+      continue;
+    }
+    currentUserIndex += 1;
+    if (currentUserIndex !== userIndex) {
+      continue;
+    }
+    return deps.extractTextBlocks(message.content)
+      .map((entry) => deps.cleanMessageTextForReasoning(entry))
+      .map((entry) => deps.normalizeText(entry))
+      .filter(Boolean)
+      .join(" ")
+      .trim();
+  }
+  return "";
+}
+
+function shouldKeepWorkflowSummaryStep(
+  text: string,
+  deps: Pick<AssistantDerivedDeps, "normalizeText" | "workflowStableHintPatterns">,
+): boolean {
+  const normalized = deps.normalizeText(text);
+  if (!normalized || looksLikeWorkflowNoise(normalized)) {
+    return false;
+  }
+  const hasActionSignal = hasWorkflowActionSignal(normalized);
+  if (hasActionSignal) {
+    return true;
+  }
+  return hasWorkflowStableHint(normalized, deps) && hasWorkflowSequenceSignal(normalized);
+}
 
 export type AssistantDerivedDeps = {
   cleanMessageTextForReasoning: (text: string) => string;
@@ -161,8 +255,7 @@ export function collectWorkflowSummarySegments(
             deps.looksLikePromptInjection(normalized) ||
             deps.isSensitiveHostBridgeText(normalized) ||
             deps.profileCaptureEphemeralPatterns.some((pattern) => pattern.test(normalized)) ||
-            (!ASSISTANT_DERIVED_WORKFLOW_PATTERNS.some((pattern) => pattern.test(normalized)) &&
-              !deps.workflowStableHintPatterns.some((pattern) => pattern.test(normalized)))
+            !shouldKeepWorkflowSummaryStep(normalized, deps)
           ) {
             continue;
           }
@@ -210,10 +303,7 @@ export function extractWorkflowSummarySteps(
         .flatMap((entry) => entry.split(/[;；]+/u))
         .map((entry) => deps.normalizeText(entry))
         .filter(
-          (entry) =>
-            Boolean(entry) &&
-            (ASSISTANT_DERIVED_WORKFLOW_PATTERNS.some((pattern) => pattern.test(entry)) ||
-              deps.workflowStableHintPatterns.some((pattern) => pattern.test(entry))),
+          (entry) => Boolean(entry) && shouldKeepWorkflowSummaryStep(entry, deps),
         )
         .map((entry) => [entry.toLowerCase(), entry] as const),
     ).values(),
@@ -328,7 +418,7 @@ export function buildAssistantDerivedWorkflowFallback(
     deps.extractMessageTexts(messages, ["assistant"]).slice(-1)[0] ?? "",
   );
   const workflowSegments = collectWorkflowSummarySegments(messages, deps).filter((entry) =>
-    ASSISTANT_DERIVED_WORKFLOW_PATTERNS.some((pattern) => pattern.test(entry.text))
+    hasWorkflowActionSignal(entry.text)
   );
   const distinctMessages = new Set(workflowSegments.map((entry) => entry.userIndex));
   const uniqueSegments = Array.from(
@@ -345,15 +435,32 @@ export function buildAssistantDerivedWorkflowFallback(
   const assistantMatchesWorkflow = ASSISTANT_DERIVED_WORKFLOW_PATTERNS.some((pattern) =>
     pattern.test(assistantText)
   );
-  const stableHint = orderedSegments.some((entry) =>
+  const stableHintFromSegments = orderedSegments.some((entry) =>
     deps.workflowStableHintPatterns.some((pattern) => pattern.test(entry.text))
   );
+  const stableHintFromMessages = messages.some((message) => {
+    if (!deps.isRecord(message) || message.role !== "user") {
+      return false;
+    }
+    return deps.extractTextBlocks(message.content).some((entry) =>
+      deps.workflowStableHintPatterns.some((pattern) => pattern.test(deps.normalizeText(entry))),
+    );
+  });
+  const stableHint = stableHintFromSegments || stableHintFromMessages;
   const sequenceHint = orderedSegments.some((entry) =>
     /\b(first|then|after|finally|next)\b/iu.test(entry.text) || /(先|然后|再|最后|下一步)/u.test(entry.text)
   );
   const singleMessageStructuredWorkflow =
     distinctMessages.size === 1 && orderedSegments.length >= 2 && stableHint && sequenceHint;
+  const singleMessageQuotedWorkflowExample =
+    singleMessageStructuredWorkflow &&
+    orderedSegments.every((entry) =>
+      looksLikeQuotedWorkflowExample(getUserMessageText(messages, entry.userIndex, deps))
+    );
   if (distinctMessages.size < 2 && !singleMessageStructuredWorkflow) {
+    return undefined;
+  }
+  if (singleMessageQuotedWorkflowExample) {
     return undefined;
   }
   let confidence = Math.max(

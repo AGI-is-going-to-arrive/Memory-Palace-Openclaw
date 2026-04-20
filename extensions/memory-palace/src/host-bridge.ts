@@ -74,6 +74,7 @@ type HostBridgeHelperDeps = {
   isSensitiveHostBridgeText: (text: string) => boolean;
   truncate: (text: string, limit: number) => string;
   escapeMemoryForPrompt: (text: string) => string;
+  sanitizeHostBridgePromptHit?: (hit: HostWorkspaceHit) => string | undefined;
   hostBridgeTag: string;
   hostBridgeDisclaimer: string;
 };
@@ -771,12 +772,29 @@ export function createHostBridgeHelpers(deps: HostBridgeHelperDeps) {
   }
 
   function formatHostBridgePromptContext(hits: HostWorkspaceHit[]): string {
+    const renderedHits = hits
+      .map((entry) => {
+        const renderedSnippet = deps.sanitizeHostBridgePromptHit
+          ? deps.sanitizeHostBridgePromptHit(entry)
+          : entry.snippet;
+        if (!renderedSnippet) {
+          return undefined;
+        }
+        return {
+          citation: deps.escapeMemoryForPrompt(entry.citation),
+          snippet: deps.escapeMemoryForPrompt(renderedSnippet),
+        };
+      })
+      .filter((entry): entry is { citation: string; snippet: string } => Boolean(entry));
+    if (renderedHits.length === 0) {
+      return "";
+    }
     return [
       `<${deps.hostBridgeTag}>`,
       deps.hostBridgeDisclaimer,
-      ...hits.map(
+      ...renderedHits.map(
         (entry, index) =>
-          `${index + 1}. [host-workspace] ${deps.escapeMemoryForPrompt(entry.citation)} :: ${deps.escapeMemoryForPrompt(entry.snippet)}`,
+          `${index + 1}. [host-workspace] ${entry.citation} :: ${entry.snippet}`,
       ),
       `</${deps.hostBridgeTag}>`,
     ].join("\n");

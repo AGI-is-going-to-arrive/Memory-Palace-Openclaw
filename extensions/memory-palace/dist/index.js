@@ -16455,7 +16455,7 @@ class MemoryPalaceMcpClient {
     };
     this.config = {
       clientName: config2.clientName ?? "openclaw-memory-palace",
-      clientVersion: config2.clientVersion ?? "1.0.1",
+      clientVersion: config2.clientVersion ?? "1.1.0",
       transport: config2.transport,
       timeoutMs: normalizePositiveInteger(config2.timeoutMs, DEFAULT_OPERATION_TIMEOUT_MS),
       stdio: config2.stdio,
@@ -20486,7 +20486,10 @@ async function runAutoRecallHook(api2, options) {
           hostBridgeHits = hostBridgeHits.filter((entry) => missingHostBridgeCategories.has(entry.category));
         }
         if (hostBridgeHits.length > 0) {
-          sections.push(deps.formatHostBridgePromptContext(hostBridgeHits));
+          const hostBridgeContext = deps.formatHostBridgePromptContext(hostBridgeHits);
+          if (hostBridgeContext) {
+            sections.push(hostBridgeContext);
+          }
           const imported = await deps.importHostBridgeHits(api2, config2, session, policy, hostBridgeHits);
           deps.logPluginTrace(api2, config2.hostBridge.traceEnabled, "memory-palace:host-bridge-import", {
             agentId: identity.value,
@@ -24538,10 +24541,23 @@ function createHostBridgeHelpers(deps) {
     return Array.from(hits.values()).sort((left, right) => right.score - left.score || HOST_BRIDGE_PATH_COLLATOR.compare(left.citation, right.citation)).slice(0, config2.maxHits);
   }
   function formatHostBridgePromptContext(hits) {
+    const renderedHits = hits.map((entry) => {
+      const renderedSnippet = deps.sanitizeHostBridgePromptHit ? deps.sanitizeHostBridgePromptHit(entry) : entry.snippet;
+      if (!renderedSnippet) {
+        return;
+      }
+      return {
+        citation: deps.escapeMemoryForPrompt(entry.citation),
+        snippet: deps.escapeMemoryForPrompt(renderedSnippet)
+      };
+    }).filter((entry) => Boolean(entry));
+    if (renderedHits.length === 0) {
+      return "";
+    }
     return [
       `<${deps.hostBridgeTag}>`,
       deps.hostBridgeDisclaimer,
-      ...hits.map((entry, index) => `${index + 1}. [host-workspace] ${deps.escapeMemoryForPrompt(entry.citation)} :: ${deps.escapeMemoryForPrompt(entry.snippet)}`),
+      ...renderedHits.map((entry, index) => `${index + 1}. [host-workspace] ${entry.citation} :: ${entry.snippet}`),
       `</${deps.hostBridgeTag}>`
     ].join(`
 `);
@@ -24663,6 +24679,72 @@ var ASSISTANT_DERIVED_SUMMARY_PATTERNS = [
   /\b(prefer|preference|likes?|wants?|default delivery preference)\b/iu,
   /(默认工作流|默认流程|固定流程|工作流|默认交付习惯|默认顺序|交付顺序|协作顺序|偏好|习惯)/u
 ];
+var WORKFLOW_SEQUENCE_PATTERNS = [
+  /\b(first|then|after|finally|next|before|last)\b/iu,
+  /(先|然后|再|最后|之前|之后|立刻|立即|优先)/u
+];
+var WORKFLOW_DOC_REFERENCE_PATTERNS = [
+  /\b(doc|docs?|documentation|runbook|guide|manual|readme|onboarding)\b/iu,
+  /(文档|手册|指南|README|runbook|onboarding)/u
+];
+var WORKFLOW_DOC_EXAMPLE_PATTERNS = [
+  /\b(example|sample|template|snippet|quote|quoted|reference|referenced)\b/iu,
+  /\b(?:according to|from)\b.{0,40}\b(doc|docs?|documentation|runbook|guide|manual|readme|onboarding)\b/iu,
+  /\b(doc|docs?|documentation|runbook|guide|manual|readme|onboarding)\b.{0,40}\b(?:say|says|said|show|shows|showed|list|lists|listed|describe|describes|document|documents|documented|use|uses|used)\b/iu,
+  /(示例|样例|模板|片段|引用|转述|根据文档|按文档示例|文档示例|文档里写|文档中写|手册里写|指南里写)/u
+];
+var WORKFLOW_NOISE_PATTERNS = [
+  /\b(read|open)\b.{0,80}\b(doc|docs?|documentation|runbook|guide|manual|readme|onboarding)\b.{0,80}\b(answer|reply|respond|output)\b/iu,
+  /(请阅读|按文档规则回答|只回答|只回复|只输出)/u,
+  /\b(answer|reply|respond|output)\b.{0,80}\b(exactly|only)\b/iu,
+  /\b(provider probe fail|session file locked|confirmation code)\b/iu,
+  /(provider probe fail|session file locked|确认代号|运行标记|不要打开.{0,12}dashboard)/u,
+  /(?:^|[\s[])(?:\/|~\/|[A-Za-z]:[\\/]|file:|core:\/\/|memory-palace\/)/u,
+  /\bmemory-palace-openclaw-onboarding\b/iu,
+  /^examples?:/iu,
+  /(^|[\s[(])(?:vendor-pitch|api-design|bug-fix)(?=$|[\s)\].,:;!?])/iu,
+  /(?:^|\s)(?:#\s*Memory Palace Durable Fact|source_mode:|capture_layer:)/u
+];
+function hasWorkflowActionSignal(text) {
+  return ASSISTANT_DERIVED_WORKFLOW_PATTERNS.some((pattern) => pattern.test(text));
+}
+function hasWorkflowStableHint(text, deps) {
+  return deps.workflowStableHintPatterns.some((pattern) => pattern.test(text));
+}
+function hasWorkflowSequenceSignal(text) {
+  return WORKFLOW_SEQUENCE_PATTERNS.some((pattern) => pattern.test(text));
+}
+function looksLikeWorkflowNoise(text) {
+  return WORKFLOW_NOISE_PATTERNS.some((pattern) => pattern.test(text));
+}
+function looksLikeQuotedWorkflowExample(text) {
+  return WORKFLOW_DOC_REFERENCE_PATTERNS.some((pattern) => pattern.test(text)) && WORKFLOW_DOC_EXAMPLE_PATTERNS.some((pattern) => pattern.test(text));
+}
+function getUserMessageText(messages, userIndex, deps) {
+  let currentUserIndex = 0;
+  for (const message of messages) {
+    if (!deps.isRecord(message) || message.role !== "user") {
+      continue;
+    }
+    currentUserIndex += 1;
+    if (currentUserIndex !== userIndex) {
+      continue;
+    }
+    return deps.extractTextBlocks(message.content).map((entry) => deps.cleanMessageTextForReasoning(entry)).map((entry) => deps.normalizeText(entry)).filter(Boolean).join(" ").trim();
+  }
+  return "";
+}
+function shouldKeepWorkflowSummaryStep(text, deps) {
+  const normalized = deps.normalizeText(text);
+  if (!normalized || looksLikeWorkflowNoise(normalized)) {
+    return false;
+  }
+  const hasActionSignal = hasWorkflowActionSignal(normalized);
+  if (hasActionSignal) {
+    return true;
+  }
+  return hasWorkflowStableHint(normalized, deps) && hasWorkflowSequenceSignal(normalized);
+}
 function extractAssistantDerivedSegments(text, deps) {
   return deps.stripCodeBlocks(deps.cleanMessageTextForReasoning(text)).split(/[\n。！？!?]+/u).map((entry) => deps.normalizeText(entry)).filter(Boolean).filter((entry) => entry.length >= 10 && entry.length <= 240).filter((entry) => !ASSISTANT_DERIVED_META_PATTERNS.some((pattern) => pattern.test(entry))).filter((entry) => !ASSISTANT_DERIVED_UNCERTAIN_PATTERNS.some((pattern) => pattern.test(entry))).filter((entry) => !deps.looksLikePromptInjection(entry));
 }
@@ -24716,7 +24798,7 @@ function collectWorkflowSummarySegments(messages, deps) {
       for (const segment of deps.splitProfileCaptureSegments(text)) {
         for (const rawPart of segment.split(/[;；]+/u).flatMap((entry) => entry.split(/[.。！？!?]+/u))) {
           const normalized = deps.normalizeText(rawPart);
-          if (!normalized || deps.looksLikePromptInjection(normalized) || deps.isSensitiveHostBridgeText(normalized) || deps.profileCaptureEphemeralPatterns.some((pattern) => pattern.test(normalized)) || !ASSISTANT_DERIVED_WORKFLOW_PATTERNS.some((pattern) => pattern.test(normalized)) && !deps.workflowStableHintPatterns.some((pattern) => pattern.test(normalized))) {
+          if (!normalized || deps.looksLikePromptInjection(normalized) || deps.isSensitiveHostBridgeText(normalized) || deps.profileCaptureEphemeralPatterns.some((pattern) => pattern.test(normalized)) || !shouldKeepWorkflowSummaryStep(normalized, deps)) {
             continue;
           }
           workflowSegments.push({ userIndex, text: normalized });
@@ -24739,7 +24821,7 @@ function synthesizeWorkflowSummary(messages, preferredSummary, deps) {
   return `${prefix}${orderedSegments.map((entry) => entry.text).join(separator)}`;
 }
 function extractWorkflowSummarySteps(text, deps) {
-  return Array.from(new Map(deps.splitProfileCaptureSegments(text).flatMap((entry) => entry.split(/[;；]+/u)).map((entry) => deps.normalizeText(entry)).filter((entry) => Boolean(entry) && (ASSISTANT_DERIVED_WORKFLOW_PATTERNS.some((pattern) => pattern.test(entry)) || deps.workflowStableHintPatterns.some((pattern) => pattern.test(entry)))).map((entry) => [entry.toLowerCase(), entry])).values());
+  return Array.from(new Map(deps.splitProfileCaptureSegments(text).flatMap((entry) => entry.split(/[;；]+/u)).map((entry) => deps.normalizeText(entry)).filter((entry) => Boolean(entry) && shouldKeepWorkflowSummaryStep(entry, deps)).map((entry) => [entry.toLowerCase(), entry])).values());
 }
 function workflowSummaryCovers(existingSummary, candidateSummary, deps) {
   const existingSteps = extractWorkflowSummarySteps(existingSummary, deps);
@@ -24787,7 +24869,7 @@ function mergeWorkflowSummaries(existingSummary, candidateSummary, deps) {
 }
 function buildAssistantDerivedWorkflowFallback(messages, config2, deps) {
   const assistantText = deps.normalizeText(deps.extractMessageTexts(messages, ["assistant"]).slice(-1)[0] ?? "");
-  const workflowSegments = collectWorkflowSummarySegments(messages, deps).filter((entry) => ASSISTANT_DERIVED_WORKFLOW_PATTERNS.some((pattern) => pattern.test(entry.text)));
+  const workflowSegments = collectWorkflowSummarySegments(messages, deps).filter((entry) => hasWorkflowActionSignal(entry.text));
   const distinctMessages = new Set(workflowSegments.map((entry) => entry.userIndex));
   const uniqueSegments = Array.from(new Map(workflowSegments.map((entry) => [deps.normalizeText(entry.text).toLowerCase(), entry])).values());
   if (uniqueSegments.length < 2) {
@@ -24795,10 +24877,21 @@ function buildAssistantDerivedWorkflowFallback(messages, config2, deps) {
   }
   const orderedSegments = uniqueSegments.sort((left, right) => left.userIndex - right.userIndex).slice(0, 4);
   const assistantMatchesWorkflow = ASSISTANT_DERIVED_WORKFLOW_PATTERNS.some((pattern) => pattern.test(assistantText));
-  const stableHint = orderedSegments.some((entry) => deps.workflowStableHintPatterns.some((pattern) => pattern.test(entry.text)));
+  const stableHintFromSegments = orderedSegments.some((entry) => deps.workflowStableHintPatterns.some((pattern) => pattern.test(entry.text)));
+  const stableHintFromMessages = messages.some((message) => {
+    if (!deps.isRecord(message) || message.role !== "user") {
+      return false;
+    }
+    return deps.extractTextBlocks(message.content).some((entry) => deps.workflowStableHintPatterns.some((pattern) => pattern.test(deps.normalizeText(entry))));
+  });
+  const stableHint = stableHintFromSegments || stableHintFromMessages;
   const sequenceHint = orderedSegments.some((entry) => /\b(first|then|after|finally|next)\b/iu.test(entry.text) || /(先|然后|再|最后|下一步)/u.test(entry.text));
   const singleMessageStructuredWorkflow = distinctMessages.size === 1 && orderedSegments.length >= 2 && stableHint && sequenceHint;
+  const singleMessageQuotedWorkflowExample = singleMessageStructuredWorkflow && orderedSegments.every((entry) => looksLikeQuotedWorkflowExample(getUserMessageText(messages, entry.userIndex, deps)));
   if (distinctMessages.size < 2 && !singleMessageStructuredWorkflow) {
+    return;
+  }
+  if (singleMessageQuotedWorkflowExample) {
     return;
   }
   let confidence = Math.max(0.05, Math.min(0.92, 0.42 + Math.min(0.18, (distinctMessages.size - 1) * 0.12) + Math.min(0.12, (orderedSegments.length - 1) * 0.08) + (assistantMatchesWorkflow ? 0.08 : 0) + (stableHint ? 0.08 : 0) + (sequenceHint ? 0.08 : 0)));
@@ -25743,6 +25836,15 @@ var PROFILE_CAPTURE_EPHEMERAL_PATTERNS = [
   /只用一句/u,
   /如果.*问.*再/u
 ];
+var HOST_BRIDGE_WORKFLOW_PROMPT_NOISE_PATTERNS = [
+  ...PROFILE_CAPTURE_EPHEMERAL_PATTERNS,
+  /\b(read|open)\b.{0,80}\b(doc|docs?|documentation|runbook|guide|manual|readme|onboarding)\b/iu,
+  /(请阅读|按文档规则回答|只回答|只输出|文档规则)/u,
+  /\b(answer|reply|respond|output)\b.{0,80}\b(exactly|only)\b/iu,
+  /\b(provider probe fail|session file locked|confirmation code)\b/iu,
+  /(provider probe fail|session file locked|确认代号)/u,
+  /(?:^|[\s[])(?:\/|~\/|[A-Za-z]:[\\/]|file:|core:\/\/|memory-palace\/)/u
+];
 var WORKFLOW_STABLE_HINT_PATTERNS = WORKFLOW_SIGNAL_PATTERNS;
 function extractAgentIdFromSessionKey(value) {
   const normalized = readString(value);
@@ -26210,6 +26312,26 @@ var assistantDerivedDeps = {
   workflowStableHintPatterns: WORKFLOW_STABLE_HINT_PATTERNS,
   profileCaptureEphemeralPatterns: PROFILE_CAPTURE_EPHEMERAL_PATTERNS
 };
+function sanitizeHostBridgePromptHit(entry) {
+  if (entry.category !== "workflow") {
+    return entry.snippet;
+  }
+  const originalText = normalizeText(entry.text);
+  const sanitized = sanitizeProfileCaptureText("workflow", originalText);
+  if (sanitized) {
+    return truncate(sanitized, Math.max(entry.snippet.length, 1));
+  }
+  const rescuedWorkflowSteps = originalText.split(/[;；\n]+/u).map((part) => normalizeText(part)).filter(Boolean).map((part) => sanitizeProfileCaptureText("workflow", part)).filter((part) => Boolean(part)).map((part) => normalizeWorkflowProfileStep(part)).filter(Boolean);
+  if (rescuedWorkflowSteps.length > 0) {
+    const useCjk = /[\u3400-\u9fff]/u.test(rescuedWorkflowSteps.join(" "));
+    const rescuedWorkflow = `${useCjk ? "默认工作流：" : "Default workflow: "}${rescuedWorkflowSteps.join("；")}`;
+    return truncate(rescuedWorkflow, Math.max(entry.snippet.length, 1));
+  }
+  if (HOST_BRIDGE_WORKFLOW_PROMPT_NOISE_PATTERNS.some((pattern) => pattern.test(originalText))) {
+    return;
+  }
+  return entry.snippet;
+}
 var hostBridgeHelpers = createHostBridgeHelpers({
   normalizeText,
   tokenizeForHostBridge,
@@ -26220,6 +26342,7 @@ var hostBridgeHelpers = createHostBridgeHelpers({
   isSensitiveHostBridgeText,
   truncate,
   escapeMemoryForPrompt,
+  sanitizeHostBridgePromptHit,
   hostBridgeTag: HOST_BRIDGE_TAG,
   hostBridgeDisclaimer: HOST_BRIDGE_DISCLAIMER
 });
@@ -27421,7 +27544,11 @@ function fitProfileBlockItemsToBudgetResult(block, agentId, items, maxChars) {
 function sanitizeDurableSynthesisSummary(category, text) {
   const profileBlock = mapCaptureCategoryToProfileBlock(category);
   if (profileBlock) {
-    return sanitizeProfileCaptureText(profileBlock, text) ?? truncate(stripProfileCaptureTimestampPrefix(text), 280);
+    const sanitized = sanitizeProfileCaptureText(profileBlock, text);
+    if (profileBlock === "workflow") {
+      return sanitized;
+    }
+    return sanitized ?? truncate(stripProfileCaptureTimestampPrefix(text), 280);
   }
   const normalized = truncate(stripProfileCaptureTimestampPrefix(text), 280).trim();
   return normalized || undefined;
@@ -28098,7 +28225,11 @@ async function loadProfilePromptEntries(client, config2, policy) {
       }
       const content = extractStoredContentFromReadText(extracted.text);
       for (const item of extractProfileBlockItems(content)) {
-        entries.push({ block, text: item });
+        const sanitizedItem = block === "workflow" ? sanitizeProfileCaptureText(block, item) : sanitizeProfileCaptureText(block, item) ?? item;
+        if (!sanitizedItem) {
+          continue;
+        }
+        entries.push({ block, text: sanitizedItem });
       }
     } catch (error2) {
       if (!isMissingReadError(error2)) {
@@ -28183,7 +28314,20 @@ function shouldIncludeReflection2(params, config2, policy, paramFilters, logger)
   return shouldIncludeReflection(params, config2, policy, paramFilters, logger, createAclSearchDeps());
 }
 function formatPromptContext2(tag, heading, results) {
-  return formatPromptContext(tag, heading, results, createAclSearchDeps());
+  return formatPromptContext(tag, heading, results.map((entry) => {
+    if (!/(^|\/)workflow(?:\/|\.md$)/iu.test(entry.path)) {
+      return entry;
+    }
+    const sanitizedSnippet = sanitizeProfileCaptureText("workflow", entry.snippet);
+    if (!sanitizedSnippet) {
+      return null;
+    }
+    return {
+      ...entry,
+      snippet: sanitizedSnippet,
+      endLine: countLines3(sanitizedSnippet)
+    };
+  }).filter((entry) => Boolean(entry)), createAclSearchDeps());
 }
 function formatProfilePromptContext2(entries) {
   return formatProfilePromptContext(entries, createAclSearchDeps());
@@ -28440,7 +28584,7 @@ function persistTransportDiagnosticsSnapshot2(config2, client, report) {
     buildPluginRuntimeSignature,
     getTransportFallbackOrder,
     instanceId: transportSnapshotInstanceId,
-    pluginVersion: "1.0.1",
+    pluginVersion: "1.1.0",
     sanitizeText: redactVisualSensitiveText2,
     snapshotPluginRuntimeState,
     processId: process.pid

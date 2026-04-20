@@ -269,6 +269,46 @@ If you want to resolve these `warn` results, the more effective sequence is:
 3. If `host-plugin-split-brain` persists:
    - Give it a normal host workspace first
 
+### 7.1 The conversation context suddenly becomes huge
+
+The key point:
+
+- The current known main risk is not “the skills docs were dumped into the prompt”
+- It is more likely that previously polluted `workflow` memory on the host is being pulled back through profile recall, durable recall, or host-bridge recall
+
+After this fix, the intended default boundary is:
+
+- workflow-related recall is sanitized before prompt injection
+- onboarding doc paths, provider diagnostics, and confirmation-code noise should no longer be written back or injected as stable workflow context
+- a single workflow statement that only quotes a documentation example is no longer supposed to be treated as a stable long-term workflow
+- smart extraction now skips assistant thinking blocks so the transcript budget is reserved for actual workflow steps
+- this fixes the plugin's own recall/capture logic; it does not patch OpenClaw core
+
+If you suspect your current machine already contains polluted historical data, check first:
+
+```bash
+openclaw memory-palace get core://agents/main/profile/workflow --json --max-chars 5000
+openclaw memory-palace get core://agents/main/captured/llm-extracted/workflow/current --json --max-chars 8000
+openclaw memory-palace verify --json
+openclaw memory-palace doctor --query 'What is my default workflow?' --json
+```
+
+The safer way to read the result is:
+
+- first inspect whether `profile/workflow` and `captured/llm-extracted/workflow/current` contain doc paths, `provider probe fail`, confirmation-code text, or similar noise
+- then inspect `lastCapturePath / lastReconcile` in `verify / doctor`
+
+One boundary is easy to misread:
+
+- `lastCapturePath / lastReconcile` are runtime diagnostic snapshots
+- they are not the same thing as “the current prompt is still dirty”
+- the prompt can already be clean while those two fields still point at an older successful capture, until a newer successful capture overwrites them
+
+If you confirm that the problem is historical polluted data:
+
+- you still need a one-time host-data cleanup
+- that is a maintenance action, not something the normal plugin runtime is supposed to do automatically
+
 ---
 
 ## 8. `Profile C/D` Configured but Still Not Working

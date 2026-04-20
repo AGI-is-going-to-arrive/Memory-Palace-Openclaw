@@ -35,6 +35,7 @@ These should no longer be described as “planned”:
 - durable / reflection auto recall now merge the current session into recall scope, so “the current chat context did not come back” is less likely on the default path
 - command:new reflection dedupe has session/TTL/budget protection
 - command:new reflection and smart extraction now fail closed when the target session transcript cannot be identified, instead of scanning the latest unrelated transcript
+- workflow-related profile recall, durable recall, and host-bridge prompt blocks are now sanitized before prompt injection; onboarding doc paths, provider diagnostics, and confirmation-code noise are no longer supposed to be written back or injected as stable workflow context
 - onboarding tools avoid passing secrets on the command line
 - current installer accepts legacy env aliases and maps them forward
 
@@ -45,6 +46,7 @@ These should no longer be described as “planned”:
 - `memory-palace` can take over the active OpenClaw memory slot
 - that does **not** replace the host's own file-based memory
 - automatic recall / capture / visual harvest still depend on hook-capable hosts
+- this fix changes the plugin's own recall/capture logic, not OpenClaw core; if a host already contains polluted historical workflow records, the cleanup is still a one-time maintenance task
 - newer hosts may also keep a compatibility shim such as `memory-core`, but as long as `plugins.slots.memory` still points at `memory-palace`, the active slot has not changed
 - visual context harvest is not the same thing as long-term visual storage
 

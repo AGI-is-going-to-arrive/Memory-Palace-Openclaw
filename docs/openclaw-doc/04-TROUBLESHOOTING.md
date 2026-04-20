@@ -269,6 +269,46 @@ docker compose version
 3. 如果还是 `host-plugin-split-brain`
    - 先给它一个正常 host workspace
 
+### 7.1 用着用着会话上下文突然变大
+
+先说结论：
+
+- 当前已知的主风险不是“skills 文档整块塞进 prompt”
+- 更像是宿主里已经污染过的 `workflow` 记忆，被 profile recall / durable recall / host bridge recall 反复带回 prompt
+
+这次代码修复之后，新的默认边界是：
+
+- `workflow` 相关 recall 在注入 prompt 前会先做净化
+- onboarding 文档路径、provider 诊断、confirmation code 这类噪声，不该再被当成稳定 workflow 写回或注入
+- 只是在引用文档示例的单条 workflow，当前不会再被当成稳定长期流程
+- smart extraction 现在会跳过 assistant thinking block，尽量把 transcript budget 留给真正的 workflow step
+- 这修的是插件自己的 recall/capture 逻辑，不是去改 OpenClaw core
+
+如果你怀疑自己这台机器上已经留下历史污染，先查：
+
+```bash
+openclaw memory-palace get core://agents/main/profile/workflow --json --max-chars 5000
+openclaw memory-palace get core://agents/main/captured/llm-extracted/workflow/current --json --max-chars 8000
+openclaw memory-palace verify --json
+openclaw memory-palace doctor --query 'What is my default workflow?' --json
+```
+
+更稳的判断方式是：
+
+- 先看 `profile/workflow` 和 `captured/llm-extracted/workflow/current` 正文里有没有混进文档路径、provider probe fail、confirmation code 这类脏内容
+- 再看 `verify / doctor` 里的 `lastCapturePath / lastReconcile`
+
+这里还有一个边界要记住：
+
+- `lastCapturePath / lastReconcile` 是 runtime 诊断快照
+- 它们不是“当前 prompt 已经脏了”的同义词
+- prompt 可能已经干净，但这两个字段还停留在旧的成功 capture，直到新的成功 capture 把它们覆盖掉
+
+如果已经确认是历史脏数据：
+
+- 需要做一次性宿主数据清理
+- 这属于维护动作，不是插件日常运行会自动替你做的事情
+
 ---
 
 ## 8. `Profile C/D` 配了还是不工作

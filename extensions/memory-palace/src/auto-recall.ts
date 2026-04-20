@@ -285,7 +285,10 @@ export async function runAutoRecallHook(
           );
         }
         if (hostBridgeHits.length > 0) {
-          sections.push(deps.formatHostBridgePromptContext(hostBridgeHits));
+          const hostBridgeContext = deps.formatHostBridgePromptContext(hostBridgeHits);
+          if (hostBridgeContext) {
+            sections.push(hostBridgeContext);
+          }
           const imported = await deps.importHostBridgeHits(
             api,
             config,

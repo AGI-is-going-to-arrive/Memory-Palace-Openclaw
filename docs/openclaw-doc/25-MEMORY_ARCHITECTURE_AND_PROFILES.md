@@ -337,6 +337,10 @@ flowchart TD
 - `command:new` reflection 和 smart extraction 如果找不到目标 session transcript
 - 当前会直接跳过这次 transcript 读取
 - 不再回退去读 sessions 目录里“最新但无关”的 transcript
+- `workflow` 相关 recall 在拼 prompt 前也会先做净化
+- onboarding 文档路径、provider 诊断、confirmation code 这类明显不该进入长期 workflow 的内容，当前会尽量在这一步被挡掉
+- capture 侧如果只看到“引用文档示例”的单条 workflow，当前会直接跳过，不把它当成稳定长期流程
+- smart extraction 组 transcript 时会跳过 assistant thinking block，并把预算优先留给真正的 user / assistant workflow turn
 
 ### 5.2 host bridge 的角色
 
@@ -350,6 +354,12 @@ flowchart TD
 
 然后把命中的内容导进插件可理解的记忆上下文里。
 所以它更像“把老文件记忆接到新系统里”，而不是“一刀切废弃旧习惯”。
+
+但这里也要补一个边界：
+
+- `hostBridge` 不是“看到文件就原样塞进 prompt”
+- 尤其是 `workflow` 命中，当前也会先做一层 prompt 侧净化
+- 这次修的是插件自己的桥接/召回逻辑，不是去改宿主文件本身
 
 ### 5.3 显式召回
 
@@ -722,6 +732,8 @@ flowchart LR
 - 用户明确要求“记住这个”时，应该走 `memory_learn`，不是让 auto-capture 偷偷写。
 - ACL 默认没开，不能假定天然隔离。
 - `agentId` 缺失时，ACL 走 shared-only，不会默认给匿名私有根。
+- 这套插件不会去改 OpenClaw core，但它会按设计写自己的 durable memory / diagnostics；如果宿主里已经留下历史脏 workflow 数据，清理仍是一锤子维护动作，不是正常运行路径。
+- `lastCapturePath / lastReconcile` 是 runtime 诊断快照，不等于“当前 prompt 已经脏了”；只有新的成功 capture 覆盖它们时，这两个字段才会刷新。
 - 这套系统已经很完整，但还不是“所有安全问题都已经最终定型”的状态。
 
 ---

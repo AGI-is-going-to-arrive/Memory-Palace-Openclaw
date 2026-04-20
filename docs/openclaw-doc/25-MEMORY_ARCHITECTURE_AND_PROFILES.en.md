@@ -339,6 +339,10 @@ One conservative boundary is worth keeping explicit:
 - if `command:new` reflection or smart extraction cannot identify the target session transcript
 - the current behavior is to skip that transcript read
 - it no longer falls back to scanning the latest unrelated transcript under the sessions directory
+- workflow-related recall is also sanitized before prompt assembly
+- onboarding doc paths, provider diagnostics, and confirmation-code text are now supposed to be filtered out instead of being treated as durable workflow context
+- on the capture side, a single workflow statement that only quotes a documentation example is skipped instead of being treated as a stable long-term workflow
+- when smart extraction builds its transcript, assistant thinking blocks are skipped and the budget is kept for actual user / assistant workflow turns
 
 ### 5.2 What host bridge is for
 
@@ -351,6 +355,12 @@ It can read controlled host-side sources such as:
 - memory-related files under the workspace
 
 So this is better understood as “bridging old file memory into the new system”, not “deleting the old style completely”.
+
+One more boundary matters here:
+
+- `hostBridge` is not supposed to dump matched files into the prompt verbatim
+- especially for workflow hits, the current path sanitizes prompt-side recall before injection
+- this fix changes the plugin's own bridge/recall behavior; it does not rewrite the host files themselves
 
 ### 5.3 Explicit recall
 
@@ -725,6 +735,8 @@ flowchart LR
 - Explicit “remember this” requests should go through `memory_learn`, not silent auto-capture.
 - ACL is not enabled by default, so strict isolation should not be assumed.
 - When `agentId` is missing, ACL falls back to shared-only mode instead of creating a private anonymous root.
+- The plugin does not patch OpenClaw core, but it does write its own durable memory and diagnostics by design; if the host already contains polluted historical workflow data, cleanup is still a one-time maintenance task rather than part of the normal runtime path.
+- `lastCapturePath / lastReconcile` are runtime diagnostic snapshots, not a direct synonym for “the current prompt is still dirty”; those fields only refresh when a newer successful capture overwrites them.
 - The system is already quite complete, but it is not yet “the final security model for every edge case”.
 
 ---

@@ -1284,6 +1284,15 @@ const PROFILE_CAPTURE_EPHEMERAL_PATTERNS = [
   /只用一句/u,
   /如果.*问.*再/u,
 ];
+const HOST_BRIDGE_WORKFLOW_PROMPT_NOISE_PATTERNS = [
+  ...PROFILE_CAPTURE_EPHEMERAL_PATTERNS,
+  /\b(read|open)\b.{0,80}\b(doc|docs?|documentation|runbook|guide|manual|readme|onboarding)\b/iu,
+  /(请阅读|按文档规则回答|只回答|只输出|文档规则)/u,
+  /\b(answer|reply|respond|output)\b.{0,80}\b(exactly|only)\b/iu,
+  /\b(provider probe fail|session file locked|confirmation code)\b/iu,
+  /(provider probe fail|session file locked|确认代号)/u,
+  /(?:^|[\s[])(?:\/|~\/|[A-Za-z]:[\\/]|file:|core:\/\/|memory-palace\/)/u,
+] as const;
 const WORKFLOW_STABLE_HINT_PATTERNS = WORKFLOW_SIGNAL_PATTERNS;
 
 type AutoCaptureAnalysis =
@@ -1938,6 +1947,38 @@ const assistantDerivedDeps = {
   profileCaptureEphemeralPatterns: PROFILE_CAPTURE_EPHEMERAL_PATTERNS,
 };
 
+function sanitizeHostBridgePromptHit(entry: HostWorkspaceHit): string | undefined {
+  if (entry.category !== "workflow") {
+    return entry.snippet;
+  }
+  const originalText = normalizeText(entry.text);
+  const sanitized = sanitizeProfileCaptureText("workflow", originalText);
+  if (sanitized) {
+    return truncate(sanitized, Math.max(entry.snippet.length, 1));
+  }
+  const rescuedWorkflowSteps = originalText
+    .split(/[;；\n]+/u)
+    .map((part) => normalizeText(part))
+    .filter(Boolean)
+    .map((part) => sanitizeProfileCaptureText("workflow", part))
+    .filter((part): part is string => Boolean(part))
+    .map((part) => normalizeWorkflowProfileStep(part))
+    .filter(Boolean);
+  if (rescuedWorkflowSteps.length > 0) {
+    const useCjk = /[\u3400-\u9fff]/u.test(rescuedWorkflowSteps.join(" "));
+    const rescuedWorkflow = `${useCjk ? "默认工作流：" : "Default workflow: "}${rescuedWorkflowSteps.join("；")}`;
+    return truncate(rescuedWorkflow, Math.max(entry.snippet.length, 1));
+  }
+  if (
+    HOST_BRIDGE_WORKFLOW_PROMPT_NOISE_PATTERNS.some((pattern) =>
+      pattern.test(originalText),
+    )
+  ) {
+    return undefined;
+  }
+  return entry.snippet;
+}
+
 const hostBridgeHelpers = createHostBridgeHelpers({
   normalizeText,
   tokenizeForHostBridge,
@@ -1948,6 +1989,7 @@ const hostBridgeHelpers = createHostBridgeHelpers({
   isSensitiveHostBridgeText,
   truncate,
   escapeMemoryForPrompt,
+  sanitizeHostBridgePromptHit,
   hostBridgeTag: HOST_BRIDGE_TAG,
   hostBridgeDisclaimer: HOST_BRIDGE_DISCLAIMER,
 });
@@ -3629,7 +3671,11 @@ function fitProfileBlockItemsToBudgetResult(
 function sanitizeDurableSynthesisSummary(category: string, text: string): string | undefined {
   const profileBlock = mapCaptureCategoryToProfileBlock(category);
   if (profileBlock) {
-    return sanitizeProfileCaptureText(profileBlock, text) ?? truncate(stripProfileCaptureTimestampPrefix(text), 280);
+    const sanitized = sanitizeProfileCaptureText(profileBlock, text);
+    if (profileBlock === "workflow") {
+      return sanitized;
+    }
+    return sanitized ?? truncate(stripProfileCaptureTimestampPrefix(text), 280);
   }
   const normalized = truncate(stripProfileCaptureTimestampPrefix(text), 280).trim();
   return normalized || undefined;
@@ -4505,7 +4551,14 @@ async function loadProfilePromptEntries(
       }
       const content = extractStoredContentFromReadText(extracted.text);
       for (const item of extractProfileBlockItems(content)) {
-        entries.push({ block, text: item });
+        const sanitizedItem =
+          block === "workflow"
+            ? sanitizeProfileCaptureText(block, item)
+            : sanitizeProfileCaptureText(block, item) ?? item;
+        if (!sanitizedItem) {
+          continue;
+        }
+        entries.push({ block, text: sanitizedItem });
       }
     } catch (error) {
       if (!isMissingReadError(error)) {
@@ -4694,7 +4747,27 @@ function shouldIncludeReflection(
 }
 
 function formatPromptContext(tag: string, heading: string, results: MemorySearchResult[]): string {
-  return formatPromptContextModule(tag, heading, results, createAclSearchDeps());
+  return formatPromptContextModule(
+    tag,
+    heading,
+    results
+      .map((entry) => {
+        if (!/(^|\/)workflow(?:\/|\.md$)/iu.test(entry.path)) {
+          return entry;
+        }
+        const sanitizedSnippet = sanitizeProfileCaptureText("workflow", entry.snippet);
+        if (!sanitizedSnippet) {
+          return null;
+        }
+        return {
+          ...entry,
+          snippet: sanitizedSnippet,
+          endLine: countLines(sanitizedSnippet),
+        };
+      })
+      .filter((entry): entry is MemorySearchResult => Boolean(entry)),
+    createAclSearchDeps(),
+  );
 }
 
 function formatProfilePromptContext(entries: ProfilePromptEntry[]): string {
@@ -5050,7 +5123,7 @@ function persistTransportDiagnosticsSnapshot(
     buildPluginRuntimeSignature,
     getTransportFallbackOrder,
     instanceId: transportSnapshotInstanceId,
-    pluginVersion: "1.0.1",
+    pluginVersion: "1.1.0",
     sanitizeText: redactVisualSensitiveText,
     snapshotPluginRuntimeState,
     processId: process.pid,
