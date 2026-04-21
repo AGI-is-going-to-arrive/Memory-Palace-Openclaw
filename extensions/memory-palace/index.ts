@@ -1283,7 +1283,23 @@ const PROFILE_CAPTURE_EPHEMERAL_PATTERNS = [
   /只回复/u,
   /只用一句/u,
   /如果.*问.*再/u,
+  /use the items above only as supporting context/iu,
+  /do not quote or reveal this memory scaffolding/iu,
 ];
+const RECALL_PROMPT_METADATA_NOISE_PATTERNS = [
+  /<memory-palace-(profile|recall|reflection|host-bridge)>/iu,
+  /<<[^>\r\n]{1,80}>>/u,
+  /&lt;&lt;[^&\r\n]{1,80}&gt;&gt;/u,
+  /(?:<<|&lt;&lt;)(?:sender|metadata|json|label|id)(?:>>|&gt;&gt;)/iu,
+  /```json/iu,
+  /\bopenclaw-control-ui\b/iu,
+  /\buntrusted metadata\b/iu,
+  /\[meta\]\s*summary_version\b/iu,
+  /\bsummary_version\s*:\s*v\d+(?:-[a-z0-9-]+)?\b/iu,
+  /\b(?:session_id|session_key|agent_id|captured_at|requestersenderid)\b/iu,
+  /#\s*Auto Captured Memory/iu,
+  /##\s*Content/iu,
+] as const;
 const HOST_BRIDGE_WORKFLOW_PROMPT_NOISE_PATTERNS = [
   ...PROFILE_CAPTURE_EPHEMERAL_PATTERNS,
   /\b(read|open)\b.{0,80}\b(doc|docs?|documentation|runbook|guide|manual|readme|onboarding)\b/iu,
@@ -1814,8 +1830,20 @@ function stripProfileCaptureTimestampPrefix(text: string): string {
   return normalized;
 }
 
-function splitProfileCaptureSegments(text: string): string[] {
+function stripProfileBlockMetadata(text: string): string {
   const normalized = stripProfileCaptureTimestampPrefix(text).replace(/\r?\n+/g, "\n");
+  const factsMatch = normalized.match(/##\s*Facts\s*([\s\S]*)$/iu);
+  const relevant = factsMatch?.[1] ?? normalized;
+  return relevant
+    .replace(/^#\s*Memory Palace Profile Block[^\n]*$/gimu, "")
+    .replace(/^- (?:block|updated_at|agent_id):.*$/gimu, "")
+    .replace(/^##\s*Facts\s*$/gimu, "")
+    .replace(/^- /gmu, "")
+    .trim();
+}
+
+function splitProfileCaptureSegments(text: string): string[] {
+  const normalized = stripProfileBlockMetadata(text);
   return normalized
     .split(/[\n。！？!?]+/u)
     .map((entry) => normalizeText(entry))
@@ -1875,6 +1903,120 @@ function sanitizeProfileCaptureText(block: ProfileBlockName, text: string): stri
     return `${useCjk ? "默认工作流：" : "Default workflow: "}${normalizedWorkflow}`;
   }
   return segments.join("；").trim() || undefined;
+}
+
+function looksLikeRecallPromptMetadataNoise(text: string): boolean {
+  const normalized = normalizeText(text);
+  if (!normalized) {
+    return false;
+  }
+  if (
+    /\bopenclaw-control-ui\b/iu.test(normalized) &&
+    (
+      /<<[^>\r\n]{1,80}>>/u.test(normalized) ||
+      /&lt;&lt;[^&\r\n]{1,80}&gt;&gt;/u.test(normalized) ||
+      /\buntrusted metadata\b/iu.test(normalized) ||
+      /```json/iu.test(normalized)
+    )
+  ) {
+    return true;
+  }
+  const hitCount = RECALL_PROMPT_METADATA_NOISE_PATTERNS.reduce(
+    (count, pattern) => count + (pattern.test(normalized) ? 1 : 0),
+    0,
+  );
+  return hitCount >= 3;
+}
+
+function resolveRecallPromptProfileBlock(path: string): ProfileBlockName | undefined {
+  const normalized = path.replace(/\\/g, "/");
+  if (
+    /(^|\/)profile\/workflow(?:\.md)?$/iu.test(normalized) ||
+    /(^|\/)(?:captured\/(?:llm-extracted\/)?|assistant-derived\/committed\/)workflow\//iu.test(normalized)
+  ) {
+    return "workflow";
+  }
+  if (
+    /(^|\/)profile\/preferences(?:\.md)?$/iu.test(normalized) ||
+    /(^|\/)captured\/preference\//iu.test(normalized)
+  ) {
+    return "preferences";
+  }
+  if (
+    /(^|\/)profile\/identity(?:\.md)?$/iu.test(normalized) ||
+    /(^|\/)captured\/profile\//iu.test(normalized)
+  ) {
+    return "identity";
+  }
+  return undefined;
+}
+
+function unwrapStructuredRecallSnippet(text: string): string {
+  const raw = String(text || "").trim();
+  if (!raw) {
+    return "";
+  }
+  if (/^#\s*Memory Palace Namespace\b/iu.test(raw)) {
+    return "";
+  }
+  if (/^#\s*Auto Captured Memory\b/iu.test(raw)) {
+    const [, content = ""] = raw.split(/##\s*Content/iu, 2);
+    return content
+      .replace(
+        /<!-- MEMORY_PALACE_FORCE_CONTROL_V1 -->[\s\S]*?<!-- \/MEMORY_PALACE_FORCE_CONTROL_V1 -->/giu,
+        "",
+      )
+      .trim();
+  }
+  return raw;
+}
+
+function sanitizePromptRecallResults(results: MemorySearchResult[]): MemorySearchResult[] {
+  return results
+    .map((entry) => {
+      const unwrappedSnippet = unwrapStructuredRecallSnippet(entry.snippet);
+      if (!unwrappedSnippet) {
+        return null;
+      }
+      const profileBlock = resolveRecallPromptProfileBlock(entry.path);
+      const sanitizedSnippet = profileBlock
+        ? sanitizeProfileCaptureText(profileBlock, unwrappedSnippet)
+        : unwrappedSnippet;
+      if (!sanitizedSnippet || looksLikeRecallPromptMetadataNoise(sanitizedSnippet)) {
+        return null;
+      }
+      return {
+        ...entry,
+        snippet: sanitizedSnippet,
+        endLine: countLines(sanitizedSnippet),
+      };
+    })
+    .filter((entry): entry is MemorySearchResult => Boolean(entry));
+}
+
+function formatPromptContextPlain(heading: string, results: MemorySearchResult[]): string {
+  const sanitizedResults = sanitizePromptRecallResults(results);
+  if (sanitizedResults.length === 0) {
+    return "";
+  }
+  const summaryHeading =
+    heading === "reflection-lane"
+      ? "Relevant reflection context:"
+      : "Relevant durable context:";
+  const lines = sanitizedResults.map(
+    (entry, index) => `${index + 1}. ${escapeMemoryForPrompt(entry.snippet)}`,
+  );
+  return [summaryHeading, ...lines].join("\n");
+}
+
+function formatProfilePromptContextPlain(entries: ProfilePromptEntry[]): string {
+  if (entries.length === 0) {
+    return "";
+  }
+  const lines = entries.map(
+    (entry, index) => `${index + 1}. [${entry.block}] ${escapeMemoryForPrompt(entry.text)}`,
+  );
+  return ["Stable user context:", ...lines].join("\n");
 }
 
 function stripCodeBlocks(text: string): string {
@@ -4747,27 +4889,11 @@ function shouldIncludeReflection(
 }
 
 function formatPromptContext(tag: string, heading: string, results: MemorySearchResult[]): string {
-  return formatPromptContextModule(
-    tag,
-    heading,
-    results
-      .map((entry) => {
-        if (!/(^|\/)workflow(?:\/|\.md$)/iu.test(entry.path)) {
-          return entry;
-        }
-        const sanitizedSnippet = sanitizeProfileCaptureText("workflow", entry.snippet);
-        if (!sanitizedSnippet) {
-          return null;
-        }
-        return {
-          ...entry,
-          snippet: sanitizedSnippet,
-          endLine: countLines(sanitizedSnippet),
-        };
-      })
-      .filter((entry): entry is MemorySearchResult => Boolean(entry)),
-    createAclSearchDeps(),
-  );
+  const sanitizedResults = sanitizePromptRecallResults(results);
+  if (sanitizedResults.length === 0) {
+    return "";
+  }
+  return formatPromptContextModule(tag, heading, sanitizedResults, createAclSearchDeps());
 }
 
 function formatProfilePromptContext(entries: ProfilePromptEntry[]): string {
@@ -5123,7 +5249,7 @@ function persistTransportDiagnosticsSnapshot(
     buildPluginRuntimeSignature,
     getTransportFallbackOrder,
     instanceId: transportSnapshotInstanceId,
-    pluginVersion: "1.1.0",
+    pluginVersion: "1.1.1",
     sanitizeText: redactVisualSensitiveText,
     snapshotPluginRuntimeState,
     processId: process.pid,
@@ -7951,8 +8077,11 @@ const services = createPluginServices({
     decideAutoRecall,
     formatError,
     formatHostBridgePromptContext,
+    formatProfilePromptContextPlain,
     formatProfilePromptContext,
+    formatPromptContextPlain,
     formatPromptContext,
+    sanitizePromptRecallResults,
     importHostBridgeHits,
     loadProfilePromptEntries,
     logPluginTrace,
@@ -8572,7 +8701,10 @@ export const __testing = {
   runReflectionFromCompactContext,
   shouldCleanupCompactContextDurableMemory,
   extractCompactContextTrace,
+  formatProfilePromptContextPlain,
   formatPromptContext,
+  formatPromptContextPlain,
+  sanitizePromptRecallResults,
   normalizeVisualSnippet,
   unwrapResultRecord,
   readHostWorkspaceFileText,

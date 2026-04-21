@@ -5892,6 +5892,51 @@ class SQLiteClient(SQLiteClientRetrievalMixin):
         }
 
     @staticmethod
+    def _normalize_write_guard_query(query: str) -> str:
+        raw_query = str(query or "").strip()
+        if not raw_query:
+            return ""
+        if not raw_query.startswith("# Auto Captured Memory"):
+            return raw_query
+        if "- category:" not in raw_query or "- captured_at:" not in raw_query:
+            return raw_query
+        if "## Content" not in raw_query:
+            return raw_query
+
+        _, _, content_block = raw_query.partition("## Content")
+        if not content_block:
+            return raw_query
+
+        normalized = re.sub(
+            r"<!-- MEMORY_PALACE_FORCE_CONTROL_V1 -->[\s\S]*?<!-- /MEMORY_PALACE_FORCE_CONTROL_V1 -->",
+            "",
+            content_block,
+        ).strip()
+        return normalized or raw_query
+
+    async def _is_exact_structured_write_guard_duplicate(
+        self,
+        *,
+        normalized_query: str,
+        candidate: Optional[Dict[str, Any]],
+    ) -> bool:
+        if not normalized_query or not isinstance(candidate, dict):
+            return False
+        memory_id = candidate.get("memory_id")
+        if not isinstance(memory_id, int) or memory_id <= 0:
+            return False
+
+        async with self.session() as session:
+            result = await session.execute(
+                select(Memory.content).where(Memory.id == memory_id)
+            )
+            existing_content = result.scalar_one_or_none()
+
+        if not isinstance(existing_content, str) or not existing_content.strip():
+            return False
+        return self._normalize_write_guard_query(existing_content) == normalized_query
+
+    @staticmethod
     def _normalize_guard_action(value: Any) -> Optional[str]:
         if not isinstance(value, str):
             return None
@@ -6563,7 +6608,8 @@ class SQLiteClient(SQLiteClientRetrievalMixin):
         path_prefix: Optional[str] = None,
         exclude_memory_id: Optional[int] = None,
     ) -> Dict[str, Any]:
-        query = (content or "").strip()
+        raw_query = (content or "").strip()
+        query = self._normalize_write_guard_query(raw_query)
         if not query:
             return self._build_guard_decision(
                 action="NOOP",
@@ -6683,6 +6729,23 @@ class SQLiteClient(SQLiteClientRetrievalMixin):
             if keyword_candidates
             else None
         )
+
+        if raw_query != query:
+            for candidate in (keyword_top_for_cross_check, semantic_top):
+                if await self._is_exact_structured_write_guard_duplicate(
+                    normalized_query=query,
+                    candidate=candidate,
+                ):
+                    return self._build_guard_decision(
+                        action="NOOP",
+                        target_id=candidate.get("memory_id"),
+                        target_uri=candidate.get("uri"),
+                        reason="normalized structured content matches an existing durable memory",
+                        method="structured_body_exact",
+                        degrade_reasons=degrade_reasons,
+                        semantic_top=semantic_top,
+                        keyword_top=keyword_top_for_cross_check,
+                    )
 
         # Score normalization for dense API embeddings (C/D profiles).
         # Dense models like qwen3-embedding compress cosine similarity into

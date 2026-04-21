@@ -68,6 +68,25 @@ Windows top baseline above.
   against `OpenClaw 2026.4.14` after the placeholder-override fix. The recorded
   `setup --profile d` and `onboarding --profile d --strict-profile --apply --validate`
   runs kept `effective_profile=d` and `fallback_applied=false`.
+- A fresh isolated `Profile B` replacement-acceptance rerun was also added on
+  the macOS validation host without reusing `current-host main` and without the
+  optional `V7` short-session extension. The final report is
+  `.tmp/replacement-acceptance/isolated-clean-lane-b-final/webui_report.json`,
+  and the base WebUI gate is now `6/6 PASS`.
+- In that fresh isolated rerun, `V4` confirmed the forced workflow variant via
+  `core://agents/alpha/captured/workflow/sha256-e99b298bd064`, while `V5 / V6`
+  each confirmed their own isolated `alpha` fact capture. So this repository no
+  longer needs `current-host main` reuse to explain those final acceptance
+  results.
+- A second fresh isolated `Profile B` rerun was then added as a strict UI
+  negative gate, still without reusing `current-host main` and still without
+  the optional `V7` short-session extension. The final report is
+  `.tmp/replacement-acceptance/isolated-clean-lane-b-ui-noise-fix3/webui_report.json`,
+  and that stricter gate also ends at `6/6 PASS`.
+- In that stricter rerun, `V2 / V4 / V5 / V6` also required the visible chat
+  body to stay free of raw `memory-palace-profile` / `memory-palace-recall`
+  blocks and the earlier control-ui metadata noise. So the `v1.1.1` fix is now
+  recorded as both a functional recall fix and a user-visible chat-surface fix.
 - In Docker Linux userspace reruns, both `linux/aarch64` and `linux/amd64`
   passed the same shared-LLM `Profile D` path: `setup --profile b`,
   `setup --profile d`, and `onboarding --profile d --strict-profile --apply --validate`.

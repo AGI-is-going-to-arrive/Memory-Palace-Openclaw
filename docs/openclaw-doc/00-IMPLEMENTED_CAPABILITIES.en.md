@@ -36,6 +36,7 @@ These should no longer be described as “planned”:
 - command:new reflection dedupe has session/TTL/budget protection
 - command:new reflection and smart extraction now fail closed when the target session transcript cannot be identified, instead of scanning the latest unrelated transcript
 - workflow-related profile recall, durable recall, and host-bridge prompt blocks are now sanitized before prompt injection; onboarding doc paths, provider diagnostics, and confirmation-code noise are no longer supposed to be written back or injected as stable workflow context
+- control-ui / WeChat-style chat surfaces are no longer supposed to echo raw `memory-palace-profile` / `memory-palace-recall` blocks or `openclaw-control-ui` metadata noise back into visible replies
 - onboarding tools avoid passing secrets on the command line
 - current installer accepts legacy env aliases and maps them forward
 

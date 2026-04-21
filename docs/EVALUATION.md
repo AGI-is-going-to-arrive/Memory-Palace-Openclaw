@@ -382,6 +382,16 @@ Layer A 定稿结果（2026-04-06 frozen baseline）：
   - `current-host strict C/D` 在该次复跑里都重新跑到 `6/6 PASS`
   - `isolated A/B/C/D` 在启用可选 `V7` 后都跑到 `7/7 PASS`
   - `V7` 只代表短会话 recall 用户体验通过；是否真的触发 early flush，以 host-level probe 为准
+- `2026-04-22` 又补跑了一次 fresh isolated `Profile B` base gate（不复用 `current-host main`，也不打开可选 `V7`）：
+  - 最终报告是 `.tmp/replacement-acceptance/isolated-clean-lane-b-final/webui_report.json`
+  - 结果是 `6/6 PASS`
+  - `V4` 当前已能在 fresh isolated lane 上确认 `write_guard_blocked -> 用户确认 -> force 写入 -> recall`，并命中 `core://agents/alpha/captured/workflow/sha256-e99b298bd064`
+  - `V5 / V6` 同一轮也都命中 isolated `alpha` 的独立 fact capture，不再需要借 `current-host main` 来解释结果
+- `2026-04-22` 又补跑了一次 fresh isolated `Profile B` strict UI negative gate（仍然不复用 `current-host main`，也不打开可选 `V7`）：
+  - 最终报告是 `.tmp/replacement-acceptance/isolated-clean-lane-b-ui-noise-fix3/webui_report.json`
+  - 结果是 `6/6 PASS`
+  - 这轮额外要求 `V2 / V4 / V5 / V6` 的聊天可见正文里不再出现 `memory-palace-profile` / `memory-palace-recall` 这类 raw memory block，也不再出现此前那种 control-ui metadata 噪声
+  - 这说明本次 `v1.1.1` 修补不只是保持 recall / confirm / force-write 主链路可用，也把用户侧最直观的“聊天里回显一大段 memory scaffolding”问题压下来了
 
 - current-host strict 复跑命令：
   - `OPENCLAW_ONBOARDING_USE_CURRENT_HOST=true OPENCLAW_ACCEPTANCE_STRICT_UI=true OPENCLAW_PROFILE=c node scripts/test_replacement_acceptance_webui.mjs`
@@ -427,7 +437,7 @@ Layer A 定稿结果（2026-04-06 frozen baseline）：
 
 **结论**：
 
-当前页面可直接引用的已验证事实是：`Profile A/B/C/D` 的 CLI smoke、`Profile A/B/C-default/C-llm/D-default` 的 profile-matrix、replacement acceptance 的标准集与 runtime 扩展集、`B/C/D` 的 host-level high-value probe，以及 replacement acceptance 的 current-host / isolated WebUI 路径，都能在当前 workspace 对上代码与测试。公开口径现在可以收敛成：`WebUI acceptance 的基础 gate 仍是 6 项；current-host strict C/D 当前都是 6/6 PASS；isolated A/B/C/D 在启用可选 V7 后都是 7/7 PASS；严格的 early-flush 证明继续以 B/C/D host-level probe 为准。`
+当前页面可直接引用的已验证事实是：`Profile A/B/C/D` 的 CLI smoke、`Profile A/B/C-default/C-llm/D-default` 的 profile-matrix、replacement acceptance 的标准集与 runtime 扩展集、`B/C/D` 的 host-level high-value probe，以及 replacement acceptance 的 current-host / isolated WebUI 路径，都能在当前 workspace 对上代码与测试。公开口径现在可以收敛成：`WebUI acceptance 的基础 gate 仍是 6 项；current-host strict C/D 当前都是 6/6 PASS；isolated A/B/C/D 在启用可选 V7 后都是 7/7 PASS；另外 fresh isolated B 在不启用 V7 时，base gate 与 strict UI negative gate 现在都已补跑到 6/6 PASS；严格的 early-flush 证明继续以 B/C/D host-level probe 为准。`
 
 **复跑命令**：
 

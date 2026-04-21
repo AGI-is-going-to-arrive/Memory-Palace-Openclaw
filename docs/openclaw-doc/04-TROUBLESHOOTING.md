@@ -280,6 +280,7 @@ docker compose version
 
 - `workflow` 相关 recall 在注入 prompt 前会先做净化
 - onboarding 文档路径、provider 诊断、confirmation code 这类噪声，不该再被当成稳定 workflow 写回或注入
+- control-ui / 微信这类聊天面，不该再直接回显原始 `<memory-palace-profile>` / `<memory-palace-recall>` block，也不该把 `openclaw-control-ui` 这类 metadata 噪声原样打出来
 - 只是在引用文档示例的单条 workflow，当前不会再被当成稳定长期流程
 - smart extraction 现在会跳过 assistant thinking block，尽量把 transcript budget 留给真正的 workflow step
 - 这修的是插件自己的 recall/capture 逻辑，不是去改 OpenClaw core

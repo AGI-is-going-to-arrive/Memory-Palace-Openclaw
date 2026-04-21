@@ -13,6 +13,47 @@ type ProfilePromptEntry = {
   text: string;
 };
 
+function normalizeComparableText(text: string): string {
+  return text.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function isRecordLike(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isTagSensitiveChatSurface(
+  event: Record<string, unknown>,
+  ctx: Record<string, unknown>,
+  readString: (value: unknown) => string | undefined,
+): boolean {
+  const surfaceHints = [
+    readString(ctx.requesterSenderId),
+    readString(event.requesterSenderId),
+    readString(ctx.messageChannel),
+    readString(event.messageChannel),
+    isRecordLike(ctx.deliveryContext) ? readString(ctx.deliveryContext.channel) : undefined,
+    isRecordLike(event.deliveryContext) ? readString(event.deliveryContext.channel) : undefined,
+    isRecordLike(ctx.origin) ? readString(ctx.origin.provider) : undefined,
+    isRecordLike(ctx.origin) ? readString(ctx.origin.surface) : undefined,
+    isRecordLike(event.origin) ? readString(event.origin.provider) : undefined,
+    isRecordLike(event.origin) ? readString(event.origin.surface) : undefined,
+  ]
+    .map((entry) => entry?.trim().toLowerCase())
+    .filter((entry): entry is string => Boolean(entry));
+  return surfaceHints.some((entry) =>
+    entry.includes("openclaw-control-ui") ||
+    entry.includes("control-ui"),
+  );
+}
+
+function shouldSuppressHostBridgePromptContext(
+  event: Record<string, unknown>,
+  ctx: Record<string, unknown>,
+  readString: (value: unknown) => string | undefined,
+): boolean {
+  return isTagSensitiveChatSurface(event, ctx, readString);
+}
+
 const WORKFLOW_RECALL_HINT_PATTERNS = [
   /\b(default workflow|workflow|process|review order|delivery order|coding habits?|programming habits?|code first|tests? immediately|docs? last)\b/iu,
   /(默认工作流|默认流程|工作流|顺序|编程习惯|代码习惯|先写代码|先做代码|立刻跑测试|马上跑测试|文档最后)/u,
@@ -66,12 +107,20 @@ export type AutoRecallDeps = {
   ) => { shouldRecall: boolean; forced: boolean; reasons: string[] };
   formatError: (error: unknown) => string;
   formatHostBridgePromptContext: (hits: HostWorkspaceHit[]) => string;
+  formatProfilePromptContextPlain: (entries: ProfilePromptEntry[]) => string;
   formatProfilePromptContext: (entries: ProfilePromptEntry[]) => string;
+  formatPromptContextPlain: (
+    lane: string,
+    results: MemorySearchResult[],
+  ) => string;
   formatPromptContext: (
     tag: string,
     lane: string,
     results: MemorySearchResult[],
   ) => string;
+  sanitizePromptRecallResults: (
+    results: MemorySearchResult[],
+  ) => MemorySearchResult[];
   importHostBridgeHits: (
     api: OpenClawPluginApi,
     config: PluginConfig,
@@ -179,13 +228,20 @@ export async function runAutoRecallHook(
     let hostBridgeHits: HostWorkspaceHit[] = [];
     let hasNonProfileRecallContext = false;
     let missingHostBridgeCategories = new Set<string>();
+    const injectedProfileFacts = new Set<string>();
 
     if (profileRecallEnabled) {
       const profileEntries = await session.withClient(async (client) =>
         deps.loadProfilePromptEntries(client, config, policy),
       );
       if (profileEntries.length > 0) {
-        sections.push(deps.formatProfilePromptContext(profileEntries));
+        for (const entry of profileEntries) {
+          injectedProfileFacts.add(normalizeComparableText(entry.text));
+        }
+        const profileContext = deps.formatProfilePromptContextPlain(profileEntries);
+        if (profileContext) {
+          sections.push(profileContext);
+        }
       }
     }
 
@@ -213,20 +269,24 @@ export async function runAutoRecallHook(
           }
         }
       }
-      if (payload.results.length > 0) {
-        sections.push(
-          deps.formatPromptContext(
-            "memory-palace-recall",
-            "durable-memory",
-            payload.results,
-          ),
+      const sanitizedDurableResults = deps.sanitizePromptRecallResults(payload.results);
+      const dedupedDurableResults = sanitizedDurableResults.filter(
+        (entry) => !injectedProfileFacts.has(normalizeComparableText(entry.snippet)),
+      );
+      if (dedupedDurableResults.length > 0) {
+        const durableContext = deps.formatPromptContextPlain(
+          "durable-memory",
+          dedupedDurableResults,
         );
-        hasNonProfileRecallContext = true;
+        if (durableContext) {
+          sections.push(durableContext);
+          hasNonProfileRecallContext = true;
+        }
         const requestedHostBridgeCategories =
           collectRequestedHostBridgeCategories(prompt);
         if (requestedHostBridgeCategories.size > 0) {
           const durableRecallCategories =
-            collectDurableRecallCategories(payload.results);
+            collectDurableRecallCategories(dedupedDurableResults);
           missingHostBridgeCategories = new Set(
             Array.from(requestedHostBridgeCategories).filter(
               (category) => !durableRecallCategories.has(category),
@@ -247,22 +307,26 @@ export async function runAutoRecallHook(
           },
         }),
       );
-      if (reflectionPayload.results.length > 0) {
-        sections.push(
-          deps.formatPromptContext(
-            "memory-palace-reflection",
-            "reflection-lane",
-            reflectionPayload.results,
-          ),
+      const sanitizedReflectionResults = deps.sanitizePromptRecallResults(
+        reflectionPayload.results,
+      );
+      if (sanitizedReflectionResults.length > 0) {
+        const reflectionContext = deps.formatPromptContextPlain(
+          "reflection-lane",
+          sanitizedReflectionResults,
         );
-        hasNonProfileRecallContext = true;
+        if (reflectionContext) {
+          sections.push(reflectionContext);
+          hasNonProfileRecallContext = true;
+        }
       }
     }
 
     if (
       hostBridgeRecallEnabled &&
       decision.shouldRecall &&
-      (!hasNonProfileRecallContext || missingHostBridgeCategories.size > 0)
+      (!hasNonProfileRecallContext || missingHostBridgeCategories.size > 0) &&
+      !shouldSuppressHostBridgePromptContext(event, ctx, deps.readString)
     ) {
       const workspaceDir = deps.resolveHostWorkspaceDir(ctx, identity.value);
       if (

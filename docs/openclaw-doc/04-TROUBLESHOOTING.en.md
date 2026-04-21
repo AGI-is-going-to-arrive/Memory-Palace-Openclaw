@@ -280,6 +280,7 @@ After this fix, the intended default boundary is:
 
 - workflow-related recall is sanitized before prompt injection
 - onboarding doc paths, provider diagnostics, and confirmation-code noise should no longer be written back or injected as stable workflow context
+- control-ui / WeChat-style chat surfaces should no longer echo raw `<memory-palace-profile>` / `<memory-palace-recall>` blocks or print `openclaw-control-ui` metadata noise back into the visible reply
 - a single workflow statement that only quotes a documentation example is no longer supposed to be treated as a stable long-term workflow
 - smart extraction now skips assistant thinking blocks so the transcript budget is reserved for actual workflow steps
 - this fixes the plugin's own recall/capture logic; it does not patch OpenClaw core

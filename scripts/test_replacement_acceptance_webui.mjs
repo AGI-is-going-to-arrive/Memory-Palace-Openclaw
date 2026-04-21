@@ -21,12 +21,14 @@
  *                                  through `openclaw dashboard --no-open`, or "scenario" to
  *                                  fall back to the known scenario port
  *   OPENCLAW_ACCEPTANCE_STRICT_UI – "true" to require UI-visible evidence for V2/V4/V5/V6
- *                                  in current-host Profile C/D runs (default: off)
+ *                                  in current-host Profile C/D runs, and to reject visible raw
+ *                                  memory tags / metadata noise on chat verifications (default: off)
  */
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  getDashboardUrl,
   loadPlaywright,
   OPENCLAW_BIN,
   parseJsonOutput,
@@ -255,6 +257,10 @@ function shouldEnforceStrictUiEvidence(verificationId) {
   return strictCurrentHostUiMode && ["V2", "V4", "V5", "V6", "V7"].includes(verificationId);
 }
 
+function shouldRejectVisibleUiNoise(verificationId) {
+  return strictUiRequested && ["V2", "V4", "V5", "V6"].includes(verificationId);
+}
+
 function shouldAllowCliDurableFallback(verificationId) {
   return !shouldEnforceStrictUiEvidence(verificationId);
 }
@@ -315,49 +321,55 @@ function buildAcceptanceMemorySpec() {
 
 function buildForceWriteSpec() {
   if (profileMatrixMode) {
-    const baseMarker = `matrix-base-${requestedProfile}-${acceptanceRunId}`;
-    const variantMarker = `matrix-force-${requestedProfile}-${acceptanceRunId}`;
+    const namespace = `force-lane-${requestedProfile}`;
+    const baseMarker = `matrix-force-base-${requestedProfile}-${acceptanceRunId}`;
+    const variantMarker = `matrix-force-variant-${requestedProfile}-${acceptanceRunId}`;
     return {
+      namespace,
       baseMarker,
       variantMarker,
       pausedText: "Paused.",
       storedText: "Stored.",
       baseWritePrompt:
-        `Please remember this durable workflow baseline for profile ${requestedProfile}: ` +
-        `default workflow marker ${baseMarker}. Reply only "Stored.".`,
+        `Please remember this durable incident-response workflow baseline for profile ${requestedProfile}: ` +
+        `namespace ${namespace}; sequence pause release, collect rollback evidence, then notify the owner; ` +
+        `baseline marker ${baseMarker}. Reply only "Stored.".`,
       blockedWritePrompt:
-        `Please remember this near-duplicate durable workflow variant for profile ${requestedProfile}: ` +
-        `default workflow marker ${baseMarker}; escalation marker ${variantMarker}. ` +
+        `Please remember this near-duplicate durable incident-response workflow variant for profile ${requestedProfile}: ` +
+        `namespace ${namespace}; sequence pause release, collect rollback evidence, then notify the owner; ` +
+        `baseline marker ${baseMarker}; escalation marker ${variantMarker}. ` +
         `If it is not stored as a separate durable memory, reply with one very short sentence that includes "Paused.".`,
       confirmForcePrompt:
-        `I confirm that I still want the separate durable memory saved for the variant with escalation marker ${variantMarker}, ` +
-        `even if it is close to an existing memory. Reply only "Stored.".`,
+        `I confirm that I still want the separate durable memory saved for the incident-response variant in namespace ${namespace} ` +
+        `with escalation marker ${variantMarker}, even if it is close to an existing memory. Reply only "Stored.".`,
       recallPrompt:
-        `What is the escalation marker for the confirmed variant workflow in profile ${requestedProfile}? ` +
+        `What is the escalation marker for the confirmed incident-response variant in namespace ${namespace} for profile ${requestedProfile}? ` +
         "Reply with the marker only.",
       expectedScope: `profile ${requestedProfile}`,
     };
   }
 
-  const baseMarker = `alpha-base-${acceptanceRunId}`;
-  const variantMarker = `alpha-force-${acceptanceRunId}`;
+  const namespace = "force-lane";
+  const baseMarker = `force-base-${acceptanceRunId}`;
+  const variantMarker = `force-variant-${acceptanceRunId}`;
   return {
+    namespace,
     baseMarker,
     variantMarker,
     pausedText: "已暂停。",
     storedText: "记住了。",
     baseWritePrompt:
-      `请记住这个长期协作 workflow 基线：以后默认先列清单，再实现，最后补测试。基础标记：${baseMarker}。` +
+      `请记住这个长期 incident-response workflow 基线：命名空间是 ${namespace}。流程是先暂停发布，再收集回滚证据，最后通知负责人。基础标记：${baseMarker}。` +
       `收到后只回复“记住了。”。`,
     blockedWritePrompt:
-      `请记住这个非常接近已有记忆的 workflow 变体：以后默认先列清单，再实现，最后补测试。` +
+      `请记住这个非常接近已有记忆的 incident-response workflow 变体：命名空间是 ${namespace}。流程仍然是先暂停发布，再收集回滚证据，最后通知负责人。` +
       `基础标记：${baseMarker}。升级标记：${variantMarker}。` +
       `如果它没有被单独存入，请用一句很短的话说明，并包含“已暂停。”。`,
     confirmForcePrompt:
-      `我确认：即使它和已有长期记忆很接近，也要把包含升级标记 ${variantMarker} 的版本单独长期记住。` +
+      `我确认：即使它和已有长期记忆很接近，也要把 ${namespace} 命名空间里包含升级标记 ${variantMarker} 的 incident-response workflow 变体单独长期记住。` +
       `只回复“记住了。”。`,
     recallPrompt:
-      "现在只回答刚才那个已确认变体 workflow 的升级标记，只输出标记本身。",
+      `现在只回答刚才那个已确认 ${namespace} incident-response 变体的升级标记，只输出标记本身。`,
     expectedScope: useCurrentHost ? "current-host session" : "alpha",
   };
 }
@@ -424,6 +436,72 @@ async function countOccurrences(page, needle) {
     if (!n) return 0;
     return body.split(n).length - 1;
   }, needle);
+}
+
+async function waitForMainTextToSettle(page, timeoutMs = 8_000, pollMs = 500, stablePolls = 3) {
+  let previousText = await page.locator("main").innerText().catch(() => "");
+  let stableCount = 0;
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    await page.waitForTimeout(pollMs);
+    const currentText = await page.locator("main").innerText().catch(() => "");
+    if (currentText === previousText) {
+      stableCount += 1;
+      if (stableCount >= stablePolls) {
+        return true;
+      }
+      continue;
+    }
+    previousText = currentText;
+    stableCount = 0;
+  }
+  return false;
+}
+
+const VISIBLE_UI_NOISE_MARKERS = [
+  "memory-palace-profile",
+  "memory-palace-recall",
+  "memory-palace-reflection",
+  "memory-palace-host-bridge",
+  "untrusted metadata",
+  "session_id",
+  "session_key",
+  "agent_id",
+  "captured_at",
+  "auto captured memory",
+  "## content",
+  "<<sender>>",
+  "&lt;&lt;sender&gt;&gt;",
+  "```json",
+];
+
+function collectVisibleUiNoiseHits(text) {
+  const normalized = String(text || "").toLowerCase();
+  if (!normalized) {
+    return [];
+  }
+  return VISIBLE_UI_NOISE_MARKERS.filter((marker) => normalized.includes(marker));
+}
+
+async function scanVisibleUiNoiseOnChat(page, chatUrl, selectorsChecked, label) {
+  selectorsChecked.push(`${label}_ui_noise_scan:true`);
+  await page.goto(chatUrl.toString(), {
+    waitUntil: "networkidle",
+    timeout: VERIFICATION_TIMEOUT_MS,
+  });
+  await page.waitForTimeout(1_500);
+  const settled = await waitForMainTextToSettle(page);
+  selectorsChecked.push(`${label}_ui_noise_settled:${settled}`);
+  const mainText = await page.locator("main").innerText().catch(() => "");
+  const hits = collectVisibleUiNoiseHits(mainText);
+  selectorsChecked.push(`${label}_ui_noise_free:${hits.length === 0}`);
+  if (hits.length > 0) {
+    selectorsChecked.push(`${label}_ui_noise_hits:${hits.join("|")}`);
+  }
+  return {
+    ok: hits.length === 0,
+    hits,
+  };
 }
 
 async function clickConnectIfPresent(page) {
@@ -504,7 +582,64 @@ function normalizeCliCaptureUri(rawUri) {
   return rendered.startsWith(expectedPrefix) ? rendered : null;
 }
 
+function parseAcceptanceTimestampMs(rawTimestamp) {
+  const parsed = Date.parse(String(rawTimestamp || ""));
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function buildMarkerNeedles(marker) {
+  const rendered = String(marker || "").trim();
+  if (!rendered) {
+    return [];
+  }
+  const needles = [rendered];
+  // Status/runtime details can truncate long markers near the tail. Keep a
+  // long-enough prefix so clean-lane unique run ids still disambiguate.
+  if (rendered.length > 30) {
+    needles.push(rendered.slice(0, 30));
+  }
+  return needles;
+}
+
+function collectRecentRuntimeMarkerEntries(runtimeState, marker) {
+  const markerNeedles = buildMarkerNeedles(marker);
+  const recentCaptureLayers = Array.isArray(runtimeState?.recentCaptureLayers)
+    ? runtimeState.recentCaptureLayers
+    : [];
+  return recentCaptureLayers
+    .map((entry) => {
+      const details = String(entry?.details || "");
+      if (!markerNeedles.some((needle) => details.includes(needle))) {
+        return null;
+      }
+      return {
+        at: String(entry?.at || ""),
+        atMs: parseAcceptanceTimestampMs(entry?.at),
+        layer: String(entry?.layer || ""),
+        action: String(entry?.action || ""),
+        pending: Boolean(entry?.pending),
+        rawUri: String(entry?.uri || ""),
+        uri: normalizeCliCaptureUri(entry?.uri) || null,
+        details,
+      };
+    })
+    .filter(Boolean);
+}
+
+function hasRecentRuntimeMarkerEvidence(markerEvidence, minTimestampMs = 0) {
+  const recentEntries = Array.isArray(markerEvidence?.recentMatchingEntries)
+    ? markerEvidence.recentMatchingEntries
+    : [];
+  return recentEntries.some((entry) => (
+    Boolean(entry?.atMs)
+    && entry.atMs >= minTimestampMs
+    && !entry.pending
+    && ["ADD", "UPDATE"].includes(entry.action)
+  ));
+}
+
 async function collectCliMarkerEvidence(scenario, marker) {
+  const markerNeedles = buildMarkerNeedles(marker);
   const searchResult = await runAcceptanceCliJson(scenario, [
     "memory-palace",
     "search",
@@ -516,8 +651,16 @@ async function collectCliMarkerEvidence(scenario, marker) {
     "status",
     "--json",
   ]);
-  const searchText = stringifyAcceptancePayload(searchResult.payload);
-  const searchFound = searchText.includes(marker);
+  const searchPayload = searchResult.payload ?? {};
+  const searchResults = Array.isArray(searchPayload.results) ? searchPayload.results : [];
+  const searchFound = searchResults.some((entry) => {
+    const haystacks = [
+      entry?.path,
+      entry?.citation,
+      entry?.snippet,
+    ];
+    return haystacks.some((value) => String(value || "").includes(marker));
+  }) || stringifyAcceptancePayload(searchPayload).includes(marker);
   const runtimeState = statusResult.payload?.runtimeState ?? {};
   const structuredStatusEntries = [
     runtimeState.lastCapturePath,
@@ -526,19 +669,39 @@ async function collectCliMarkerEvidence(scenario, marker) {
   const matchingStructuredEntry = structuredStatusEntries.find((entry) => {
     const normalizedUri = normalizeCliCaptureUri(entry?.uri);
     const details = String(entry?.details || "");
-    return Boolean(normalizedUri) && details.includes(marker);
+    return Boolean(normalizedUri)
+      && markerNeedles.some((needle) => details.includes(needle));
   }) || null;
-  const statusFound = Boolean(matchingStructuredEntry);
+  const recentMatchingEntries = collectRecentRuntimeMarkerEntries(runtimeState, marker);
   const lastCaptureUri = matchingStructuredEntry
     ? normalizeCliCaptureUri(matchingStructuredEntry.uri)
     : null;
+  let statusFound = false;
+  let getResult = null;
+  if (lastCaptureUri) {
+    try {
+      getResult = await runAcceptanceCliJson(scenario, [
+        "memory-palace",
+        "get",
+        lastCaptureUri,
+        "--json",
+      ]);
+      const getText = String(getResult.payload?.text || stringifyAcceptancePayload(getResult.payload));
+      statusFound = getText.includes(marker);
+    } catch {
+      statusFound = false;
+    }
+  }
   return {
     searchFound,
     statusFound,
-    strongEvidence: Boolean(lastCaptureUri) || searchFound || statusFound,
+    strongEvidence: searchFound || statusFound,
     lastCaptureUri,
+    recentMatchingEntries,
+    recentMatchFound: recentMatchingEntries.length > 0,
     searchResult,
     statusResult,
+    getResult,
   };
 }
 
@@ -666,6 +829,7 @@ async function verifyV2(page, baseUrl, scenario) {
   const screenshotPath = path.join(screenshotDir, "v2_chat_recall.png");
   const allowCliFallback = shouldAllowCliDurableFallback(id);
   const strictUiOnly = shouldEnforceStrictUiEvidence(id);
+  const rejectVisibleUiNoise = shouldRejectVisibleUiNoise(id);
   const { confirmText, marker: rememberedMarker, writePrompt, recallPrompt, expectedScope } =
     acceptanceMemorySpec;
   const assistantLabel = profileMatrixMode ? "Onboarding Doc Test" : "Scenario alpha";
@@ -676,6 +840,7 @@ async function verifyV2(page, baseUrl, scenario) {
     chatUrl.searchParams.set("session", acceptanceChatSession);
     selectorsChecked.push("route:/chat");
     selectorsChecked.push(`strict_ui_mode:${strictUiOnly}`);
+    selectorsChecked.push(`reject_visible_ui_noise:${rejectVisibleUiNoise}`);
     await page.goto(chatUrl.toString(), { waitUntil: "networkidle", timeout: VERIFICATION_TIMEOUT_MS });
     await page.waitForTimeout(1_400);
 
@@ -696,19 +861,26 @@ async function verifyV2(page, baseUrl, scenario) {
     await inputLocator.fill(writePrompt);
     await page.keyboard.press("Enter");
 
+    await page.waitForTimeout(2_000);
+    const writeCountAfterPrompt = await countOccurrences(page, confirmText);
+    const assistantLabelCountAfterPrompt = await countOccurrences(page, assistantLabel);
+
     const writeDeadline = Date.now() + VERIFICATION_TIMEOUT_MS;
-    let writeConfirmed = false;
+    let writeConfirmed = assistantLabelCountAfterPrompt > assistantLabelCountBefore;
     let writeActual = "";
     while (Date.now() < writeDeadline) {
       const mainText = await page.locator("main").innerText();
       const currentCount = mainText.split(confirmText).length - 1;
       const currentAssistantLabelCount = mainText.split(assistantLabel).length - 1;
-      if (currentCount > writeCountBefore || currentAssistantLabelCount > assistantLabelCountBefore) {
+      if (
+        currentCount > writeCountAfterPrompt ||
+        currentAssistantLabelCount > assistantLabelCountAfterPrompt
+      ) {
         writeConfirmed = true;
         writeActual =
-          `"${confirmText}" count=${currentCount} (before=${writeCountBefore}); ` +
+          `"${confirmText}" count=${currentCount} (promptBaseline=${writeCountAfterPrompt}); ` +
           `assistant label "${assistantLabel}" count=${currentAssistantLabelCount} ` +
-          `(before=${assistantLabelCountBefore})`;
+          `(promptBaseline=${assistantLabelCountAfterPrompt})`;
         break;
       }
       await page.waitForTimeout(1_000);
@@ -716,7 +888,11 @@ async function verifyV2(page, baseUrl, scenario) {
     selectorsChecked.push(
       `write_confirmed:${writeConfirmed}`,
       `assistant_label_before:${assistantLabelCountBefore}`,
+      `assistant_label_after_prompt:${assistantLabelCountAfterPrompt}`,
+      `confirm_count_after_prompt:${writeCountAfterPrompt}`,
     );
+
+    await waitForMainTextToSettle(page);
 
     // --- Step 2: Recall in the same scope ---
     // Count occurrences after the recall prompt lands. The prompt itself does
@@ -862,6 +1038,10 @@ async function verifyV2(page, baseUrl, scenario) {
     }
     selectorsChecked.push(`recall_found:${recallFound}`, `recall_tag_seen:${recallTagSeen}`);
 
+    const uiNoiseState = rejectVisibleUiNoise
+      ? await scanVisibleUiNoiseOnChat(page, chatUrl, selectorsChecked, "v2")
+      : { ok: true, hits: [] };
+
     await page.screenshot({ path: screenshotPath, fullPage: false });
 
     cliEvidence =
@@ -885,6 +1065,7 @@ async function verifyV2(page, baseUrl, scenario) {
           )
         )
       );
+    const pass = recallPass && uiNoiseState.ok;
     if (!recallFound && cliEvidence?.strongEvidence) {
       recallActual = allowCliFallback
         ? (
@@ -927,14 +1108,29 @@ async function verifyV2(page, baseUrl, scenario) {
         `Agent completes the write for "${rememberedMarker}" and later exposes the remembered marker ` +
         `"${rememberedMarker}" ` +
         `for ${expectedScope}`,
-      actual: recallFound
-        ? (writeConfirmed
-          ? recallActual
-          : `${recallActual}; assistant confirmation was not independently observed before recall`)
-        : (recallActual || (profileMatrixMode
-          ? "Profile marker not recalled within timeout"
-          : "Alpha marker not recalled within timeout")),
-      pass_fail: recallPass ? "PASS" : "FAIL",
+      actual: pass
+        ? (
+          recallFound
+            ? (writeConfirmed
+              ? recallActual
+              : `${recallActual}; assistant confirmation was not independently observed before recall`)
+            : recallActual
+        )
+        : [
+            recallFound
+              ? (
+                writeConfirmed
+                  ? ""
+                  : "Assistant confirmation was not independently observed before recall."
+              )
+              : (recallActual || (profileMatrixMode
+                ? "Profile marker not recalled within timeout."
+                : "Alpha marker not recalled within timeout.")),
+            uiNoiseState.ok
+              ? ""
+              : `Visible chat reply still exposed raw memory tags or metadata noise: ${uiNoiseState.hits.join(", ")}.`,
+          ].filter(Boolean).join(" "),
+      pass_fail: pass ? "PASS" : "FAIL",
       screenshot_path: screenshotPath,
       selectors_checked: selectorsChecked,
     });
@@ -1130,6 +1326,7 @@ async function verifyV4(page, baseUrl, scenario) {
   const selectorsChecked = [];
   const allowCliFallback = shouldAllowCliDurableFallback(id);
   const strictUiOnly = shouldEnforceStrictUiEvidence(id);
+  const rejectVisibleUiNoise = shouldRejectVisibleUiNoise(id);
   const {
     baseMarker,
     variantMarker,
@@ -1149,6 +1346,7 @@ async function verifyV4(page, baseUrl, scenario) {
     chatUrl.searchParams.set("session", acceptanceForceChatSession);
     selectorsChecked.push("route:/chat(force)");
     selectorsChecked.push(`strict_ui_mode:${strictUiOnly}`);
+    selectorsChecked.push(`reject_visible_ui_noise:${rejectVisibleUiNoise}`);
     await page.goto(chatUrl.toString(), { waitUntil: "networkidle", timeout: VERIFICATION_TIMEOUT_MS });
     await page.waitForTimeout(1_400);
     await clickConnectIfPresent(page);
@@ -1158,18 +1356,24 @@ async function verifyV4(page, baseUrl, scenario) {
 
     // Step 1: seed a baseline durable memory.
     const assistantLabelCountBeforeBase = await countOccurrences(page, assistantLabel);
+    const storedCountBeforeBase = await countOccurrences(page, storedText);
     await inputLocator.click();
     await inputLocator.fill(baseWritePrompt);
     await page.keyboard.press("Enter");
 
+    await page.waitForTimeout(2_000);
+    const assistantLabelCountAfterBasePrompt = await countOccurrences(page, assistantLabel);
+    const storedCountAfterBasePrompt = await countOccurrences(page, storedText);
+
     const baseDeadline = Date.now() + flowTimeoutMs;
-    let baseWriteConfirmed = false;
+    let baseWriteConfirmed = assistantLabelCountAfterBasePrompt > assistantLabelCountBeforeBase;
     while (Date.now() < baseDeadline) {
       const mainText = await page.locator("main").innerText();
       const currentAssistantLabelCount = mainText.split(assistantLabel).length - 1;
+      const currentStoredCount = mainText.split(storedText).length - 1;
       if (
-        currentAssistantLabelCount > assistantLabelCountBeforeBase ||
-        mainText.includes(storedText)
+        currentAssistantLabelCount > assistantLabelCountAfterBasePrompt ||
+        currentStoredCount > storedCountAfterBasePrompt
       ) {
         baseWriteConfirmed = true;
         break;
@@ -1181,6 +1385,8 @@ async function verifyV4(page, baseUrl, scenario) {
     selectorsChecked.push(
       `base_write_confirmed:${baseWriteConfirmed}`,
       `base_cli_search_found:${baseCliEvidence.searchFound}`,
+      `base_assistant_label_after_prompt:${assistantLabelCountAfterBasePrompt}`,
+      `base_stored_count_after_prompt:${storedCountAfterBasePrompt}`,
     );
 
     // Step 2: ask for a near-duplicate variant and expect a guarded pause.
@@ -1232,15 +1438,19 @@ async function verifyV4(page, baseUrl, scenario) {
     );
 
     // Step 3: confirm and require a force-backed separate durable write.
+    await waitForMainTextToSettle(page);
     const assistantLabelCountBeforeConfirm = await countOccurrences(page, assistantLabel);
+    const storedCountBeforeConfirm = await countOccurrences(page, storedText);
     await inputLocator.click();
     await inputLocator.fill(confirmForcePrompt);
+    const confirmStartedAtMs = Date.now();
     await page.keyboard.press("Enter");
     await page.waitForTimeout(2_000);
     const storedBaseline = await countOccurrences(page, storedText);
+    const assistantLabelCountAfterConfirmPrompt = await countOccurrences(page, assistantLabel);
 
     const forceDeadline = Date.now() + flowTimeoutMs;
-    let forceConfirmedInChat = false;
+    let forceConfirmedInChat = assistantLabelCountAfterConfirmPrompt > assistantLabelCountBeforeConfirm;
     let forceCliEvidence = null;
     let lastForceCliCheckAt = 0;
     while (Date.now() < forceDeadline) {
@@ -1249,7 +1459,7 @@ async function verifyV4(page, baseUrl, scenario) {
       const currentAssistantLabelCount = mainText.split(assistantLabel).length - 1;
       if (
         storedCount > storedBaseline ||
-        currentAssistantLabelCount > assistantLabelCountBeforeConfirm
+        currentAssistantLabelCount > assistantLabelCountAfterConfirmPrompt
       ) {
         forceConfirmedInChat = true;
         break;
@@ -1257,7 +1467,18 @@ async function verifyV4(page, baseUrl, scenario) {
       if (allowCliFallback && Date.now() - lastForceCliCheckAt >= 5_000) {
         lastForceCliCheckAt = Date.now();
         forceCliEvidence = await collectCliMarkerEvidence(scenario, variantMarker).catch(() => null);
-        if (forceCliEvidence?.strongEvidence && (forceCliEvidence.searchFound || forceCliEvidence.statusFound)) {
+        const postConfirmRuntimeFound = hasRecentRuntimeMarkerEvidence(
+          forceCliEvidence,
+          confirmStartedAtMs,
+        );
+        if (
+          forceCliEvidence?.strongEvidence
+          && (
+            forceCliEvidence.searchFound
+            || forceCliEvidence.statusFound
+            || postConfirmRuntimeFound
+          )
+        ) {
           forceConfirmedInChat = true;
           break;
         }
@@ -1266,13 +1487,49 @@ async function verifyV4(page, baseUrl, scenario) {
     }
 
     forceCliEvidence = forceCliEvidence || await collectCliMarkerEvidence(scenario, variantMarker);
+    let forcePostConfirmRuntimeFound = hasRecentRuntimeMarkerEvidence(
+      forceCliEvidence,
+      confirmStartedAtMs,
+    );
+    if (
+      allowCliFallback
+      && forceConfirmedInChat
+      && !forceCliEvidence.searchFound
+      && !forceCliEvidence.statusFound
+      && !forcePostConfirmRuntimeFound
+    ) {
+      const runtimeSettleDeadline = Date.now() + 45_000;
+      selectorsChecked.push("force_runtime_settle_window:true");
+      while (Date.now() < runtimeSettleDeadline) {
+        await page.waitForTimeout(3_000);
+        forceCliEvidence = await collectCliMarkerEvidence(scenario, variantMarker).catch(
+          () => forceCliEvidence,
+        );
+        forcePostConfirmRuntimeFound = hasRecentRuntimeMarkerEvidence(
+          forceCliEvidence,
+          confirmStartedAtMs,
+        );
+        if (
+          forceCliEvidence.searchFound
+          || forceCliEvidence.statusFound
+          || forcePostConfirmRuntimeFound
+        ) {
+          break;
+        }
+      }
+    }
     selectorsChecked.push(
       `force_confirmed_in_chat:${forceConfirmedInChat}`,
       `force_cli_search_found:${forceCliEvidence.searchFound}`,
       `force_cli_status_found:${forceCliEvidence.statusFound}`,
+      `force_cli_recent_match_found:${forceCliEvidence.recentMatchFound}`,
+      `force_cli_post_confirm_runtime_found:${forcePostConfirmRuntimeFound}`,
+      `force_assistant_label_after_prompt:${assistantLabelCountAfterConfirmPrompt}`,
+      `force_stored_count_before:${storedCountBeforeConfirm}`,
     );
 
     // Step 4: verify recall of the forced variant marker in chat.
+    await waitForMainTextToSettle(page);
     await inputLocator.click();
     await inputLocator.fill(recallPrompt);
     await page.keyboard.press("Enter");
@@ -1320,6 +1577,10 @@ async function verifyV4(page, baseUrl, scenario) {
       }
     }
 
+    const uiNoiseState = rejectVisibleUiNoise
+      ? await scanVisibleUiNoiseOnChat(page, chatUrl, selectorsChecked, "v4")
+      : { ok: true, hits: [] };
+
     await page.screenshot({ path: screenshotPath, fullPage: false });
 
     const baseStored = Boolean(
@@ -1336,7 +1597,7 @@ async function verifyV4(page, baseUrl, scenario) {
         ? (
           forceCliEvidence.searchFound ||
           forceCliEvidence.statusFound ||
-          forceCliEvidence.lastCaptureUri
+          forcePostConfirmRuntimeFound
         )
         : forceConfirmedInChat
     );
@@ -1347,7 +1608,8 @@ async function verifyV4(page, baseUrl, scenario) {
       !variantStoredBeforeConfirm &&
       forceConfirmedInChat &&
       forceStored &&
-      recallSatisfied;
+      recallSatisfied &&
+      uiNoiseState.ok;
 
     return buildResult({
       id,
@@ -1375,6 +1637,9 @@ async function verifyV4(page, baseUrl, scenario) {
             !allowCliFallback && recallCliEvidence?.strongEvidence
               ? `CLI saw durable evidence for "${variantMarker}", but strict UI mode requires the marker to be visible in the UI.`
               : "",
+            uiNoiseState.ok
+              ? ""
+              : `Visible chat reply still exposed raw memory tags or metadata noise: ${uiNoiseState.hits.join(", ")}.`,
             blockedActual,
           ].filter(Boolean).join(" "),
       pass_fail: pass ? "PASS" : "FAIL",
@@ -1410,6 +1675,7 @@ async function verifyV5(page, baseUrl, scenario) {
   const selectorsChecked = [];
   const allowCliFallback = shouldAllowCliDurableFallback(id);
   const strictUiOnly = shouldEnforceStrictUiEvidence(id);
+  const rejectVisibleUiNoise = shouldRejectVisibleUiNoise(id);
   const { confirmText, marker, writePrompt, recallPrompt } = acceptanceChineseConfirmSpec;
   const assistantLabel = profileMatrixMode ? "Onboarding Doc Test" : "Scenario alpha";
 
@@ -1418,6 +1684,7 @@ async function verifyV5(page, baseUrl, scenario) {
     chatUrl.searchParams.set("session", acceptanceChineseChatSession);
     selectorsChecked.push("route:/chat(zh-confirm)");
     selectorsChecked.push(`strict_ui_mode:${strictUiOnly}`);
+    selectorsChecked.push(`reject_visible_ui_noise:${rejectVisibleUiNoise}`);
     await page.goto(chatUrl.toString(), { waitUntil: "networkidle", timeout: VERIFICATION_TIMEOUT_MS });
     await page.waitForTimeout(1_400);
     await clickConnectIfPresent(page);
@@ -1428,6 +1695,7 @@ async function verifyV5(page, baseUrl, scenario) {
     const confirmCountBefore = await countOccurrences(page, confirmText);
     const toolOutputBefore = await countOccurrences(page, "Tool output");
     const memoryLearnToolBefore = await countOccurrences(page, "memory_learn");
+    const assistantLabelCountBefore = await countOccurrences(page, assistantLabel);
 
     await inputLocator.click();
     await inputLocator.fill(writePrompt);
@@ -1437,19 +1705,31 @@ async function verifyV5(page, baseUrl, scenario) {
     // so the confirmation text inside the user prompt itself is not counted.
     await page.waitForTimeout(2_000);
     const afterPromptConfirmCount = await countOccurrences(page, confirmText);
+    const afterPromptToolOutputCount = await countOccurrences(page, "Tool output");
+    const afterPromptMemoryLearnToolCount = await countOccurrences(page, "memory_learn");
+    const afterPromptAssistantLabelCount = await countOccurrences(page, assistantLabel);
 
     const confirmDeadline = Date.now() + VERIFICATION_TIMEOUT_MS;
-    let confirmSeen = afterPromptConfirmCount > confirmCountBefore;
+    let confirmSeen = (
+      afterPromptConfirmCount > confirmCountBefore
+      && (
+        afterPromptToolOutputCount > toolOutputBefore ||
+        afterPromptMemoryLearnToolCount > memoryLearnToolBefore ||
+        afterPromptAssistantLabelCount > assistantLabelCountBefore
+      )
+    );
     while (Date.now() < confirmDeadline) {
       const mainText = await page.locator("main").innerText();
       const confirmCount = mainText.split(confirmText).length - 1;
       const toolOutputCount = mainText.split("Tool output").length - 1;
       const memoryLearnToolCount = mainText.split("memory_learn").length - 1;
+      const assistantLabelCount = mainText.split(assistantLabel).length - 1;
       if (
-        confirmCount > confirmCountBefore &&
+        confirmCount > afterPromptConfirmCount &&
         (
-          toolOutputCount > toolOutputBefore ||
-          memoryLearnToolCount > memoryLearnToolBefore
+          toolOutputCount > afterPromptToolOutputCount ||
+          memoryLearnToolCount > afterPromptMemoryLearnToolCount ||
+          assistantLabelCount > afterPromptAssistantLabelCount
         )
       ) {
         confirmSeen = true;
@@ -1463,8 +1743,11 @@ async function verifyV5(page, baseUrl, scenario) {
       `after_prompt_confirm_count:${afterPromptConfirmCount}`,
       `tool_output_before:${toolOutputBefore}`,
       `memory_learn_tool_before:${memoryLearnToolBefore}`,
+      `assistant_label_before:${assistantLabelCountBefore}`,
+      `assistant_label_after_prompt:${afterPromptAssistantLabelCount}`,
     );
 
+    await waitForMainTextToSettle(page);
     await inputLocator.click();
     await inputLocator.fill(recallPrompt);
     await page.keyboard.press("Enter");
@@ -1519,9 +1802,13 @@ async function verifyV5(page, baseUrl, scenario) {
       `cli_status_found:${cliEvidence?.statusFound ?? false}`,
     );
 
+    const uiNoiseState = rejectVisibleUiNoise
+      ? await scanVisibleUiNoiseOnChat(page, chatUrl, selectorsChecked, "v5")
+      : { ok: true, hits: [] };
+
     await page.screenshot({ path: screenshotPath, fullPage: false });
 
-    const pass = confirmSeen && (
+    const pass = uiNoiseState.ok && confirmSeen && (
       recallSeen || (
         allowCliFallback &&
         Boolean(cliEvidence?.strongEvidence)
@@ -1543,6 +1830,9 @@ async function verifyV5(page, baseUrl, scenario) {
             !allowCliFallback && cliEvidence?.strongEvidence
               ? `CLI saw durable evidence for "${marker}", but strict UI mode requires visible UI evidence.`
               : "",
+            uiNoiseState.ok
+              ? ""
+              : `Visible chat reply still exposed raw memory tags or metadata noise: ${uiNoiseState.hits.join(", ")}.`,
           ].filter(Boolean).join(" "),
       pass_fail: pass ? "PASS" : "FAIL",
       screenshot_path: screenshotPath,
@@ -1577,13 +1867,16 @@ async function verifyV6(page, baseUrl, scenario) {
   const selectorsChecked = [];
   const allowCliFallback = shouldAllowCliDurableFallback(id);
   const strictUiOnly = shouldEnforceStrictUiEvidence(id);
+  const rejectVisibleUiNoise = shouldRejectVisibleUiNoise(id);
   const { confirmText, marker, writePrompt, recallPrompt } = acceptanceEnglishConfirmSpec;
+  const assistantLabel = profileMatrixMode ? "Onboarding Doc Test" : "Scenario alpha";
 
   try {
     const chatUrl = new URL("/chat", baseUrl.replace(/#.*$/, ""));
     chatUrl.searchParams.set("session", acceptanceEnglishChatSession);
     selectorsChecked.push("route:/chat(en-confirm)");
     selectorsChecked.push(`strict_ui_mode:${strictUiOnly}`);
+    selectorsChecked.push(`reject_visible_ui_noise:${rejectVisibleUiNoise}`);
     await page.goto(chatUrl.toString(), { waitUntil: "networkidle", timeout: VERIFICATION_TIMEOUT_MS });
     await page.waitForTimeout(1_400);
     await clickConnectIfPresent(page);
@@ -1592,6 +1885,9 @@ async function verifyV6(page, baseUrl, scenario) {
     selectorsChecked.push("selector:chat-input(en-confirm)");
 
     const confirmCountBefore = await countOccurrences(page, confirmText);
+    const assistantLabelCountBefore = await countOccurrences(page, assistantLabel);
+    const toolOutputBefore = await countOccurrences(page, "Tool output");
+    const memoryLearnToolBefore = await countOccurrences(page, "memory_learn");
 
     await inputLocator.click();
     await inputLocator.fill(writePrompt);
@@ -1599,15 +1895,37 @@ async function verifyV6(page, baseUrl, scenario) {
 
     await page.waitForTimeout(2_000);
     const afterPromptConfirmCount = await countOccurrences(page, confirmText);
+    const afterPromptAssistantLabelCount = await countOccurrences(page, assistantLabel);
+    const afterPromptToolOutputCount = await countOccurrences(page, "Tool output");
+    const afterPromptMemoryLearnToolCount = await countOccurrences(page, "memory_learn");
 
     const confirmDeadline = Date.now() + VERIFICATION_TIMEOUT_MS;
-    let confirmSeen = afterPromptConfirmCount > confirmCountBefore;
+    let confirmSeen = (
+      afterPromptConfirmCount > confirmCountBefore
+      && (
+        afterPromptAssistantLabelCount > assistantLabelCountBefore ||
+        afterPromptToolOutputCount > toolOutputBefore ||
+        afterPromptMemoryLearnToolCount > memoryLearnToolBefore
+      )
+    );
     while (Date.now() < confirmDeadline) {
       const mainText = await page.locator("main").innerText();
       const confirmCount = mainText.split(confirmText).length - 1;
+      const assistantLabelCount = mainText.split(assistantLabel).length - 1;
+      const toolOutputCount = mainText.split("Tool output").length - 1;
+      const memoryLearnToolCount = mainText.split("memory_learn").length - 1;
       if (confirmCount > confirmCountBefore) {
-        confirmSeen = true;
-        break;
+        if (
+          confirmCount > afterPromptConfirmCount &&
+          (
+            assistantLabelCount > afterPromptAssistantLabelCount ||
+            toolOutputCount > afterPromptToolOutputCount ||
+            memoryLearnToolCount > afterPromptMemoryLearnToolCount
+          )
+        ) {
+          confirmSeen = true;
+          break;
+        }
       }
       await page.waitForTimeout(1_000);
     }
@@ -1615,8 +1933,11 @@ async function verifyV6(page, baseUrl, scenario) {
       `confirm_seen:${confirmSeen}`,
       `confirm_count_before:${confirmCountBefore}`,
       `confirm_count_after_prompt:${afterPromptConfirmCount}`,
+      `assistant_label_before:${assistantLabelCountBefore}`,
+      `assistant_label_after_prompt:${afterPromptAssistantLabelCount}`,
     );
 
+    await waitForMainTextToSettle(page);
     await inputLocator.click();
     await inputLocator.fill(recallPrompt);
     await page.keyboard.press("Enter");
@@ -1671,13 +1992,17 @@ async function verifyV6(page, baseUrl, scenario) {
       `cli_status_found:${cliEvidence?.statusFound ?? false}`,
     );
 
+    const uiNoiseState = rejectVisibleUiNoise
+      ? await scanVisibleUiNoiseOnChat(page, chatUrl, selectorsChecked, "v6")
+      : { ok: true, hits: [] };
+
     await page.screenshot({ path: screenshotPath, fullPage: false });
 
     const finalConfirmCount = await countOccurrences(page, confirmText);
     const confirmSatisfied = confirmSeen || finalConfirmCount >= afterPromptConfirmCount + 1;
     selectorsChecked.push(`final_confirm_count:${finalConfirmCount}`);
 
-    const pass = confirmSatisfied && (
+    const pass = uiNoiseState.ok && confirmSatisfied && (
       recallSeen || (
         allowCliFallback &&
         Boolean(cliEvidence?.strongEvidence)
@@ -1699,6 +2024,9 @@ async function verifyV6(page, baseUrl, scenario) {
             !allowCliFallback && cliEvidence?.strongEvidence
               ? `CLI saw durable evidence for "${marker}", but strict UI mode requires visible UI evidence.`
               : "",
+            uiNoiseState.ok
+              ? ""
+              : `Visible chat reply still exposed raw memory tags or metadata noise: ${uiNoiseState.hits.join(", ")}.`,
           ].filter(Boolean).join(" "),
       pass_fail: pass ? "PASS" : "FAIL",
       screenshot_path: screenshotPath,

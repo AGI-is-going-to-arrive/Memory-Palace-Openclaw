@@ -16455,7 +16455,7 @@ class MemoryPalaceMcpClient {
     };
     this.config = {
       clientName: config2.clientName ?? "openclaw-memory-palace",
-      clientVersion: config2.clientVersion ?? "1.1.0",
+      clientVersion: config2.clientVersion ?? "1.1.1",
       transport: config2.transport,
       timeoutMs: normalizePositiveInteger(config2.timeoutMs, DEFAULT_OPERATION_TIMEOUT_MS),
       stdio: config2.stdio,
@@ -20367,6 +20367,30 @@ function registerLifecycleHooks(api2, options) {
 }
 
 // src/auto-recall.ts
+function normalizeComparableText(text) {
+  return text.trim().toLowerCase().replace(/\s+/g, " ");
+}
+function isRecordLike(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+function isTagSensitiveChatSurface(event, ctx, readString2) {
+  const surfaceHints = [
+    readString2(ctx.requesterSenderId),
+    readString2(event.requesterSenderId),
+    readString2(ctx.messageChannel),
+    readString2(event.messageChannel),
+    isRecordLike(ctx.deliveryContext) ? readString2(ctx.deliveryContext.channel) : undefined,
+    isRecordLike(event.deliveryContext) ? readString2(event.deliveryContext.channel) : undefined,
+    isRecordLike(ctx.origin) ? readString2(ctx.origin.provider) : undefined,
+    isRecordLike(ctx.origin) ? readString2(ctx.origin.surface) : undefined,
+    isRecordLike(event.origin) ? readString2(event.origin.provider) : undefined,
+    isRecordLike(event.origin) ? readString2(event.origin.surface) : undefined
+  ].map((entry) => entry?.trim().toLowerCase()).filter((entry) => Boolean(entry));
+  return surfaceHints.some((entry) => entry.includes("openclaw-control-ui") || entry.includes("control-ui"));
+}
+function shouldSuppressHostBridgePromptContext(event, ctx, readString2) {
+  return isTagSensitiveChatSurface(event, ctx, readString2);
+}
 var WORKFLOW_RECALL_HINT_PATTERNS = [
   /\b(default workflow|workflow|process|review order|delivery order|coding habits?|programming habits?|code first|tests? immediately|docs? last)\b/iu,
   /(默认工作流|默认流程|工作流|顺序|编程习惯|代码习惯|先写代码|先做代码|立刻跑测试|马上跑测试|文档最后)/u
@@ -20428,10 +20452,17 @@ async function runAutoRecallHook(api2, options) {
     let hostBridgeHits = [];
     let hasNonProfileRecallContext = false;
     let missingHostBridgeCategories = new Set;
+    const injectedProfileFacts = new Set;
     if (profileRecallEnabled) {
       const profileEntries = await session.withClient(async (client) => deps.loadProfilePromptEntries(client, config2, policy));
       if (profileEntries.length > 0) {
-        sections.push(deps.formatProfilePromptContext(profileEntries));
+        for (const entry of profileEntries) {
+          injectedProfileFacts.add(normalizeComparableText(entry.text));
+        }
+        const profileContext = deps.formatProfilePromptContextPlain(profileEntries);
+        if (profileContext) {
+          sections.push(profileContext);
+        }
       }
     }
     if (durableRecallEnabled && decision.shouldRecall) {
@@ -20454,12 +20485,17 @@ async function runAutoRecallHook(api2, options) {
           }
         }
       }
-      if (payload.results.length > 0) {
-        sections.push(deps.formatPromptContext("memory-palace-recall", "durable-memory", payload.results));
-        hasNonProfileRecallContext = true;
+      const sanitizedDurableResults = deps.sanitizePromptRecallResults(payload.results);
+      const dedupedDurableResults = sanitizedDurableResults.filter((entry) => !injectedProfileFacts.has(normalizeComparableText(entry.snippet)));
+      if (dedupedDurableResults.length > 0) {
+        const durableContext = deps.formatPromptContextPlain("durable-memory", dedupedDurableResults);
+        if (durableContext) {
+          sections.push(durableContext);
+          hasNonProfileRecallContext = true;
+        }
         const requestedHostBridgeCategories = collectRequestedHostBridgeCategories(prompt);
         if (requestedHostBridgeCategories.size > 0) {
-          const durableRecallCategories = collectDurableRecallCategories(payload.results);
+          const durableRecallCategories = collectDurableRecallCategories(dedupedDurableResults);
           missingHostBridgeCategories = new Set(Array.from(requestedHostBridgeCategories).filter((category) => !durableRecallCategories.has(category)));
         }
       }
@@ -20473,12 +20509,16 @@ async function runAutoRecallHook(api2, options) {
           path_prefix: deps.parseReflectionSearchPrefix(config2, policy)
         }
       }));
-      if (reflectionPayload.results.length > 0) {
-        sections.push(deps.formatPromptContext("memory-palace-reflection", "reflection-lane", reflectionPayload.results));
-        hasNonProfileRecallContext = true;
+      const sanitizedReflectionResults = deps.sanitizePromptRecallResults(reflectionPayload.results);
+      if (sanitizedReflectionResults.length > 0) {
+        const reflectionContext = deps.formatPromptContextPlain("reflection-lane", sanitizedReflectionResults);
+        if (reflectionContext) {
+          sections.push(reflectionContext);
+          hasNonProfileRecallContext = true;
+        }
       }
     }
-    if (hostBridgeRecallEnabled && decision.shouldRecall && (!hasNonProfileRecallContext || missingHostBridgeCategories.size > 0)) {
+    if (hostBridgeRecallEnabled && decision.shouldRecall && (!hasNonProfileRecallContext || missingHostBridgeCategories.size > 0) && !shouldSuppressHostBridgePromptContext(event, ctx, deps.readString)) {
       const workspaceDir = deps.resolveHostWorkspaceDir(ctx, identity.value);
       if (workspaceDir && !deps.shouldSkipHostBridgeRecall(workspaceDir, policy.agentKey, prompt, 15000)) {
         hostBridgeHits = await deps.scanHostWorkspaceForQuery(prompt, workspaceDir, config2.hostBridge);
@@ -25834,7 +25874,23 @@ var PROFILE_CAPTURE_EPHEMERAL_PATTERNS = [
   /请只回复/u,
   /只回复/u,
   /只用一句/u,
-  /如果.*问.*再/u
+  /如果.*问.*再/u,
+  /use the items above only as supporting context/iu,
+  /do not quote or reveal this memory scaffolding/iu
+];
+var RECALL_PROMPT_METADATA_NOISE_PATTERNS = [
+  /<memory-palace-(profile|recall|reflection|host-bridge)>/iu,
+  /<<[^>\r\n]{1,80}>>/u,
+  /&lt;&lt;[^&\r\n]{1,80}&gt;&gt;/u,
+  /(?:<<|&lt;&lt;)(?:sender|metadata|json|label|id)(?:>>|&gt;&gt;)/iu,
+  /```json/iu,
+  /\bopenclaw-control-ui\b/iu,
+  /\buntrusted metadata\b/iu,
+  /\[meta\]\s*summary_version\b/iu,
+  /\bsummary_version\s*:\s*v\d+(?:-[a-z0-9-]+)?\b/iu,
+  /\b(?:session_id|session_key|agent_id|captured_at|requestersenderid)\b/iu,
+  /#\s*Auto Captured Memory/iu,
+  /##\s*Content/iu
 ];
 var HOST_BRIDGE_WORKFLOW_PROMPT_NOISE_PATTERNS = [
   ...PROFILE_CAPTURE_EPHEMERAL_PATTERNS,
@@ -26212,9 +26268,15 @@ function stripProfileCaptureTimestampPrefix(text) {
   }
   return normalized;
 }
-function splitProfileCaptureSegments(text) {
+function stripProfileBlockMetadata(text) {
   const normalized = stripProfileCaptureTimestampPrefix(text).replace(/\r?\n+/g, `
 `);
+  const factsMatch = normalized.match(/##\s*Facts\s*([\s\S]*)$/iu);
+  const relevant = factsMatch?.[1] ?? normalized;
+  return relevant.replace(/^#\s*Memory Palace Profile Block[^\n]*$/gimu, "").replace(/^- (?:block|updated_at|agent_id):.*$/gimu, "").replace(/^##\s*Facts\s*$/gimu, "").replace(/^- /gmu, "").trim();
+}
+function splitProfileCaptureSegments(text) {
+  const normalized = stripProfileBlockMetadata(text);
   return normalized.split(/[\n。！？!?]+/u).map((entry) => normalizeText(entry)).filter(Boolean);
 }
 function stripWorkflowSummaryPrefix(text) {
@@ -26250,6 +26312,80 @@ function sanitizeProfileCaptureText(block, text) {
     return `${useCjk ? "默认工作流：" : "Default workflow: "}${normalizedWorkflow}`;
   }
   return segments.join("；").trim() || undefined;
+}
+function looksLikeRecallPromptMetadataNoise(text) {
+  const normalized = normalizeText(text);
+  if (!normalized) {
+    return false;
+  }
+  if (/\bopenclaw-control-ui\b/iu.test(normalized) && (/<<[^>\r\n]{1,80}>>/u.test(normalized) || /&lt;&lt;[^&\r\n]{1,80}&gt;&gt;/u.test(normalized) || /\buntrusted metadata\b/iu.test(normalized) || /```json/iu.test(normalized))) {
+    return true;
+  }
+  const hitCount = RECALL_PROMPT_METADATA_NOISE_PATTERNS.reduce((count, pattern) => count + (pattern.test(normalized) ? 1 : 0), 0);
+  return hitCount >= 3;
+}
+function resolveRecallPromptProfileBlock(path9) {
+  const normalized = path9.replace(/\\/g, "/");
+  if (/(^|\/)profile\/workflow(?:\.md)?$/iu.test(normalized) || /(^|\/)(?:captured\/(?:llm-extracted\/)?|assistant-derived\/committed\/)workflow\//iu.test(normalized)) {
+    return "workflow";
+  }
+  if (/(^|\/)profile\/preferences(?:\.md)?$/iu.test(normalized) || /(^|\/)captured\/preference\//iu.test(normalized)) {
+    return "preferences";
+  }
+  if (/(^|\/)profile\/identity(?:\.md)?$/iu.test(normalized) || /(^|\/)captured\/profile\//iu.test(normalized)) {
+    return "identity";
+  }
+  return;
+}
+function unwrapStructuredRecallSnippet(text) {
+  const raw = String(text || "").trim();
+  if (!raw) {
+    return "";
+  }
+  if (/^#\s*Memory Palace Namespace\b/iu.test(raw)) {
+    return "";
+  }
+  if (/^#\s*Auto Captured Memory\b/iu.test(raw)) {
+    const [, content = ""] = raw.split(/##\s*Content/iu, 2);
+    return content.replace(/<!-- MEMORY_PALACE_FORCE_CONTROL_V1 -->[\s\S]*?<!-- \/MEMORY_PALACE_FORCE_CONTROL_V1 -->/giu, "").trim();
+  }
+  return raw;
+}
+function sanitizePromptRecallResults(results) {
+  return results.map((entry) => {
+    const unwrappedSnippet = unwrapStructuredRecallSnippet(entry.snippet);
+    if (!unwrappedSnippet) {
+      return null;
+    }
+    const profileBlock = resolveRecallPromptProfileBlock(entry.path);
+    const sanitizedSnippet = profileBlock ? sanitizeProfileCaptureText(profileBlock, unwrappedSnippet) : unwrappedSnippet;
+    if (!sanitizedSnippet || looksLikeRecallPromptMetadataNoise(sanitizedSnippet)) {
+      return null;
+    }
+    return {
+      ...entry,
+      snippet: sanitizedSnippet,
+      endLine: countLines3(sanitizedSnippet)
+    };
+  }).filter((entry) => Boolean(entry));
+}
+function formatPromptContextPlain(heading, results) {
+  const sanitizedResults = sanitizePromptRecallResults(results);
+  if (sanitizedResults.length === 0) {
+    return "";
+  }
+  const summaryHeading = heading === "reflection-lane" ? "Relevant reflection context:" : "Relevant durable context:";
+  const lines = sanitizedResults.map((entry, index) => `${index + 1}. ${escapeMemoryForPrompt(entry.snippet)}`);
+  return [summaryHeading, ...lines].join(`
+`);
+}
+function formatProfilePromptContextPlain(entries) {
+  if (entries.length === 0) {
+    return "";
+  }
+  const lines = entries.map((entry, index) => `${index + 1}. [${entry.block}] ${escapeMemoryForPrompt(entry.text)}`);
+  return ["Stable user context:", ...lines].join(`
+`);
 }
 function stripCodeBlocks(text) {
   return text.replace(/```[\s\S]*?```/gu, " ").replace(/`[^`\r\n]+`/gu, " ").replace(/\s+/g, " ").trim();
@@ -28314,20 +28450,11 @@ function shouldIncludeReflection2(params, config2, policy, paramFilters, logger)
   return shouldIncludeReflection(params, config2, policy, paramFilters, logger, createAclSearchDeps());
 }
 function formatPromptContext2(tag, heading, results) {
-  return formatPromptContext(tag, heading, results.map((entry) => {
-    if (!/(^|\/)workflow(?:\/|\.md$)/iu.test(entry.path)) {
-      return entry;
-    }
-    const sanitizedSnippet = sanitizeProfileCaptureText("workflow", entry.snippet);
-    if (!sanitizedSnippet) {
-      return null;
-    }
-    return {
-      ...entry,
-      snippet: sanitizedSnippet,
-      endLine: countLines3(sanitizedSnippet)
-    };
-  }).filter((entry) => Boolean(entry)), createAclSearchDeps());
+  const sanitizedResults = sanitizePromptRecallResults(results);
+  if (sanitizedResults.length === 0) {
+    return "";
+  }
+  return formatPromptContext(tag, heading, sanitizedResults, createAclSearchDeps());
 }
 function formatProfilePromptContext2(entries) {
   return formatProfilePromptContext(entries, createAclSearchDeps());
@@ -28584,7 +28711,7 @@ function persistTransportDiagnosticsSnapshot2(config2, client, report) {
     buildPluginRuntimeSignature,
     getTransportFallbackOrder,
     instanceId: transportSnapshotInstanceId,
-    pluginVersion: "1.1.0",
+    pluginVersion: "1.1.1",
     sanitizeText: redactVisualSensitiveText2,
     snapshotPluginRuntimeState,
     processId: process.pid
@@ -30708,8 +30835,11 @@ var services = createPluginServices({
     decideAutoRecall,
     formatError: formatError2,
     formatHostBridgePromptContext,
+    formatProfilePromptContextPlain,
     formatProfilePromptContext: formatProfilePromptContext2,
+    formatPromptContextPlain,
     formatPromptContext: formatPromptContext2,
+    sanitizePromptRecallResults,
     importHostBridgeHits,
     loadProfilePromptEntries,
     logPluginTrace,
@@ -31204,7 +31334,10 @@ var __testing = {
   runReflectionFromCompactContext: runReflectionFromCompactContext2,
   shouldCleanupCompactContextDurableMemory: shouldCleanupCompactContextDurableMemory2,
   extractCompactContextTrace: extractCompactContextTrace2,
+  formatProfilePromptContextPlain,
   formatPromptContext: formatPromptContext2,
+  formatPromptContextPlain,
+  sanitizePromptRecallResults,
   normalizeVisualSnippet,
   unwrapResultRecord,
   readHostWorkspaceFileText,

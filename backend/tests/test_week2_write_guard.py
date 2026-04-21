@@ -20,6 +20,35 @@ def _sqlite_url(db_path: Path) -> str:
     return f"sqlite+aiosqlite:///{db_path}"
 
 
+def _configure_hash_write_guard_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("RETRIEVAL_EMBEDDING_BACKEND", "hash")
+    monkeypatch.setenv("EMBEDDING_PROVIDER_CHAIN_ENABLED", "false")
+    monkeypatch.setenv("RETRIEVAL_RERANKER_ENABLED", "false")
+    monkeypatch.setenv("WRITE_GUARD_LLM_ENABLED", "false")
+
+
+def _auto_captured_fact(
+    text: str,
+    *,
+    captured_at: str,
+    session_id: str,
+    session_key: str,
+) -> str:
+    return "\n".join(
+        [
+            "# Auto Captured Memory",
+            "- category: fact",
+            f"- captured_at: {captured_at}",
+            "- agent_id: main",
+            f"- session_id: {session_id}",
+            f"- session_key: {session_key}",
+            "",
+            "## Content",
+            text,
+        ]
+    )
+
+
 def _force_meta_line(payload: Dict[str, Any]) -> str:
     return f"MP_FORCE_META={json.dumps(payload, ensure_ascii=False, separators=(',', ':'))}"
 
@@ -231,6 +260,85 @@ async def test_write_guard_identical_content_hits_noop(tmp_path: Path) -> None:
     assert decision["action"] == "NOOP"
     assert decision["target_id"] == created["id"]
     assert decision["method"] in {"embedding", "keyword"}
+
+
+@pytest.mark.asyncio
+async def test_write_guard_auto_captured_fact_ignores_wrapper_metadata_for_distinct_fact(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _configure_hash_write_guard_env(monkeypatch)
+    db_path = tmp_path / "guard-auto-captured-distinct.db"
+    client = SQLiteClient(_sqlite_url(db_path))
+    await client.init_db()
+    created = await client.create_memory(
+        parent_path="",
+        content=_auto_captured_fact(
+            "以后如果我说“中文确认代号”，默认就是 zh-confirm-b-unit-001。这是一条新的长期事实。",
+            captured_at="2026-04-21T16:54:26.406Z",
+            session_id="session-zh",
+            session_key="agent:main:zh-confirm-unit-001",
+        ),
+        priority=90,
+        title="captured-fact-zh",
+        disclosure="user explicitly asked to store this as a new long-term fact",
+        domain="core",
+    )
+
+    decision = await client.write_guard(
+        content=_auto_captured_fact(
+            'English confirmation code default: en-confirm-b-unit-002. This is a new durable fact.',
+            captured_at="2026-04-21T16:56:16.000Z",
+            session_id="session-en",
+            session_key="agent:main:en-confirm-unit-002",
+        ),
+        domain="core",
+    )
+    await client.close()
+
+    assert created["id"] > 0
+    assert decision["action"] == "ADD"
+    assert decision["target_id"] is None
+    assert decision["target_uri"] is None
+
+
+@pytest.mark.asyncio
+async def test_write_guard_auto_captured_fact_still_noops_for_same_body_with_new_metadata(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _configure_hash_write_guard_env(monkeypatch)
+    db_path = tmp_path / "guard-auto-captured-duplicate.db"
+    client = SQLiteClient(_sqlite_url(db_path))
+    await client.init_db()
+    created = await client.create_memory(
+        parent_path="",
+        content=_auto_captured_fact(
+            'English confirmation code default: en-confirm-b-unit-003. This is a new durable fact.',
+            captured_at="2026-04-21T16:54:26.406Z",
+            session_id="session-en-a",
+            session_key="agent:main:en-confirm-unit-003-a",
+        ),
+        priority=90,
+        title="captured-fact-en",
+        disclosure="user explicitly asked to store this as a new long-term fact",
+        domain="core",
+    )
+
+    decision = await client.write_guard(
+        content=_auto_captured_fact(
+            'English confirmation code default: en-confirm-b-unit-003. This is a new durable fact.',
+            captured_at="2026-04-21T16:56:16.000Z",
+            session_id="session-en-b",
+            session_key="agent:main:en-confirm-unit-003-b",
+        ),
+        domain="core",
+    )
+    await client.close()
+
+    assert decision["action"] == "NOOP"
+    assert decision["target_id"] == created["id"]
+    assert decision["method"] == "structured_body_exact"
 
 
 @pytest.mark.asyncio
