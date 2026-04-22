@@ -7,7 +7,7 @@
 > This page is the English reference for the core tool surface.
 
 <p align="center">
-  <img src="images/runtime_architecture_bilingual_4k.png" width="1100" alt="Runtime architecture overview" />
+  <img src="images/runtime_architecture_en_4k.png" width="1100" alt="Runtime architecture overview" />
 </p>
 
 ---

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/images/system_architecture_bilingual_4k.png" width="1100" alt="Memory Palace 双语架构总览图" />
+  <img src="docs/images/system_architecture_zh_4k.png" width="1100" alt="Memory Palace 中文架构总览图" />
 </p>
 
 <h1 align="center">🏛️ Memory Palace · 记忆宫殿</h1>
@@ -45,7 +45,7 @@
 官方宿主安装入口：`https://docs.openclaw.ai/install`
 
 <p align="center">
-  <img src="docs/images/install_boundary_bilingual_4k.png" width="1100" />
+  <img src="docs/images/install_boundary_zh_4k.png" width="1100" />
 </p>
 
 推荐安装流程：

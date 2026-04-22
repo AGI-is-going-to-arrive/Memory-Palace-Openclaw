@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/images/system_architecture_bilingual_4k.png" width="1100" alt="Memory Palace Architecture Overview" />
+  <img src="docs/images/system_architecture_en_4k.png" width="1100" alt="Memory Palace Architecture Overview" />
 </p>
 
 <h1 align="center">🏛️ Memory Palace</h1>
@@ -45,7 +45,7 @@ back to `docs/openclaw-doc/01-INSTALL_AND_RUN.en.md`.
 Official host install guide: `https://docs.openclaw.ai/install`
 
 <p align="center">
-  <img src="docs/images/install_boundary_bilingual_4k.png" width="1100" />
+  <img src="docs/images/install_boundary_en_4k.png" width="1100" />
 </p>
 
 Recommended install flow:

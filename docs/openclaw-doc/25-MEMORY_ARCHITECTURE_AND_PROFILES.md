@@ -133,7 +133,7 @@ flowchart TD
 这也是为什么它能相对独立地演进 plugin、backend、profile 和 ACL。
 
 <p align="center">
-  <img src="../images/memory_engine_architecture_bilingual_4k.png" width="1100" alt="OpenClaw 记忆引擎分层结构双语图" />
+  <img src="../images/memory_engine_architecture_zh_4k.png" width="1100" alt="OpenClaw 记忆引擎分层结构中文图" />
 </p>
 
 ### 2.3 Plugin、Skills、MCP 各管什么
@@ -194,7 +194,7 @@ sequenceDiagram
 ```
 
 <p align="center">
-  <img src="../images/default_memory_chain_bilingual_4k.png" width="1100" alt="默认记忆主链与显式工具分流双语图" />
+  <img src="../images/default_memory_chain_zh_4k.png" width="1100" alt="默认记忆主链与显式工具分流中文图" />
 </p>
 
 ---
@@ -240,7 +240,7 @@ sequenceDiagram
 - `Gist` 像给档案写摘要标签
 
 <p align="center">
-  <img src="../images/memory_data_model_versions_bilingual_4k.png" width="1100" alt="记忆对象模型与版本更新双语图" />
+  <img src="../images/memory_data_model_versions_zh_4k.png" width="1100" alt="记忆对象模型与版本更新中文图" />
 </p>
 
 ---
@@ -374,7 +374,7 @@ flowchart TD
 这也是 skills 里推荐的使用顺序。
 
 <p align="center">
-  <img src="../images/write_recall_flow_bilingual_4k.png" width="1100" alt="写入与召回双轨对照双语图" />
+  <img src="../images/write_recall_flow_zh_4k.png" width="1100" alt="写入与召回双轨对照中文图" />
 </p>
 
 ---
@@ -417,7 +417,7 @@ reflection 主要存的不是用户事实，而是：
 这也是为什么代码里单独有 `core://reflection/...` 根。
 
 <p align="center">
-  <img src="../images/runtime_reflection_lane_bilingual_4k.png" width="1100" alt="Session runtime、compact_context 与 reflection lane 双语图" />
+  <img src="../images/runtime_reflection_lane_zh_4k.png" width="1100" alt="Session runtime、compact_context 与 reflection lane 中文图" />
 </p>
 
 ---
@@ -481,7 +481,7 @@ ACL 已经进入：
 - benchmark / smoke / validation
 
 <p align="center">
-  <img src="../images/technical_highlights_bilingual_4k.png" width="1100" alt="项目技术亮点双语图" />
+  <img src="../images/technical_highlights_zh_4k.png" width="1100" alt="项目技术亮点中文图" />
 </p>
 
 ---
@@ -559,7 +559,7 @@ flowchart TD
 - 默认值仍然是 `acl.enabled=false`，说明项目当前更偏“可选隔离”，不是“默认硬隔离”。
 
 <p align="center">
-  <img src="../images/acl_memory_isolation_bilingual_4k.png" width="1100" alt="ACL 多 Agent 记忆隔离双语图" />
+  <img src="../images/acl_memory_isolation_zh_4k.png" width="1100" alt="ACL 多 Agent 记忆隔离中文图" />
 </p>
 
 ### 8.5 ACL 技术路线图
@@ -677,7 +677,7 @@ benchmark 目录里，经常把 A/B/C/D 当成实验分层：
 不要把这两套语义混成一套。
 
 <p align="center">
-  <img src="../images/profile_semantics_matrix_bilingual_4k.png" width="1100" alt="Profile 产品语义与 benchmark 语义矩阵双语图" />
+  <img src="../images/profile_semantics_matrix_zh_4k.png" width="1100" alt="Profile 产品语义与 benchmark 语义矩阵中文图" />
 </p>
 
 ---
@@ -723,7 +723,7 @@ flowchart LR
 - **要更完整的高级辅助链路**：D
 
 <p align="center">
-  <img src="../images/profile_ladder_bilingual_4k.png" width="1100" alt="Profile 能力阶梯双语图" />
+  <img src="../images/profile_ladder_zh_4k.png" width="1100" alt="Profile 能力阶梯中文图" />
 </p>
 
 ---

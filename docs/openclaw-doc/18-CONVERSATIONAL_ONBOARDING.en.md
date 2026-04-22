@@ -3,7 +3,7 @@
 # 18 · Conversational Onboarding
 
 <p align="center">
-  <img src="../images/profile_ladder_bilingual_4k.png" width="1100" />
+  <img src="../images/profile_ladder_en_4k.png" width="1100" />
 </p>
 
 This page answers one question:
@@ -26,7 +26,7 @@ Keep one boundary explicit up front:
 - the public docs now treat this page as the **recommended default starting path**
 
 <p align="center">
-  <img src="../images/openclaw_dialog_install_bilingual_4k.png" width="1100" alt="OpenClaw conversational install and profile guidance" />
+  <img src="../images/openclaw_dialog_install_en_4k.png" width="1100" alt="OpenClaw conversational install and profile guidance" />
 </p>
 
 ---

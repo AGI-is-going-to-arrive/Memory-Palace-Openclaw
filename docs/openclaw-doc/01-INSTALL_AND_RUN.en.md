@@ -3,7 +3,7 @@
 # 01 - Installation and Running
 
 <p align="center">
-  <img src="../images/install_boundary_bilingual_4k.png" width="1100" />
+  <img src="../images/install_boundary_en_4k.png" width="1100" />
 </p>
 
 This page covers one thing:

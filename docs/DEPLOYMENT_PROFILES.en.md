@@ -58,7 +58,7 @@ One more boundary so the two paths do not get conflated:
 ## 2. Profile Overview
 
 <p align="center">
-  <img src="images/profile_ladder_bilingual_4k.png" width="1100" alt="Profile upgrade ladder and capability progression" />
+  <img src="images/profile_ladder_en_4k.png" width="1100" alt="Profile upgrade ladder and capability progression" />
 </p>
 
 | Profile | Search Mode | Embedding Method | Reranker | Use Case |

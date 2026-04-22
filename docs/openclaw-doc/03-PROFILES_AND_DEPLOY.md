@@ -11,7 +11,7 @@
 - [../DEPLOYMENT_PROFILES.md](../DEPLOYMENT_PROFILES.md)
 
 <p align="center">
-  <img src="../images/profile_ladder_bilingual_4k.png" width="1100" alt="Profile A/B/C/D 双语能力阶梯图" />
+  <img src="../images/profile_ladder_zh_4k.png" width="1100" alt="Profile A/B/C/D 中文能力阶梯图" />
 </p>
 
 ---

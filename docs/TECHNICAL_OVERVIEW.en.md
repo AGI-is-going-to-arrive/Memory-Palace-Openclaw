@@ -3,7 +3,7 @@
 # Memory Palace Technical Overview
 
 <p align="center">
-  <img src="images/write_guard_review_loop_bilingual_4k.png" width="1100" />
+  <img src="images/write_guard_review_loop_en_4k.png" width="1100" />
 </p>
 
 This page is for technical users who want to understand the current
@@ -81,7 +81,7 @@ Read that diagram literally:
 - direct MCP / canonical skill remains a secondary route
 
 <p align="center">
-  <img src="images/runtime_architecture_bilingual_4k.png" width="1100" alt="Runtime architecture overview" />
+  <img src="images/runtime_architecture_en_4k.png" width="1100" alt="Runtime architecture overview" />
 </p>
 
 ---

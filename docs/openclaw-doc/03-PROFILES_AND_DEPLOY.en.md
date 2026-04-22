@@ -11,7 +11,7 @@ If you want to see the full environment variables and advanced tuning options, g
 - [../DEPLOYMENT_PROFILES.en.md](../DEPLOYMENT_PROFILES.en.md)
 
 <p align="center">
-  <img src="../images/profile_ladder_bilingual_4k.png" width="1100" alt="Bilingual profile capability ladder" />
+  <img src="../images/profile_ladder_en_4k.png" width="1100" alt="Profile capability ladder" />
 </p>
 
 ---

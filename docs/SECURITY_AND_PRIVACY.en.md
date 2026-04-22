@@ -3,7 +3,7 @@
 # Memory Palace Security and Privacy Guide
 
 <p align="center">
-  <img src="images/write_guard_review_loop_bilingual_4k.png" width="1100" />
+  <img src="images/write_guard_review_loop_en_4k.png" width="1100" />
 </p>
 
 This page is for users who deploy, maintain, or share Memory Palace.

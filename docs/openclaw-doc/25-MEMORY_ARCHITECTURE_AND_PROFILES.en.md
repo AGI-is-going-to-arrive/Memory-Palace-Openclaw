@@ -135,7 +135,7 @@ So the takeover point is the **host memory slot**, not a direct rewrite of OpenC
 That is also why the plugin, backend, profiles, and ACL can evolve somewhat independently.
 
 <p align="center">
-  <img src="../images/memory_engine_architecture_bilingual_4k.png" width="1100" alt="OpenClaw memory engine layered architecture bilingual diagram" />
+  <img src="../images/memory_engine_architecture_en_4k.png" width="1100" alt="OpenClaw memory engine layered architecture diagram" />
 </p>
 
 ### 2.3 What plugin, skills, and MCP each do
@@ -196,7 +196,7 @@ sequenceDiagram
 ```
 
 <p align="center">
-  <img src="../images/default_memory_chain_bilingual_4k.png" width="1100" alt="Default memory chain and explicit tools bilingual diagram" />
+  <img src="../images/default_memory_chain_en_4k.png" width="1100" alt="Default memory chain and explicit tools diagram" />
 </p>
 
 ---
@@ -242,7 +242,7 @@ One of the most important design choices is that the backend is not built around
 - `Gist` = summary label attached to the archive
 
 <p align="center">
-  <img src="../images/memory_data_model_versions_bilingual_4k.png" width="1100" alt="Memory object model and version-update bilingual diagram" />
+  <img src="../images/memory_data_model_versions_en_4k.png" width="1100" alt="Memory object model and version-update diagram" />
 </p>
 
 ---
@@ -375,7 +375,7 @@ If default recall is not enough, or if the model needs explicit verification:
 That is also the usage order recommended by the bundled skills.
 
 <p align="center">
-  <img src="../images/write_recall_flow_bilingual_4k.png" width="1100" alt="Write and recall dual-lane bilingual diagram" />
+  <img src="../images/write_recall_flow_en_4k.png" width="1100" alt="Write and recall dual-lane diagram" />
 </p>
 
 ---
@@ -420,7 +420,7 @@ That is why it makes sense to separate it from ordinary durable recall.
 This is also why the code keeps a dedicated `core://reflection/...` root.
 
 <p align="center">
-  <img src="../images/runtime_reflection_lane_bilingual_4k.png" width="1100" alt="Session runtime, compact_context, and reflection-lane bilingual diagram" />
+  <img src="../images/runtime_reflection_lane_en_4k.png" width="1100" alt="Session runtime, compact_context, and reflection-lane diagram" />
 </p>
 
 ---
@@ -484,7 +484,7 @@ This repository already includes:
 - benchmark / smoke / validation logic
 
 <p align="center">
-  <img src="../images/technical_highlights_bilingual_4k.png" width="1100" alt="Technical highlights bilingual diagram" />
+  <img src="../images/technical_highlights_en_4k.png" width="1100" alt="Technical highlights diagram" />
 </p>
 
 ---
@@ -562,7 +562,7 @@ This part matters.
 - The default still keeps `acl.enabled=false`, which tells you the system is currently “optional isolation” rather than “strict isolation by default”.
 
 <p align="center">
-  <img src="../images/acl_memory_isolation_bilingual_4k.png" width="1100" alt="ACL multi-agent memory isolation bilingual diagram" />
+  <img src="../images/acl_memory_isolation_en_4k.png" width="1100" alt="ACL multi-agent memory isolation diagram" />
 </p>
 
 ### 8.5 ACL technical roadmap
@@ -680,7 +680,7 @@ But it is not the full product configuration story.
 Do not collapse these two meanings into one.
 
 <p align="center">
-  <img src="../images/profile_semantics_matrix_bilingual_4k.png" width="1100" alt="Profile semantics matrix bilingual diagram" />
+  <img src="../images/profile_semantics_matrix_en_4k.png" width="1100" alt="Profile semantics matrix diagram" />
 </p>
 
 ---
@@ -726,7 +726,7 @@ flowchart LR
 - **Need the more complete advanced assist path**: D
 
 <p align="center">
-  <img src="../images/profile_ladder_bilingual_4k.png" width="1100" alt="Profile capability ladder bilingual diagram" />
+  <img src="../images/profile_ladder_en_4k.png" width="1100" alt="Profile capability ladder diagram" />
 </p>
 
 ---

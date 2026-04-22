@@ -3,7 +3,7 @@
 # Memory Palace x OpenClaw 接入文档
 
 <p align="center">
-  <img src="../images/openclaw_doc_route_map_bilingual_4k.png" width="1100" />
+  <img src="../images/openclaw_doc_route_map_zh_4k.png" width="1100" />
 </p>
 
 这套文档只讲一件事：
@@ -13,7 +13,7 @@
 > 如果这个项目对你的 OpenClaw 使用有帮助，欢迎顺手点个 Star ⭐。
 
 <p align="center">
-  <img src="../images/openclaw_dialog_install_bilingual_4k.png" width="1100" alt="OpenClaw 对话式安装与 profile 选择双语主视觉" />
+  <img src="../images/openclaw_dialog_install_zh_4k.png" width="1100" alt="OpenClaw 对话式安装与 profile 选择中文主视觉" />
 </p>
 
 先记住 7 句话：

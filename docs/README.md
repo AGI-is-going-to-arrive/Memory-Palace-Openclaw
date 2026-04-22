@@ -3,11 +3,11 @@
 # Memory Palace 文档中心
 
 <p align="center">
-  <img src="images/openclaw_doc_route_map_bilingual_4k.png" width="1100" />
+  <img src="images/docs_hub_route_map_zh_4k.png" width="1100" />
 </p>
 
 <p align="center">
-  <img src="images/runtime_architecture_bilingual_4k.png" width="1100" />
+  <img src="images/runtime_architecture_zh_4k.png" width="1100" />
 </p>
 
 先说一句最重要的：

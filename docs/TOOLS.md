@@ -6,7 +6,7 @@
 > 本文档是所有 11 个 MCP 工具的完整参考，适合首次接入的新手用户阅读。
 
 <p align="center">
-  <img src="images/runtime_architecture_bilingual_4k.png" width="1100" alt="当前真实运行架构双语图" />
+  <img src="images/runtime_architecture_zh_4k.png" width="1100" alt="当前真实运行架构中文图" />
 </p>
 
 ---

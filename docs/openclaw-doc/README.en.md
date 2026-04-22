@@ -3,7 +3,7 @@
 # Memory Palace x OpenClaw Integration Documentation
 
 <p align="center">
-  <img src="../images/openclaw_doc_route_map_bilingual_4k.png" width="1100" />
+  <img src="../images/openclaw_doc_route_map_en_4k.png" width="1100" />
 </p>
 
 This documentation covers one thing:
@@ -13,7 +13,7 @@ This documentation covers one thing:
 > If this repo helps with your OpenClaw workflow, please give it a GitHub star ⭐.
 
 <p align="center">
-  <img src="../images/openclaw_dialog_install_bilingual_4k.png" width="1100" alt="OpenClaw conversational install and profile selection hero" />
+  <img src="../images/openclaw_dialog_install_en_4k.png" width="1100" alt="OpenClaw conversational install and profile selection hero" />
 </p>
 
 Keep these 7 points in mind:

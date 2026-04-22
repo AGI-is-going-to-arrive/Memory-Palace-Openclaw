@@ -54,7 +54,7 @@
 - 这里提到的 `setup / provider-probe / onboarding` 都指 `python3 scripts/openclaw_memory_palace.py ...`（Windows PowerShell 里统一写成 `py -3 scripts/openclaw_memory_palace.py ...`）
 
 <p align="center">
-  <img src="images/profile_ladder_bilingual_4k.png" width="1100" alt="Profile 升级路径双语宣传图" />
+  <img src="images/profile_ladder_zh_4k.png" width="1100" alt="Profile 升级路径中文宣传图" />
 </p>
 
 > 这张图对应当前真实口径：`B` 是安全起步档，`C` 是 embedding + reranker + 可选 LLM 套件，`D` 是 embedding + reranker + 共享 LLM 套件全开。
@@ -64,7 +64,7 @@
 ## 2. 档位一览
 
 <p align="center">
-  <img src="images/profile_ladder_bilingual_4k.png" width="1100" alt="Profile 升级路径与能力阶梯" />
+  <img src="images/profile_ladder_zh_4k.png" width="1100" alt="Profile 升级路径与能力阶梯" />
 </p>
 
 | 档位 | 搜索模式 | Embedding 方式 | Reranker | 适用场景 |

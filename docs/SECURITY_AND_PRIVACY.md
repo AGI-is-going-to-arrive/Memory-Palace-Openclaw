@@ -3,7 +3,7 @@
 # Memory Palace 安全与隐私指南
 
 <p align="center">
-  <img src="images/write_guard_review_loop_bilingual_4k.png" width="1100" />
+  <img src="images/write_guard_review_loop_zh_4k.png" width="1100" />
 </p>
 
 本文档面向部署和维护 Memory Palace 的用户，涵盖密钥管理、接口鉴权、Docker 安全，以及分享或正式发布前的安全自检。

@@ -3,7 +3,7 @@
 # Memory Palace 技术总览
 
 <p align="center">
-  <img src="images/write_guard_review_loop_bilingual_4k.png" width="1100" />
+  <img src="images/write_guard_review_loop_zh_4k.png" width="1100" />
 </p>
 
 本文档面向需要了解系统内部实现或进行二次开发的技术用户，涵盖后端、前端、MCP 工具层、运行时与部署架构。
@@ -82,7 +82,7 @@ flowchart LR
 - **direct MCP / canonical skill 是辅路线，不是第二套独立产品**
 
 <p align="center">
-  <img src="images/runtime_architecture_bilingual_4k.png" width="1100" alt="当前真实运行架构双语图" />
+  <img src="images/runtime_architecture_zh_4k.png" width="1100" alt="当前真实运行架构中文图" />
 </p>
 
 ---

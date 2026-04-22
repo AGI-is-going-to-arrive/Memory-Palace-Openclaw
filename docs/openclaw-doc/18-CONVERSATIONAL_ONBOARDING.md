@@ -3,7 +3,7 @@
 # 18 · 对话式 Onboarding
 
 <p align="center">
-  <img src="../images/profile_ladder_bilingual_4k.png" width="1100" />
+  <img src="../images/profile_ladder_zh_4k.png" width="1100" />
 </p>
 
 这页只讲一件事：
@@ -26,7 +26,7 @@
 - 当前公开文档已经把这页当成**默认推荐起步页**
 
 <p align="center">
-  <img src="../images/openclaw_dialog_install_bilingual_4k.png" width="1100" alt="OpenClaw 对话式安装与 profile 选择双语主视觉" />
+  <img src="../images/openclaw_dialog_install_zh_4k.png" width="1100" alt="OpenClaw 对话式安装与 profile 选择中文主视觉" />
 </p>
 
 ---

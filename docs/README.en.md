@@ -3,11 +3,11 @@
 # Memory Palace Documentation Hub
 
 <p align="center">
-  <img src="images/openclaw_doc_route_map_bilingual_4k.png" width="1100" />
+  <img src="images/docs_hub_route_map_en_4k.png" width="1100" />
 </p>
 
 <p align="center">
-  <img src="images/runtime_architecture_bilingual_4k.png" width="1100" />
+  <img src="images/runtime_architecture_en_4k.png" width="1100" />
 </p>
 
 The most important thing first:

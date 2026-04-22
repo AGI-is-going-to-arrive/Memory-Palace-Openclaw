@@ -3,7 +3,7 @@
 # 01 · 安装与运行
 
 <p align="center">
-  <img src="../images/install_boundary_bilingual_4k.png" width="1100" />
+  <img src="../images/install_boundary_zh_4k.png" width="1100" />
 </p>
 
 这页只讲一件事：
