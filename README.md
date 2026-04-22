@@ -25,6 +25,7 @@
 </p>
 
 <p align="center">
+  <a href="https://agi-is-going-to-arrive.github.io/Memory-Palace-Openclaw/">Landing Page</a> ·
   <a href="README_CN.md">中文</a> ·
   <a href="docs/README.en.md">Docs</a> ·
   <a href="docs/openclaw-doc/README.en.md">OpenClaw</a> ·
@@ -34,6 +35,14 @@
 </p>
 
 > If this repo helps with your OpenClaw workflow, please give it a GitHub star ⭐.
+
+---
+
+## Live Entry
+
+- **Live landing page**: `https://agi-is-going-to-arrive.github.io/Memory-Palace-Openclaw/`
+- **Default doc entry for OpenClaw users**: `docs/openclaw-doc/README.en.md`
+- **Current validation baseline**: `docs/EVALUATION.en.md`
 
 ---
 

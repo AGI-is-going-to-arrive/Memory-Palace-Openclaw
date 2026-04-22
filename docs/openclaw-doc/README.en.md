@@ -12,6 +12,10 @@ This documentation covers one thing:
 
 > If this repo helps with your OpenClaw workflow, please give it a GitHub star ⭐.
 
+If you want the one-page public overview before diving into the docs, start here:
+
+- `https://agi-is-going-to-arrive.github.io/Memory-Palace-Openclaw/`
+
 <p align="center">
   <img src="../images/openclaw_dialog_install_en_4k.png" width="1100" alt="OpenClaw conversational install and profile selection hero" />
 </p>

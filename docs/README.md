@@ -16,6 +16,10 @@
 
 > 如果这个项目对你的 OpenClaw 使用有帮助，欢迎顺手点个 Star ⭐。
 
+先看公开 landing page：
+
+- `https://agi-is-going-to-arrive.github.io/Memory-Palace-Openclaw/`
+
 也就是：
 
 - 主入口是 `docs/openclaw-doc/README.md`

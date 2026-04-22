@@ -16,6 +16,10 @@ The most important thing first:
 
 > If this repo helps with your OpenClaw workflow, please give it a GitHub star ⭐.
 
+Start with the live landing page:
+
+- `https://agi-is-going-to-arrive.github.io/Memory-Palace-Openclaw/`
+
 That means:
 
 - the main entry point is `docs/openclaw-doc/README.en.md`

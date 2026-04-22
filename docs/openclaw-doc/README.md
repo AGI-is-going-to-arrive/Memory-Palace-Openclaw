@@ -12,6 +12,10 @@
 
 > 如果这个项目对你的 OpenClaw 使用有帮助，欢迎顺手点个 Star ⭐。
 
+如果你想先看一页式总览，再回到正文文档，先看：
+
+- `https://agi-is-going-to-arrive.github.io/Memory-Palace-Openclaw/`
+
 <p align="center">
   <img src="../images/openclaw_dialog_install_zh_4k.png" width="1100" alt="OpenClaw 对话式安装与 profile 选择中文主视觉" />
 </p>

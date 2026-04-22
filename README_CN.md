@@ -25,6 +25,7 @@
 </p>
 
 <p align="center">
+  <a href="https://agi-is-going-to-arrive.github.io/Memory-Palace-Openclaw/">Landing Page</a> ·
   <a href="README.md">English</a> ·
   <a href="docs/README.md">文档中心</a> ·
   <a href="docs/openclaw-doc/README.md">OpenClaw 接入</a> ·
@@ -34,6 +35,14 @@
 </p>
 
 > 如果这个项目对你的 OpenClaw 使用有帮助，欢迎顺手点个 Star ⭐。
+
+---
+
+## 先看这里
+
+- **公开 landing page**：`https://agi-is-going-to-arrive.github.io/Memory-Palace-Openclaw/`
+- **OpenClaw 用户默认文档入口**：`docs/openclaw-doc/README.md`
+- **当前验证基线**：`docs/EVALUATION.md`
 
 ---
 

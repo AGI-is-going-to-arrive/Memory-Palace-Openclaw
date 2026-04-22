@@ -1,0 +1,2279 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Memory Palace for OpenClaw</title>
+    <meta
+      name="description"
+      content="Memory Palace for OpenClaw: install path, configuration, benchmark results, architecture, ACL isolation, MCP tools, and dashboard."
+    />
+    <meta property="og:title" content="Memory Palace for OpenClaw" />
+    <meta property="og:description" content="OpenClaw memory plugin + bundled skills. Install path, configuration, benchmark results, architecture, ACL isolation, MCP tools, and dashboard." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="./images/openclaw_doc_route_map_en_4k.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Memory Palace for OpenClaw" />
+    <meta name="twitter:description" content="OpenClaw memory plugin + bundled skills. Single-page overview of install, benchmarks, architecture, and ACL." />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='52' font-size='48'%3E%F0%9F%A6%9E%3C/text%3E%3C/svg%3E"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+/* ─────────────────────────────────────────────
+   §1  DESIGN TOKENS
+   ───────────────────────────────────────────── */
+:root {
+  /* Surfaces */
+  --page: #f5f7f9;
+  --panel: #ffffff;
+  --panel-warm: #F8F4EE;
+  --ink: #14181d;
+  --ink-soft: #36404a;
+  --muted: #64717d;
+  --accent: #D14F3F;
+  --accent-deep: #9F3327;
+  --accent-soft: rgba(209,79,63,0.12);
+  --warm: #E9DFD2;
+  --warm-deep: #C7B7A0;
+  --line: rgba(39,45,52,0.12);
+  --line-strong: rgba(39,45,52,0.24);
+  --ok: #2C855D;
+  --warn: #9F6F2F;
+  --error: #D14F3F;
+
+  /* Typography */
+  --f-display: "Fraunces", "Iowan Old Style", Georgia, serif;
+  --f-sans:    "IBM Plex Sans", "PingFang SC", "Segoe UI", sans-serif;
+  --f-mono:    "IBM Plex Mono", "SFMono-Regular", monospace;
+
+  /* Type scale */
+  --fs-00: 0.6875rem;
+  --fs-0:  0.8125rem;
+  --fs-1:  0.9375rem;
+  --fs-2:  1rem;
+  --fs-3:  1.125rem;
+  --fs-4:  1.375rem;
+  --fs-5:  1.75rem;
+  --fs-6:  2.375rem;
+  --fs-7:  clamp(2.75rem, 5.2vw, 4.5rem);
+
+  /* Spacing */
+  --sp-1: 0.25rem; --sp-2: 0.5rem; --sp-3: 0.75rem; --sp-4: 1rem;
+  --sp-5: 1.5rem;  --sp-6: 2rem;   --sp-7: 3rem;    --sp-8: 4rem;
+  --sp-9: 6rem;    --sp-10: 8rem;
+
+  /* Radius */
+  --r-sm: 6px; --r-md: 10px; --r-lg: 14px; --r-xl: 20px;
+
+  /* Elevation */
+  --shadow-sm: 0 1px 2px rgba(15,23,42,.04), 0 2px 8px rgba(15,23,42,.04);
+  --shadow-md: 0 2px 6px rgba(15,23,42,.05), 0 12px 32px rgba(15,23,42,.06);
+
+  /* Z-index */
+  --z-nav: 40; --z-sticky: 50; --z-modal: 80; --z-toast: 90;
+
+  /* Content width */
+  --content: min(1480px, calc(100vw - var(--sp-6)));
+
+  /* Motion */
+  --ease: cubic-bezier(.25,1,.5,1);
+  --ease-slow: cubic-bezier(.16,1,.3,1);
+  --dur: 180ms;
+}
+
+/* ─────────────────────────────────────────────
+   §2  RESET & BASE
+   ───────────────────────────────────────────── */
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{margin:0;font-family:var(--f-sans);font-size:var(--fs-2);line-height:1.6;color:var(--ink);background:var(--page);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+img{display:block;max-width:100%;height:auto}
+a{color:inherit}
+code,pre{font-family:var(--f-mono)}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
+
+/* Skip link */
+.skip-link{position:absolute;left:-9999px;top:var(--sp-2);z-index:var(--z-toast);background:var(--accent);color:#fff;padding:var(--sp-2) var(--sp-4);font-size:var(--fs-1);text-decoration:none;border-radius:var(--r-sm)}
+.skip-link:focus{left:var(--sp-4)}
+
+/* Focus rings */
+.btn:focus-visible,a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+
+/* ─────────────────────────────────────────────
+   §3  SHELL – GRID + RAIL + TOPBAR
+   ───────────────────────────────────────────── */
+.shell{display:grid;grid-template-columns:248px 1fr;min-height:100vh}
+
+/* Rail */
+.rail{position:sticky;top:0;height:100vh;width:248px;display:flex;flex-direction:column;background:var(--page);border-right:1.5px solid var(--ink);z-index:var(--z-nav);overflow-y:auto;overflow-x:hidden}
+.rail-masthead{padding:var(--sp-5) var(--sp-5) var(--sp-4);border-bottom:1.5px solid var(--ink);position:relative}
+.rail-masthead::after{content:"";position:absolute;left:0;right:0;bottom:-3px;border-top:0.5px solid var(--ink)}
+.rail-logo-row{display:flex;align-items:center;gap:var(--sp-3)}
+.rail-logomark{width:40px;height:40px;display:grid;place-items:center;border:1.5px solid var(--ink);border-radius:50%;font-size:1.25rem;background:var(--page);flex-shrink:0}
+.rail-wordmark{font-family:var(--f-mono);font-size:var(--fs-00);letter-spacing:0.12em;text-transform:uppercase;color:var(--ink);font-weight:500}
+.rail-stamp{display:inline-block;margin-top:var(--sp-2);font-family:var(--f-mono);font-size:var(--fs-00);letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);border:0.5px solid var(--ink);padding:2px var(--sp-2);background:var(--panel-warm)}
+
+/* Rail nav */
+.rail-nav{flex:1;padding:var(--sp-3) var(--sp-3) var(--sp-2);overflow-y:auto}
+.rail-nav-group{margin-bottom:var(--sp-4)}
+.rail-nav-group:last-child{margin-bottom:0}
+.rail-nav-label{display:block;font-family:var(--f-mono);font-size:var(--fs-00);letter-spacing:0.22em;text-transform:uppercase;color:var(--muted);padding:var(--sp-1) var(--sp-2);margin-bottom:var(--sp-1);border-bottom:0.5px solid var(--line)}
+.rail-nav a{display:flex;align-items:baseline;gap:var(--sp-2);padding:var(--sp-1) var(--sp-2);text-decoration:none;font-family:var(--f-sans);font-size:var(--fs-1);color:var(--ink-soft);transition:background var(--dur) var(--ease)}
+.rail-nav a:hover{background:var(--panel-warm);color:var(--ink)}
+.rail-nav a[aria-current="true"]{background:var(--accent-soft);color:var(--accent-deep);font-weight:500}
+.rail-nav a[aria-current="true"] .rom{color:var(--accent)}
+.rom{font-family:var(--f-mono);font-size:var(--fs-00);color:var(--muted);min-width:1.5em;letter-spacing:0.04em}
+
+/* Rail footer */
+.rail-foot{margin-top:auto;padding:var(--sp-4) var(--sp-5);border-top:1.5px solid var(--ink)}
+.locale-switch{display:flex;gap:var(--sp-2);margin-bottom:var(--sp-3)}
+.locale-switch button{flex:1;height:2.25rem;border:0.5px solid var(--ink);background:var(--page);color:var(--muted);font-family:var(--f-mono);font-size:var(--fs-00);letter-spacing:0.12em;text-transform:uppercase;transition:var(--dur) var(--ease)}
+.locale-switch button.active{background:var(--accent);border-color:var(--accent-deep);color:#fff}
+.locale-switch button:hover{border-color:var(--ink);color:var(--ink)}
+.rail-credit{font-size:var(--fs-00);color:var(--muted);line-height:1.55}
+
+/* Topbar */
+.topbar{position:sticky;top:0;z-index:var(--z-sticky);display:flex;align-items:center;gap:var(--sp-4);height:3.5rem;padding:0 var(--sp-6);border-bottom:0.5px solid var(--line);background:rgba(245,247,249,0.92);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.crumb{font-family:var(--f-display);font-style:italic;font-size:var(--fs-0);color:var(--muted)}
+.crumb .sep{margin:0 var(--sp-2);color:var(--line-strong)}
+.crumb b{font-family:var(--f-display);font-style:normal;color:var(--ink);font-weight:500}
+.topbar-actions{margin-left:auto;display:flex;align-items:center;gap:var(--sp-2)}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:var(--sp-2);height:2rem;padding:0 var(--sp-4);font-size:var(--fs-0);font-weight:500;border:0.5px solid var(--ink);background:var(--page);color:var(--ink);font-family:var(--f-sans);letter-spacing:0.01em;text-decoration:none;transition:transform var(--dur) var(--ease),background var(--dur) var(--ease),color var(--dur) var(--ease),box-shadow var(--dur) var(--ease)}
+.btn:hover{background:var(--ink);color:var(--page);transform:translateY(-1px);box-shadow:var(--shadow-sm)}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent-deep)}
+.btn.primary:hover{background:var(--accent-deep)}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--muted)}
+.btn.ghost:hover{background:var(--panel-warm);color:var(--ink)}
+
+/* Main content area */
+.main-col{min-width:0;display:flex;flex-direction:column}
+#app{max-width:var(--content);margin:0 auto;padding:var(--sp-6) var(--sp-6) var(--sp-10);width:100%}
+
+/* Mobile hamburger */
+.hamburger{display:none;width:2.5rem;height:2.5rem;place-items:center;border:0.5px solid var(--ink);background:var(--page);cursor:pointer;flex-shrink:0}
+.hamburger span{display:block;width:1rem;height:1.5px;background:var(--ink);position:relative}
+.hamburger span::before,.hamburger span::after{content:"";display:block;width:1rem;height:1.5px;background:var(--ink);position:absolute;left:0}
+.hamburger span::before{top:-5px}
+.hamburger span::after{top:5px}
+.rail-overlay{display:none;position:fixed;inset:0;background:rgba(20,24,29,0.4);z-index:calc(var(--z-nav) - 1)}
+
+/* ─────────────────────────────────────────────
+   §4  EDITORIAL TYPOGRAPHY HELPERS
+   ───────────────────────────────────────────── */
+h1,h2,h3,.lede,.hero-lede{text-wrap:pretty;text-wrap:balance;font-optical-sizing:auto}
+.kicker{display:flex;align-items:center;gap:var(--sp-3);font-family:var(--f-mono);font-size:var(--fs-00);letter-spacing:0.15em;text-transform:uppercase;color:var(--accent-deep);margin-bottom:var(--sp-4)}
+.kicker::after{content:"";flex:1;border-top:0.5px solid var(--ink)}
+/* Manual .drop span kept: only 2 instances (overview + architecture), avoiding per-locale ::first-letter brittleness */
+.drop{font-family:var(--f-display);font-weight:600;float:left;font-size:3.25rem;line-height:0.82;padding:var(--sp-1) var(--sp-3) 0 0;color:var(--accent)}
+.eyebrow{font-family:var(--f-mono);font-size:var(--fs-00);letter-spacing:0.15em;text-transform:uppercase;color:var(--muted)}
+.lede{font-family:var(--f-display);font-style:italic;font-size:var(--fs-3);color:var(--ink-soft);line-height:1.5;max-width:680px}
+
+/* ─────────────────────────────────────────────
+   §5  SECTION BASE
+   ───────────────────────────────────────────── */
+.ed-section{padding:var(--sp-8) 0;position:relative}
+.ed-section + .ed-section{border-top:0.5px solid var(--line)}
+.section-head{margin-bottom:var(--sp-6)}
+.section-head h2{font-family:var(--f-display);font-weight:500;font-size:var(--fs-5);letter-spacing:-0.02em;margin:0 0 var(--sp-2);line-height:1.1}
+.section-head .intro{color:var(--muted);font-size:var(--fs-1);line-height:1.7;max-width:720px}
+
+/* ─────────────────────────────────────────────
+   §6  HERO
+   ───────────────────────────────────────────── */
+.hero-section{padding:var(--sp-8) 0 var(--sp-7);border-bottom:2px solid var(--ink)}
+.hero-grid{display:grid;grid-template-columns:1.15fr 0.85fr;gap:var(--sp-8);align-items:start}
+.hero-copy{display:flex;flex-direction:column;gap:var(--sp-4)}
+.hero-copy h1{font-family:var(--f-display);font-weight:500;font-size:var(--fs-7);line-height:0.96;letter-spacing:-0.04em;margin:0}
+.hero-copy h1 em{font-style:italic;color:var(--accent);font-weight:500}
+.hero-lede{font-size:var(--fs-3);color:var(--muted);line-height:1.5;max-width:620px}
+.hero-lede code{font-size:var(--fs-1);background:rgba(15,23,42,0.06);padding:1px var(--sp-2);border-radius:4px}
+.hero-ctas{display:flex;gap:var(--sp-3);flex-wrap:wrap;align-items:center}
+.cli-hint{display:flex;align-items:center;gap:var(--sp-3);padding:var(--sp-2) var(--sp-4);border:0.5px solid var(--ink);background:var(--panel-warm);font-family:var(--f-mono);font-size:var(--fs-00);color:var(--ink-soft);margin-top:var(--sp-2)}
+.cli-hint .dollar{color:var(--muted);user-select:none;margin-right:var(--sp-2)}
+.cli-hint code{flex:1;overflow-x:auto;white-space:nowrap}
+.cli-hint .copy{margin-left:auto;font-family:var(--f-mono);font-size:var(--fs-00);color:var(--accent-deep);cursor:pointer;border:0.5px solid var(--line);padding:2px var(--sp-2);background:var(--page);white-space:nowrap;transition:background var(--dur) var(--ease),color var(--dur) var(--ease)}
+.cli-hint .copy:hover{background:var(--panel-warm);color:var(--ink)}
+
+/* Hero stat cluster */
+.stat-cluster{display:grid;grid-template-columns:1fr 1fr;gap:0;border:0.5px solid var(--ink)}
+.stat-cell{padding:var(--sp-4) var(--sp-5);border-bottom:0.5px solid var(--ink);border-right:0.5px solid var(--ink)}
+.stat-cell:nth-child(2n){border-right:0}
+.stat-cell:nth-last-child(-n+2){border-bottom:0}
+.stat-cell .stat-num{font-family:var(--f-display);font-weight:500;font-size:var(--fs-6);line-height:1;letter-spacing:-0.03em;color:var(--ink);font-variant-numeric:tabular-nums}
+.stat-cell .stat-label{font-family:var(--f-mono);font-size:var(--fs-00);color:var(--muted);letter-spacing:0.08em;margin-top:var(--sp-1)}
+
+/* Hero figure */
+.hero-figure-wrap{margin-top:var(--sp-6);border-top:0.5px solid var(--ink);padding-top:var(--sp-4)}
+.hero-figure-wrap img{width:100%;border:0.5px solid var(--line)}
+.hero-figure-wrap .fig-caption{display:flex;align-items:baseline;gap:var(--sp-2);margin-top:var(--sp-2);font-family:var(--f-mono);font-size:var(--fs-00);color:var(--muted);letter-spacing:0.06em}
+
+/* ─────────────────────────────────────────────
+   §7  OVERVIEW SECTION
+   ───────────────────────────────────────────── */
+.overview-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:var(--sp-7)}
+.overview-intro{font-size:var(--fs-2);line-height:1.75;color:var(--ink-soft)}
+.overview-list{display:flex;flex-direction:column;gap:var(--sp-4)}
+.overview-item{display:flex;gap:var(--sp-3);align-items:flex-start}
+.overview-item .ov-num{font-family:var(--f-display);font-style:italic;font-size:var(--fs-1);color:var(--accent);min-width:2.5em;flex-shrink:0;padding-top:2px}
+.overview-item h3{margin:0 0 var(--sp-1);font-family:var(--f-display);font-size:var(--fs-2);font-weight:500;letter-spacing:-0.01em}
+.overview-item p{margin:0;font-size:var(--fs-1);color:var(--muted);line-height:1.6}
+.overview-figure{margin-top:var(--sp-6);border:0.5px solid var(--line);background:var(--panel)}
+.overview-figure img{width:100%}
+.overview-figure figcaption{padding:var(--sp-3) var(--sp-4);font-size:var(--fs-0);color:var(--muted);border-top:0.5px solid var(--line)}
+
+/* ─────────────────────────────────────────────
+   §8  INSTALL SECTION
+   ───────────────────────────────────────────── */
+.pipeline-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:0;border:0.5px solid var(--ink);margin-bottom:var(--sp-6)}
+.pipeline-step{padding:var(--sp-4) var(--sp-4);border-right:0.5px solid var(--ink);position:relative}
+.pipeline-step:last-child{border-right:0}
+.pipeline-step .ps-num{font-family:var(--f-display);font-style:italic;font-weight:500;font-size:var(--fs-5);color:var(--accent);line-height:1}
+.pipeline-step h3{font-family:var(--f-display);font-size:var(--fs-1);font-weight:500;margin:var(--sp-1) 0;letter-spacing:-0.01em}
+.pipeline-step p{font-size:var(--fs-00);color:var(--muted);margin:0;line-height:1.5}
+
+/* Install table */
+.install-table{width:100%;border-collapse:collapse;font-family:var(--f-mono);font-size:var(--fs-0);margin:var(--sp-5) 0}
+.install-table th{text-align:left;font-size:var(--fs-00);letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);padding:var(--sp-3) var(--sp-4);border-top:1.5px solid var(--ink);border-bottom:0.5px solid var(--ink);background:var(--panel-warm)}
+.install-table td{padding:var(--sp-3) var(--sp-4);border-bottom:0.5px solid var(--line);vertical-align:top}
+.install-table tr:nth-child(even) td{background:var(--panel-warm)}
+.install-table tr:hover td{background:rgba(209,79,63,0.04)}
+
+/* Code block */
+.code-block{margin:var(--sp-4) 0;padding:var(--sp-4) var(--sp-5);overflow:auto;background:#10141a;color:#f5f7f9;font-family:var(--f-mono);font-size:var(--fs-0);line-height:1.7;border:0.5px solid var(--ink);position:relative}
+.code-block .line-num{color:rgba(245,247,249,0.3);user-select:none;display:inline-block;min-width:2em;text-align:right;margin-right:var(--sp-4)}
+.inline-note{padding:var(--sp-4) var(--sp-5);border-left:3px solid var(--accent);background:var(--panel-warm);font-size:var(--fs-1);color:var(--ink-soft);line-height:1.7;margin-top:var(--sp-4)}
+
+/* ─────────────────────────────────────────────
+   §9  USAGE SECTION
+   ───────────────────────────────────────────── */
+.usage-block{padding:var(--sp-6) 0;border-top:0.5px solid var(--line)}
+.usage-block:first-child{border-top:0;padding-top:0}
+.usage-inner{display:grid;grid-template-columns:2fr 1fr;gap:var(--sp-6);align-items:start}
+.usage-inner h3{font-family:var(--f-display);font-size:var(--fs-4);font-weight:500;margin:0 0 var(--sp-3);letter-spacing:-0.01em}
+.usage-inner p{font-size:var(--fs-1);color:var(--muted);line-height:1.7;margin:0}
+.usage-fig{border:0.5px solid var(--line);background:var(--panel)}
+.usage-fig img{width:100%}
+.usage-fig figcaption{padding:var(--sp-2) var(--sp-3);font-size:var(--fs-00);color:var(--muted);border-top:0.5px solid var(--line);font-family:var(--f-mono)}
+
+/* ─────────────────────────────────────────────
+   §10  WHY / DESIGN RATIONALE
+   ───────────────────────────────────────────── */
+.why-list{display:grid;gap:0}
+.why-item{display:grid;grid-template-columns:auto 1fr;gap:var(--sp-5);padding:var(--sp-5) 0;border-top:0.5px solid var(--line)}
+.why-item:first-child{border-top:0;padding-top:0}
+.why-num{font-family:var(--f-display);font-style:italic;font-size:var(--fs-5);color:var(--accent);min-width:3rem;padding-top:var(--sp-1);border-left:3px solid var(--accent);padding-left:var(--sp-4)}
+.why-item h3{font-family:var(--f-display);font-size:var(--fs-3);font-weight:500;margin:0 0 var(--sp-2);letter-spacing:-0.01em}
+.why-item .why-tag{display:inline-block;font-family:var(--f-mono);font-size:var(--fs-00);letter-spacing:0.18em;text-transform:uppercase;color:var(--accent-deep);margin-bottom:var(--sp-2)}
+.why-item p{font-size:var(--fs-1);color:var(--muted);line-height:1.7;margin:0}
+
+/* ─────────────────────────────────────────────
+   §11  ARCHITECTURE
+   ───────────────────────────────────────────── */
+.arch-reader{display:grid;grid-template-columns:1fr 320px;gap:var(--sp-7)}
+.arch-narrative{font-size:var(--fs-2);line-height:1.75;color:var(--ink-soft)}
+.arch-narrative blockquote{margin:var(--sp-5) 0;padding:var(--sp-3) var(--sp-5);border-left:3px solid var(--accent);font-family:var(--f-display);font-style:italic;font-size:var(--fs-3);color:var(--ink);line-height:1.55}
+.arch-narrative blockquote cite{display:block;font-size:var(--fs-0);color:var(--muted);font-style:normal;margin-top:var(--sp-2);font-family:var(--f-mono)}
+.arch-legend{position:sticky;top:5rem;align-self:start;border-left:0.5px solid var(--line);padding-left:var(--sp-4)}
+.arch-legend h4{font-family:var(--f-mono);font-size:var(--fs-00);letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin:0 0 var(--sp-3);padding-bottom:var(--sp-2);border-bottom:0.5px solid var(--line)}
+.arch-legend-item{padding:var(--sp-2) 0;border-bottom:0.5px dotted var(--line)}
+.arch-legend-item .al-tag{font-family:var(--f-mono);font-size:var(--fs-00);color:var(--accent-deep);letter-spacing:0.1em;text-transform:uppercase}
+.arch-legend-item .al-title{font-size:var(--fs-1);font-weight:500;margin:var(--sp-1) 0 0}
+.arch-legend-item .al-text{font-size:var(--fs-00);color:var(--muted);line-height:1.5;margin:var(--sp-1) 0 0}
+.arch-figures{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-4);margin-top:var(--sp-6)}
+.arch-fig{border:0.5px solid var(--line);background:var(--panel)}
+.arch-fig img{width:100%}
+.arch-fig figcaption{padding:var(--sp-2) var(--sp-3);font-size:var(--fs-00);color:var(--muted);border-top:0.5px solid var(--line);font-family:var(--f-mono)}
+.arch-flow{display:grid;grid-template-columns:repeat(6,1fr);gap:0;border:0.5px solid var(--ink);margin-top:var(--sp-6)}
+.arch-flow-step{padding:var(--sp-4);border-right:0.5px solid var(--ink)}
+.arch-flow-step:last-child{border-right:0}
+.arch-flow-step .afs-num{font-family:var(--f-display);font-style:italic;font-size:var(--fs-4);color:var(--accent);line-height:1}
+.arch-flow-step h4{font-family:var(--f-display);font-size:var(--fs-1);font-weight:500;margin:var(--sp-1) 0;letter-spacing:-0.005em}
+.arch-flow-step p{font-size:var(--fs-00);color:var(--muted);margin:0;line-height:1.5}
+
+/* ─────────────────────────────────────────────
+   §12  BENCHMARK
+   ───────────────────────────────────────────── */
+.bench-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-4);margin-bottom:var(--sp-6)}
+.bench-card{border:0.5px solid var(--ink);background:var(--panel);padding:var(--sp-5)}
+.bench-card .bc-title{font-family:var(--f-mono);font-size:var(--fs-00);letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-bottom:var(--sp-4)}
+.bench-bar-wrap{margin-bottom:var(--sp-3)}
+.bench-bar-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:var(--sp-1)}
+.bench-bar-head .profile-name{font-family:var(--f-display);font-weight:500;font-size:var(--fs-2)}
+.bench-bar-head .profile-val{font-family:var(--f-mono);font-size:var(--fs-0);color:var(--muted)}
+.bench-bar{height:6px;background:var(--panel-warm);border:0.5px solid var(--line);overflow:hidden}
+.bench-bar-fill{height:100%;background:var(--accent);transition:width 800ms var(--ease-slow)}
+.bench-bar-fill[data-animated="false"]{width:0 !important}
+
+/* Benchmark data table */
+.bench-table{width:100%;border-collapse:collapse;font-family:var(--f-mono);font-size:var(--fs-0);margin:var(--sp-5) 0}
+.bench-table th{text-align:left;font-size:var(--fs-00);letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);padding:var(--sp-3) var(--sp-4);border-top:1.5px solid var(--ink);border-bottom:0.5px solid var(--ink);background:var(--panel-warm)}
+.bench-table td{padding:var(--sp-3) var(--sp-4);border-bottom:0.5px solid var(--line);vertical-align:top}
+.bench-table tr:nth-child(even) td{background:var(--panel-warm)}
+
+/* Benchmark notes */
+.bench-notes{border-left:3px solid var(--accent);padding:var(--sp-4) var(--sp-5);background:var(--panel-warm);margin-top:var(--sp-5)}
+.bench-notes h3{font-family:var(--f-mono);font-size:var(--fs-00);letter-spacing:0.18em;text-transform:uppercase;color:var(--accent-deep);margin:0 0 var(--sp-3)}
+.bench-notes ul{margin:0;padding-left:var(--sp-5)}
+.bench-notes li{font-size:var(--fs-1);color:var(--muted);margin-bottom:var(--sp-2);line-height:1.6}
+.bench-meta{display:flex;flex-wrap:wrap;gap:var(--sp-2);margin-top:var(--sp-4)}
+.bench-pill{font-family:var(--f-mono);font-size:var(--fs-00);padding:var(--sp-1) var(--sp-3);border:0.5px solid var(--line);background:var(--panel);color:var(--muted)}
+
+/* ─────────────────────────────────────────────
+   §13  ACL
+   ───────────────────────────────────────────── */
+.acl-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-5);margin-bottom:var(--sp-6)}
+.acl-pane{border:0.5px solid var(--ink);background:var(--panel)}
+.acl-pane-head{padding:var(--sp-3) var(--sp-4);border-bottom:0.5px solid var(--ink);display:flex;align-items:center;justify-content:space-between;background:var(--panel-warm)}
+.acl-pane-head h3{font-family:var(--f-mono);font-size:var(--fs-00);letter-spacing:0.14em;text-transform:uppercase;color:var(--ink);margin:0}
+.badge{display:inline-flex;align-items:center;gap:var(--sp-1);padding:1px var(--sp-2);font-size:var(--fs-00);font-family:var(--f-mono);letter-spacing:0.14em;text-transform:uppercase;border:0.5px solid var(--line)}
+.badge .bd{width:5px;height:5px;border-radius:50%;background:currentColor}
+.badge.verified{color:var(--ok);background:rgba(44,133,93,0.1);border-color:rgba(44,133,93,0.4)}
+.badge.weak{color:var(--warn);background:rgba(159,111,47,0.1);border-color:rgba(159,111,47,0.4)}
+.acl-pane-body{padding:var(--sp-4)}
+.acl-pane-body p{font-size:var(--fs-1);color:var(--muted);margin:0;line-height:1.65}
+.acl-proof-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-4);margin-bottom:var(--sp-5)}
+.acl-proof{border:0.5px solid var(--line);background:var(--panel)}
+.acl-proof img{width:100%}
+.acl-proof figcaption{padding:var(--sp-2) var(--sp-3);font-size:var(--fs-00);color:var(--muted);border-top:0.5px solid var(--line)}
+.acl-proof figcaption strong{display:block;color:var(--ink);font-size:var(--fs-1);margin-bottom:var(--sp-1)}
+.acl-snippet{margin:0;padding:var(--sp-4) var(--sp-5);overflow:auto;background:#10141a;color:#f5f7f9;font-family:var(--f-mono);font-size:var(--fs-0);line-height:1.7;border:0.5px solid var(--ink)}
+.acl-snippet .cm{color:var(--muted)}
+.acl-snippet .str{color:#E07A5F}
+
+/* ─────────────────────────────────────────────
+   §14  TOOLS & DASHBOARD
+   ───────────────────────────────────────────── */
+.tools-dl{margin:0 0 var(--sp-6);display:grid;gap:var(--sp-4)}
+.tools-group{padding:var(--sp-4) 0;border-top:0.5px solid var(--line)}
+.tools-group:first-child{border-top:0;padding-top:0}
+.tools-group .tg-tag{font-family:var(--f-mono);font-size:var(--fs-00);letter-spacing:0.18em;text-transform:uppercase;color:var(--accent-deep);margin-bottom:var(--sp-2)}
+.tools-group h3{font-family:var(--f-display);font-size:var(--fs-3);font-weight:500;margin:0 0 var(--sp-2)}
+.tools-group dt{font-family:var(--f-mono);font-size:var(--fs-1);color:var(--ink);padding:var(--sp-2) 0 var(--sp-1);font-weight:500}
+.tools-group dd{margin:0 0 var(--sp-2) var(--sp-4);font-size:var(--fs-1);color:var(--muted);line-height:1.6}
+
+/* Dashboard gallery */
+.dash-gallery{display:grid;grid-template-columns:1.4fr 1fr;grid-template-rows:auto auto;gap:var(--sp-4)}
+.dash-gallery .lead{grid-row:1 / 3}
+.dash-gallery figure{border:0.5px solid var(--line);background:var(--panel);margin:0}
+.dash-gallery img{width:100%}
+.dash-gallery figcaption{padding:var(--sp-2) var(--sp-3);font-size:var(--fs-00);color:var(--muted);border-top:0.5px solid var(--line);font-family:var(--f-mono)}
+.dash-pages{display:grid;grid-template-columns:repeat(5,1fr);gap:0;border:0.5px solid var(--ink);margin-top:var(--sp-5)}
+.dash-page{padding:var(--sp-3) var(--sp-4);border-right:0.5px solid var(--ink)}
+.dash-page:last-child{border-right:0}
+.dash-page .dp-tag{font-family:var(--f-mono);font-size:var(--fs-00);letter-spacing:0.14em;text-transform:uppercase;color:var(--accent-deep)}
+.dash-page h3{font-family:var(--f-display);font-size:var(--fs-1);font-weight:500;margin:var(--sp-1) 0}
+.dash-page p{font-size:var(--fs-00);color:var(--muted);margin:0;line-height:1.45}
+
+/* ─────────────────────────────────────────────
+   §15  NEXT STEPS
+   ───────────────────────────────────────────── */
+.next-cta{text-align:center;max-width:640px;margin:0 auto;padding:var(--sp-8) 0}
+.next-cta p{font-size:var(--fs-2);color:var(--muted);line-height:1.7;margin:var(--sp-3) 0 var(--sp-5)}
+.next-links{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-4);margin-top:var(--sp-6);text-align:left}
+.next-link{display:block;padding:var(--sp-4) var(--sp-5);border:0.5px solid var(--line);background:var(--panel);text-decoration:none;transition:border-color var(--dur) var(--ease),transform var(--dur) var(--ease),box-shadow var(--dur) var(--ease)}
+.next-link:hover{border-color:var(--ink);transform:translateY(-2px);box-shadow:var(--shadow-sm)}
+.next-link strong{display:block;font-size:var(--fs-2);margin-bottom:var(--sp-2)}
+.next-link span{font-size:var(--fs-1);color:var(--muted)}
+.next-truth{margin-top:var(--sp-6);text-align:left;padding:var(--sp-4) var(--sp-5);border-left:3px solid var(--accent);background:var(--panel-warm)}
+.next-truth h3{font-family:var(--f-mono);font-size:var(--fs-00);letter-spacing:0.18em;text-transform:uppercase;color:var(--accent-deep);margin:0 0 var(--sp-3)}
+.next-truth ul{margin:0;padding-left:var(--sp-5);font-size:var(--fs-1);color:var(--muted)}
+.next-truth li{margin-bottom:var(--sp-1)}
+.next-final{margin-top:var(--sp-4);text-align:left;padding:var(--sp-4) var(--sp-5);border:0.5px solid var(--line);font-size:var(--fs-1);color:var(--ink-soft);line-height:1.7}
+
+/* ─────────────────────────────────────────────
+   §15b  BOOT SKELETON
+   ───────────────────────────────────────────── */
+.boot-skeleton{padding:var(--sp-8) 0}
+.boot-skeleton > div{animation:skel-shimmer 1.6s ease-in-out infinite alternate}
+@keyframes skel-shimmer{from{opacity:.6}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.boot-skeleton > div{animation:none}}
+
+/* GitHub repo link icon in topbar */
+.gh-link{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:var(--r-sm);color:var(--muted);border:0.5px solid var(--line);background:var(--page);flex-shrink:0;transition:color var(--dur) var(--ease),border-color var(--dur) var(--ease),background var(--dur) var(--ease),transform var(--dur) var(--ease)}
+.gh-link:hover{color:var(--ink);border-color:var(--ink-soft);background:var(--panel);transform:translateY(-1px)}
+.gh-link:focus-visible{color:var(--ink);border-color:var(--accent);outline:2px solid var(--accent);outline-offset:2px}
+.gh-link svg{width:18px;height:18px;display:block}
+@media (prefers-reduced-motion: reduce){.gh-link,.gh-link:hover{transition:none;transform:none}}
+
+/* ─────────────────────────────────────────────
+   §16  RESPONSIVE
+   ───────────────────────────────────────────── */
+@media (max-width:1320px){
+  .hero-grid{gap:var(--sp-6)}
+  .arch-reader{gap:var(--sp-5)}
+}
+@media (max-width:1080px){
+  .shell{grid-template-columns:1fr}
+  .rail{position:fixed;left:0;width:280px;transform:translateX(-100%);transition:transform 300ms var(--ease);z-index:var(--z-modal)}
+  body[data-rail-open] .rail{transform:translateX(0)}
+  body[data-rail-open] .rail-overlay{display:block}
+  .hamburger{display:grid}
+  .hero-grid,.overview-grid,.arch-reader,.arch-figures,.usage-inner,.acl-grid,.bench-cards,.acl-proof-grid,.next-links{grid-template-columns:1fr}
+  .arch-legend{position:static}
+  .pipeline-strip{grid-template-columns:repeat(3,1fr)}
+  .arch-flow{grid-template-columns:repeat(3,1fr)}
+  .dash-pages{grid-template-columns:repeat(3,1fr)}
+  .dash-gallery{grid-template-columns:1fr}
+  .dash-gallery .lead{grid-row:auto}
+}
+@media (max-width:720px){
+  #app{padding:var(--sp-4) var(--sp-4) var(--sp-8)}
+  .topbar{padding:0 var(--sp-4);height:3rem}
+  .topbar .crumb .full-crumb{display:none}
+  .hero-copy h1{font-size:var(--fs-6)}
+  .pipeline-strip{grid-template-columns:1fr}
+  .arch-flow{grid-template-columns:1fr}
+  .arch-flow-step{border-right:0;border-bottom:0.5px solid var(--ink)}
+  .arch-flow-step:last-child{border-bottom:0}
+  .dash-pages{grid-template-columns:1fr}
+  .dash-page{border-right:0;border-bottom:0.5px solid var(--ink)}
+  .dash-page:last-child{border-bottom:0}
+  .bench-table,.install-table{display:block;overflow-x:auto}
+  .acl-proof-grid{grid-template-columns:1fr}
+  .next-links{grid-template-columns:1fr}
+  .stat-cluster{grid-template-columns:1fr}
+  .stat-cell{border-right:0}
+  .stat-cell:nth-last-child(-n+2){border-bottom:0.5px solid var(--ink)}
+  .stat-cell:last-child{border-bottom:0}
+}
+@media (max-width:480px){
+  .hero-ctas{flex-direction:column;align-items:stretch}
+  .hero-ctas .btn{justify-content:center}
+}
+    </style>
+  </head>
+  <body>
+    <a class="skip-link" href="#app">Skip to content</a>
+    <div class="rail-overlay" id="rail-overlay"></div>
+
+    <div class="shell">
+      <aside class="rail" id="rail-aside">
+        <div class="rail-masthead">
+          <div class="rail-logo-row">
+            <div class="rail-logomark" aria-hidden="true">&#x1F99E;</div>
+            <div>
+              <div class="rail-wordmark">OPENCLAW</div>
+              <span class="rail-stamp" id="rail-version">v1.1.2</span>
+            </div>
+          </div>
+        </div>
+        <nav class="rail-nav" id="side-nav" aria-label="Section navigation"></nav>
+        <div class="rail-foot">
+          <div class="locale-switch" aria-label="Language switch">
+            <button type="button" data-locale="zh">中文</button>
+            <button type="button" data-locale="en">EN</button>
+          </div>
+          <div class="rail-credit" id="rail-foot"></div>
+        </div>
+      </aside>
+
+      <div class="main-col">
+        <header class="topbar">
+          <button class="hamburger" id="hamburger-btn" type="button" aria-label="Open navigation" aria-expanded="false">
+            <span></span>
+          </button>
+          <div class="crumb">
+            <span class="full-crumb">OpenClaw<span class="sep">&middot;</span>docs<span class="sep">&middot;</span></span><b id="crumb-section">Overview</b>
+          </div>
+          <div class="topbar-actions">
+            <a class="btn ghost" id="docs-link" href="https://github.com/AGI-is-going-to-arrive/Memory-Palace-Openclaw/blob/main/README.md" target="_blank" rel="noreferrer">Docs</a>
+            <a class="btn primary" href="#install" aria-keyshortcuts="g i">Get started</a>
+            <a class="gh-link" href="https://github.com/AGI-is-going-to-arrive/Memory-Palace-Openclaw" target="_blank" rel="noopener noreferrer" aria-label="GitHub: AGI-is-going-to-arrive/Memory-Palace-Openclaw"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 012-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg></a>
+          </div>
+        </header>
+        <main id="app">
+          <!-- Boot skeleton: replaced on first renderPage() call -->
+          <div class="boot-skeleton" aria-hidden="true">
+            <div style="height:1rem;width:40%;background:rgba(20,24,29,.06);margin-bottom:1rem"></div>
+            <div style="height:3.5rem;width:80%;background:rgba(20,24,29,.06);margin-bottom:1rem"></div>
+            <div style="height:1rem;width:65%;background:rgba(20,24,29,.06);margin-bottom:2rem"></div>
+            <div style="display:flex;gap:0.75rem;margin-bottom:2rem">
+              <div style="height:2rem;width:8rem;border-radius:4px;background:rgba(20,24,29,.06)"></div>
+              <div style="height:2rem;width:8rem;border-radius:4px;background:rgba(20,24,29,.06)"></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid rgba(20,24,29,.06)">
+              <div style="height:4rem;border-right:1px solid rgba(20,24,29,.06);border-bottom:1px solid rgba(20,24,29,.06)"></div>
+              <div style="height:4rem;border-bottom:1px solid rgba(20,24,29,.06)"></div>
+              <div style="height:4rem;border-right:1px solid rgba(20,24,29,.06)"></div>
+              <div style="height:4rem"></div>
+            </div>
+          </div>
+          <noscript>
+            <p style="padding:2rem;font-family:sans-serif;color:#14181d">JavaScript is required to render this page. View the <a href="https://github.com/AGI-is-going-to-arrive/Memory-Palace-Openclaw/blob/main/README.md">README on GitHub</a> instead.</p>
+          </noscript>
+        </main>
+      </div>
+    </div>
+
+    <script>
+      const LINKS = {
+        repo: "https://github.com/AGI-is-going-to-arrive/Memory-Palace-Openclaw",
+        officialInstall: "https://docs.openclaw.ai/install",
+        readmeEn: "https://github.com/AGI-is-going-to-arrive/Memory-Palace-Openclaw/blob/main/README.md",
+        readmeZh: "https://github.com/AGI-is-going-to-arrive/Memory-Palace-Openclaw/blob/main/README_CN.md",
+        docsHubEn: "https://github.com/AGI-is-going-to-arrive/Memory-Palace-Openclaw/blob/main/docs/README.en.md",
+        docsHubZh: "https://github.com/AGI-is-going-to-arrive/Memory-Palace-Openclaw/blob/main/docs/README.md",
+        openclawHubEn: "https://github.com/AGI-is-going-to-arrive/Memory-Palace-Openclaw/blob/main/docs/openclaw-doc/README.en.md",
+        openclawHubZh: "https://github.com/AGI-is-going-to-arrive/Memory-Palace-Openclaw/blob/main/docs/openclaw-doc/README.md",
+        onboardingEn: "https://github.com/AGI-is-going-to-arrive/Memory-Palace-Openclaw/blob/main/docs/openclaw-doc/18-CONVERSATIONAL_ONBOARDING.en.md",
+        onboardingZh: "https://github.com/AGI-is-going-to-arrive/Memory-Palace-Openclaw/blob/main/docs/openclaw-doc/18-CONVERSATIONAL_ONBOARDING.md",
+        evaluationEn: "https://github.com/AGI-is-going-to-arrive/Memory-Palace-Openclaw/blob/main/docs/EVALUATION.en.md",
+        evaluationZh: "https://github.com/AGI-is-going-to-arrive/Memory-Palace-Openclaw/blob/main/docs/EVALUATION.md",
+        toolsEn: "https://github.com/AGI-is-going-to-arrive/Memory-Palace-Openclaw/blob/main/docs/TOOLS.en.md",
+        toolsZh: "https://github.com/AGI-is-going-to-arrive/Memory-Palace-Openclaw/blob/main/docs/TOOLS.md",
+        dashboardEn: "https://github.com/AGI-is-going-to-arrive/Memory-Palace-Openclaw/blob/main/docs/openclaw-doc/16-DASHBOARD_GUIDE.en.md",
+        dashboardZh: "https://github.com/AGI-is-going-to-arrive/Memory-Palace-Openclaw/blob/main/docs/openclaw-doc/16-DASHBOARD_GUIDE.md",
+        aclEn: "https://github.com/AGI-is-going-to-arrive/Memory-Palace-Openclaw/blob/main/docs/openclaw-doc/24-AGENT_ACL_ISOLATION.en.md",
+        aclZh: "https://github.com/AGI-is-going-to-arrive/Memory-Palace-Openclaw/blob/main/docs/openclaw-doc/24-AGENT_ACL_ISOLATION.md",
+        architectureEn: "https://github.com/AGI-is-going-to-arrive/Memory-Palace-Openclaw/blob/main/docs/openclaw-doc/25-MEMORY_ARCHITECTURE_AND_PROFILES.en.md",
+        architectureZh: "https://github.com/AGI-is-going-to-arrive/Memory-Palace-Openclaw/blob/main/docs/openclaw-doc/25-MEMORY_ARCHITECTURE_AND_PROFILES.md",
+        openclawUsageEn: "https://github.com/AGI-is-going-to-arrive/Memory-Palace-Openclaw/blob/main/docs/openclaw-doc/15-END_USER_INSTALL_AND_USAGE.en.md",
+        openclawUsageZh: "https://github.com/AGI-is-going-to-arrive/Memory-Palace-Openclaw/blob/main/docs/openclaw-doc/15-END_USER_INSTALL_AND_USAGE.md"
+      };
+
+      const ASSETS = {
+        routeMap: {
+          zh: "./images/openclaw_doc_route_map_zh_4k.png",
+          en: "./images/openclaw_doc_route_map_en_4k.png"
+        },
+        systemArchitecture: {
+          zh: "./images/system_architecture_zh_4k.png",
+          en: "./images/system_architecture_en_4k.png"
+        },
+        installFlow: {
+          zh: "./images/mermaid/install-run-flow.zh.png",
+          en: "./images/mermaid/install-run-flow.en.png"
+        },
+        profileLadder: {
+          zh: "./images/profile_ladder_zh_4k.png",
+          en: "./images/profile_ladder_en_4k.png"
+        },
+        memoryEngine: {
+          zh: "./images/memory_engine_architecture_zh_4k.png",
+          en: "./images/memory_engine_architecture_en_4k.png"
+        },
+        defaultChain: {
+          zh: "./images/default_memory_chain_zh_4k.png",
+          en: "./images/default_memory_chain_en_4k.png"
+        },
+        dashboardMap: {
+          zh: "./images/mermaid/dashboard-page-map.zh.png",
+          en: "./images/mermaid/dashboard-page-map.en.png"
+        },
+        skillEntry: "./openclaw-doc/assets/real-openclaw-run/openclaw-control-ui-skills-memory-palace.png",
+        onboardingInstalled: {
+          zh: "./openclaw-doc/assets/real-openclaw-run/openclaw-onboarding-doc-installed.zh.png",
+          en: "./openclaw-doc/assets/real-openclaw-run/openclaw-onboarding-doc-installed.en.png"
+        },
+        recall: "./openclaw-doc/assets/real-openclaw-run/openclaw-control-ui-chat-recall-confirmed.png",
+        dashboardMemory: {
+          zh: "./openclaw-doc/assets/real-openclaw-run/dashboard-current/dashboard-memory-page.zh.png",
+          en: "./openclaw-doc/assets/real-openclaw-run/dashboard-current/dashboard-memory-page.en.png"
+        },
+        dashboardObservability: {
+          zh: "./openclaw-doc/assets/real-openclaw-run/dashboard-current/dashboard-observability-page.zh.png",
+          en: "./openclaw-doc/assets/real-openclaw-run/dashboard-current/dashboard-observability-page.en.png"
+        },
+        aclAgents: "./openclaw-doc/assets/real-openclaw-run/24-acl-agents-page.png",
+        aclAlpha: {
+          zh: "./openclaw-doc/assets/real-openclaw-run/24-acl-alpha-memory-confirmed.png",
+          en: "./openclaw-doc/assets/real-openclaw-run/24-acl-alpha-memory-confirmed.en.png"
+        },
+        aclBeta: {
+          zh: "./openclaw-doc/assets/real-openclaw-run/24-acl-beta-chat-isolated.png",
+          en: "./openclaw-doc/assets/real-openclaw-run/24-acl-beta-chat-isolated.en.png"
+        }
+      };
+
+      const BENCHMARK_PROFILES = [
+        { name: "A", hr: 0.333, mrr: 0.219, ndcg: 0.235 },
+        { name: "B", hr: 0.583, mrr: 0.292, ndcg: 0.357 },
+        { name: "C", hr: 0.729, mrr: 0.457, ndcg: 0.492 },
+        { name: "D", hr: 0.958, mrr: 0.851, ndcg: 0.839 }
+      ];
+
+      const CONTENT = {
+        zh: {
+          meta: {
+            title: "Memory Palace for OpenClaw | GitHub Landing Page",
+            description:
+              "Memory Palace for OpenClaw：安装路径、配置边界、Benchmark 结果、技术架构、ACL 隔离、MCP tools 和 Dashboard。"
+          },
+          rail: {
+            eyebrow: "GitHub Landing Page",
+            title: "Memory Palace",
+            subtitle: "OpenClaw memory plugin + bundled skills",
+            intro:
+              "README、OpenClaw 文档、评测和 benchmark 工件的单页汇总。默认跟随浏览器语言，也可以手动切换。",
+            foot:
+              "页面内容来自仓库代码、文档和已记录的验证结果。"
+          },
+          nav: [
+            { id: "overview", label: "项目定位" },
+            { id: "install", label: "安装与配置" },
+            { id: "usage", label: "OpenClaw 里怎么用" },
+            { id: "why", label: "设计思路" },
+            { id: "architecture", label: "技术架构与数据流" },
+            { id: "benchmark", label: "Benchmark 真值" },
+            { id: "acl", label: "ACL 隔离" },
+            { id: "tools-dashboard", label: "MCP Tools 与 Dashboard" },
+            { id: "next", label: "继续阅读" }
+          ],
+          hero: {
+            eyebrow: "OpenClaw Memory Plugin",
+            title:
+              "给 OpenClaw 接上 <em>durable memory</em>，\n作为插件，不是独立产品。",
+            intro:
+              "Memory Palace 是一个 OpenClaw <code>kind: \"memory\"</code> 插件，附带 bundled skills 和共用的 FastAPI + MCP + SQLite runtime。这个页面覆盖项目定位、安装路径、配置边界、使用方式、Benchmark 结果、架构、ACL、MCP tools 和 Dashboard。",
+            chips: [
+              "插件路线为主，direct MCP / skills 为辅",
+              "默认 onboarding 在聊天里完成",
+              "Dashboard 是运行时辅助面，需要时再打开",
+              "ACL 目前是实验特性，不是硬化安全边界"
+            ],
+            buttons: [
+              {
+                label: "开始看对话式 Onboarding",
+                href: LINKS.onboardingZh,
+                kind: "primary"
+              },
+              {
+                label: "看评测与验证摘要",
+                href: LINKS.evaluationZh
+              },
+              {
+                label: "OpenClaw 接入文档中心",
+                href: LINKS.openclawHubZh
+              },
+              {
+                label: "OpenClaw 官方安装入口",
+                href: LINKS.officialInstall
+              }
+            ],
+            sideTitle: "当前公开主线",
+            sideBullets: [
+              "先装 OpenClaw 宿主，再把 onboarding 文档交给 OpenClaw。",
+              "plugin 未安装时，先走最短 setup fallback；安装后再走 onboarding tools。",
+              "长期稳定命令面是 `openclaw memory-palace ...`，不是 repo wrapper 本身。",
+              "Profile B 是默认起步档；Profile C / D 要以 provider 健康和真实签收为准。"
+            ],
+            sideCaption: "推荐的 OpenClaw 用户阅读顺序。",
+            figureAlt: "Memory Palace x OpenClaw 文档路线图"
+          },
+          metrics: [
+            { value: "11", label: "公开文档覆盖的 MCP tools" },
+            { value: "5", label: "Dashboard 页面" },
+            { value: "4", label: "Profile 档位（A / B / C / D）" },
+            { value: "2", label: "Benchmark 层次（Layer A / Layer B）" }
+          ],
+          overview: {
+            title: "这个项目是什么（以及不是什么）",
+            intro:
+              "常见的三个误读：它不是替代 OpenClaw 的独立产品；不是只靠 prompt 伪装记忆；Dashboard 也不是唯一入口。理清这三点，后面的文档就好读了。",
+            cards: [
+              {
+                tag: "What it is",
+                title: "仓库里有什么",
+                items: [
+                  "接到 OpenClaw memory slot 上的 `memory-palace` 插件。",
+                  "一组 bundled skills，决定 agent 何时用默认 recall、何时调显式工具。",
+                  "`FastAPI + MCP + SQLite` runtime，同时支撑 review / maintenance / observability。"
+                ]
+              },
+              {
+                tag: "What it is not",
+                title: "它不做什么",
+                items: [
+                  "不改 OpenClaw 源码。",
+                  "不替代宿主的 `USER.md / MEMORY.md / memory/*.md`。",
+                  "npm spec 和 `openclaw plugins install memory-palace` 不是目前的默认安装路径。"
+                ]
+              },
+              {
+                tag: "Start here",
+                title: "普通用户应该从哪里开始看",
+                items: [
+                  "OpenClaw 用户：先看 `18 -> 01 -> 15`。",
+                  "想开 Dashboard 再补 `16`，不是反过来。",
+                  "直接走 skill + MCP 的客户端用户，再看 `docs/skills` 和 `docs/TOOLS`。"
+                ]
+              }
+            ],
+            figureTitle: "整体定位图",
+            figureCaption:
+              "README 里的排序：OpenClaw plugin 在前，skills 和 runtime 在后。"
+          },
+          install: {
+            title: "安装路径和配置边界",
+            intro:
+              "先装 OpenClaw 宿主，把 onboarding 文档交给 OpenClaw。如果 plugin 还没装，走最短 setup fallback。最后用 `verify / doctor / smoke` 签收。",
+            steps: [
+              {
+                tag: "Step 1",
+                title: "装宿主",
+                text:
+                  "这个仓库不涉及 OpenClaw 本体安装。没装宿主的话，先去官方安装页。"
+              },
+              {
+                tag: "Step 2",
+                title: "把 onboarding 文档交给 OpenClaw",
+                text:
+                  "把 `18-CONVERSATIONAL_ONBOARDING` 交给 CLI 或 WebUI，比手动改配置更快。"
+              },
+              {
+                tag: "Step 3",
+                title: "Fallback：从源码 checkout 安装",
+                text:
+                  "plugin 没装的话，用 `setup --mode basic --profile b`。目前没有 marketplace 安装路径。"
+              },
+              {
+                tag: "Step 4",
+                title: "先跑通 Profile B",
+                text:
+                  "Profile B 不需要外部 provider。C / D 需要 embedding / reranker 端点真正可用——光填 env 不够。"
+              },
+              {
+                tag: "Step 5",
+                title: "用 verify / doctor / smoke 签收",
+                text:
+                  "最终验收：`openclaw memory-palace verify / doctor / smoke --json`。这是稳定的签收命令。"
+              }
+            ],
+            routeTitle: "当前推荐执行顺序",
+            routeCaption:
+              "这张图对应 `docs/openclaw-doc/01-*` 的当前口径：聊天优先，终端兜底，签收统一。",
+            compareTitle: "两类命令面不要混",
+            compareLeftTitle: "repo wrapper",
+            compareLeftText:
+              "用于 setup / onboarding / provider-probe，把仓库接入宿主。",
+            compareRightTitle: "稳定用户命令",
+            compareRightText:
+              "安装完成后用 `openclaw memory-palace ...`，这是稳定的用户面。",
+            profileTitle: "Profile 怎么选",
+            profileText:
+              "B = 无需外部 provider。C = provider-backed retrieval。D = embedding + reranker + LLM 均就绪。",
+            command: `python3 scripts/openclaw_memory_palace.py setup --mode basic --profile b --transport stdio --json
+openclaw memory-palace verify --json
+openclaw memory-palace doctor --json
+openclaw memory-palace smoke --json`,
+            note:
+              "注意：`memory_onboarding_status / probe / apply` 在 plugin 安装前不存在，安装前不要调用。"
+          },
+          usage: {
+            title: "在 OpenClaw 里怎么用",
+            intro:
+              "安装、召回、显式读取、visual memory 和最终回答都留在同一个 OpenClaw 聊天面里。Dashboard 用于运行时检查，不是主入口。",
+            media: [
+              {
+                title: "一份 onboarding 文档，两种宿主状态",
+                text:
+                  "已装 plugin：走 `memory_onboarding_status -> probe -> apply`。没装：先给最短安装链路，不假装 tool 已存在。",
+                asset: ASSETS.onboardingInstalled,
+                alt: "已安装状态下的 OpenClaw onboarding 截图"
+              },
+              {
+                title: "在 Skills 面板里可见",
+                text:
+                  "Memory Palace 作为 plugin + skill 直接出现在 OpenClaw UI 中，不是只在文档里提到的隐藏能力。",
+                asset: ASSETS.skillEntry,
+                alt: "OpenClaw Skills 页面中的 Memory Palace 条目"
+              },
+              {
+                title: "Recall 留在聊天线程",
+                text:
+                  "recall block、tool card、answer block 依次出现在同一线程，不会跳转到另一个 UI。",
+                asset: ASSETS.recall,
+                alt: "OpenClaw 聊天中 recall 生效的截图"
+              },
+              {
+                title: "Dashboard 用于运行时检查",
+                text:
+                  "Memory Hall、Review、Observability 都可用，但它们辅助聊天流程，不替代聊天入口。",
+                asset: ASSETS.dashboardMemory,
+                alt: "Dashboard Memory 页面截图"
+              }
+            ]
+          },
+          why: {
+            title: "设计思路",
+            intro:
+              "Memory Palace 用的是 OpenClaw 已有的 memory slot、hook、chat thread 和 agent scope。它扩展宿主，不跟宿主抢入口。",
+            cards: [
+              {
+                tag: "Slot-first",
+                title: "用 memory slot，不改宿主源码",
+                text:
+                  "作为标准 OpenClaw memory plugin 演进，不用每次宿主升级都打源码补丁。"
+              },
+              {
+                tag: "Chat-first",
+                title: "默认流程在 CLI / WebUI",
+                text:
+                  "用户先在 OpenClaw 里对话，需要时再开 Dashboard。不需要先进一个 5 页的运维面板。"
+              },
+              {
+                tag: "Auditable",
+                title: "记忆可查、可看、可复核",
+                text:
+                  "recall、review、maintenance、observability 共用同一套 runtime，排查问题有具体数据可看。"
+              },
+              {
+                tag: "Secondary path",
+                title: "Direct MCP / skills 路线仍然可用",
+                text:
+                  "Claude Code、Codex、Gemini CLI、OpenCode 可以用 direct MCP / skills 路线。这是辅路线，不是 OpenClaw 用户的主线。"
+              }
+            ]
+          },
+          architecture: {
+            title: "架构和数据流",
+            intro:
+              "plugin = 接线层，skills = 用法层，backend = 引擎，profile = 档位，ACL = 隔离闸门。下面的图分别展示整体分层和单轮对话的数据流。",
+            quote:
+              "plugin 是接线层，skills 是用法层，backend 是发动机，profile 是档位，ACL 是隔离闸门。",
+            quoteCaption:
+              "来自 `25-MEMORY_ARCHITECTURE_AND_PROFILES`。",
+            layers: [
+              {
+                tag: "Host",
+                title: "OpenClaw 宿主",
+                text:
+                  "提供 memory slot、hook 生命周期、CLI / WebUI / Agents 等用户接触的外层。"
+              },
+              {
+                tag: "Plugin",
+                title: "memory-palace 插件",
+                text:
+                  "注册 hooks、显式工具、onboarding、host bridge 和 memory runtime。把宿主接到 backend。"
+              },
+              {
+                tag: "Skills",
+                title: "bundled skills",
+                text:
+                  "定义 agent 何时用默认 recall，何时升级到 `memory_search`、`memory_get`、`memory_learn`。"
+              },
+              {
+                tag: "Runtime",
+                title: "FastAPI + MCP + SQLite",
+                text:
+                  "持久存储、检索、写入队列、反思、index worker、review 和 maintenance。"
+              },
+              {
+                tag: "Profile",
+                title: "Profile A / B / C / D",
+                text:
+                  "控制 retrieval 深度和辅助能力档位。用户面不随 profile 变化。"
+              },
+              {
+                tag: "ACL",
+                title: "多 Agent 记忆隔离",
+                text:
+                  "通过 `allowedUriPrefixes` 和 `writeRoots` 限制每个 agent 的读写范围。目前是实验特性。"
+              }
+            ],
+            flow: [
+              {
+                step: "1",
+                title: "用户发消息",
+                text: "消息先进入 OpenClaw 当前线程，不需要跳出到第二套前端。"
+              },
+              {
+                step: "2",
+                title: "before_prompt_build",
+                text: "plugin 先做 auto recall，把相关 durable memory 拼回当前 prompt 上下文。"
+              },
+              {
+                step: "3",
+                title: "模型给出回答",
+                text: "用户看到的仍是原生聊天线程里的 answer block。"
+              },
+              {
+                step: "4",
+                title: "message:preprocessed",
+                text: "视觉上下文和部分 webchat fallback 在这里被采集。"
+              },
+              {
+                step: "5",
+                title: "agent_end",
+                text: "auto capture、reflection、visual harvest 在会话收尾时进入 backend。"
+              },
+              {
+                step: "6",
+                title: "runtime / review / dashboard",
+                text: "SQLite、index worker、review、observability 和 Dashboard 都复用同一套底座。"
+              }
+            ],
+            figureTitle: "分层结构图",
+            figureCaption:
+              "Plugin / skills / backend / profile / ACL 在代码里是独立的层。",
+            figureTitle2: "默认主链图",
+            figureCaption2:
+              "默认链路先跑 hooks，需要时再升级到显式工具。这就是为什么用户没手动调工具，记忆仍然在工作。"
+          },
+          benchmark: {
+            title: "Memory-Native Benchmark",
+            intro:
+              "Benchmark 分两层。Layer A 是完整的 `memory_native_full` 检索基线；Layer B 是 session-merge 质量验证。两层回答的问题不同，不能互相替代。",
+            layerATitle: "Layer A · memory_native_full_report.json",
+            layerAText:
+              "工件记录 `corpus=70`、`aliases=5`、`queries=48`，给出 Profile A / B / C / D 对比。用来看同一套 repo-native benchmark 下各档位的提升幅度。",
+            profileLabels: {
+              A: "纯关键词，最低配验证",
+              B: "零配置起步档",
+              C: "provider-backed retrieval",
+              D: "完整高级档"
+            },
+            noteTitle: "这页怎么读 benchmark",
+            noteBullets: [
+              "Profile B 是可用的零配置基线，不是天花板。",
+              "Profile D 分数最高，但 provider 链路更重、时延更高。",
+              "Layer B 只验证 `search_memory_impl` 的 session-merge 质量，不是端到端 MCP tool 验证。",
+              "对外表述应回到工件和评测文档。"
+            ],
+            layerBTitle: "Layer B · memory_native_full_session_report.json",
+            layerBText:
+              "验证 per-group session ID isolation 下的 session-merge 质量，不验证完整 MCP tool 端到端表面。工件：`corpus=70`、`session_fixtures=10`、`queries=6`。",
+            retrievalTitle: "Provider-backed retrieval 仍有局限",
+            retrievalText:
+              "评测文档里的 SQuAD / BEIR 结果：`Profile C / D` 在 guard-rail 数据集上分数高，但在更难的 domain-gap stress test 上会明显下降。",
+            retrievalRows: [
+              ["SQuAD v2", "C=0.99 / D=0.99", "接近饱和"],
+              ["BEIR NFCorpus", "C=0.38 / D=0.42", "明显更难"],
+              ["结论", "不能拿 SQuAD 的高分替代通用 memory 检索成熟度", "公开文档已明确降级表达"]
+            ]
+          },
+          acl: {
+            title: "ACL 多智能体记忆隔离（实验特性）",
+            intro:
+              "当前证据：`alpha` 写入的长期记忆，`beta` 在实验链路里读不到，因此回答 `UNKNOWN`。这不是一个硬化的安全边界。",
+            cards: [
+              {
+                title: "默认关闭",
+                text:
+                  "ACL 默认不启用。即使启用，目前也不应视为完全硬化的后端安全边界。"
+              },
+              {
+                title: "配置位置",
+                text:
+                  "路径：`plugins.entries.memory-palace.config.acl`。关键字段：`allowedUriPrefixes` 和 `writeRoots`。"
+              },
+              {
+                title: "如何验证",
+                text:
+                  "验收路径：`Agents -> alpha 写入 -> beta 提问 -> UNKNOWN`。"
+              }
+            ],
+            proofTitle: "当前三张最关键证据图",
+            snippet: `{
+  "enabled": true,
+  "agents": {
+    "alpha": {
+      "allowedUriPrefixes": ["core://agents/alpha"],
+      "writeRoots": ["core://agents/alpha"]
+    },
+    "beta": {
+      "allowedUriPrefixes": ["core://agents/beta"],
+      "writeRoots": ["core://agents/beta"]
+    }
+  }
+}`
+          },
+          toolsDashboard: {
+            title: "MCP tools 和 Dashboard",
+            intro:
+              "MCP tools 负责读写、检索和治理。Dashboard 把 setup、memory、review、maintenance、observability 可视化。",
+            tools: [
+              {
+                tag: "Read / Search",
+                title: "读取与检索",
+                items: [
+                  "`read_memory`：按 URI 读内容或片段。",
+                  "`search_memory`：关键词 / 语义 / 混合检索。"
+                ]
+              },
+              {
+                tag: "Write",
+                title: "写入与别名",
+                items: [
+                  "`create_memory`、`update_memory`、`delete_memory`。",
+                  "`add_alias`：给同一条记忆挂第二个 URI 入口。"
+                ]
+              },
+              {
+                tag: "Governance",
+                title: "上下文治理",
+                items: [
+                  "`compact_context`：把会话压缩为持久摘要。",
+                  "`compact_context_reflection`：对最近一次 compact 结果做反思。"
+                ]
+              },
+              {
+                tag: "Maintenance",
+                title: "维护与 visual 支撑",
+                items: [
+                  "`rebuild_index`、`index_status`。",
+                  "`ensure_visual_namespace_chain`：预先补 visual namespace 父级链。"
+                ]
+              }
+            ],
+            pagesTitle: "Dashboard 5 页各管什么",
+            pages: [
+              {
+                tag: "Setup",
+                title: "Bootstrap Setup",
+                text: "首启、profile、transport、provider probe 和配置写入。"
+              },
+              {
+                tag: "Memory",
+                title: "Memory Hall",
+                text: "记忆树浏览、写入、visual memory 节点查看。"
+              },
+              {
+                tag: "Review",
+                title: "Review Ledger",
+                text: "快照 diff、集成、回滚和人工复核。"
+              },
+              {
+                tag: "Maintenance",
+                title: "Brain Cleanup",
+                text: "孤儿清理、vitality 清理和维护动作。"
+              },
+              {
+                tag: "Observability",
+                title: "Observability Console",
+                text: "检索诊断、transport 观测、队列和 runtime 状态。"
+              }
+            ],
+            figureCaption:
+              "Dashboard 跑在同一套 runtime 上，是辅助面，不是独立产品。"
+          },
+          next: {
+            title: "接下来",
+            intro:
+              "这页是项目概览，不替代正文文档。安装、验证细节、ACL 配置和工具参数请看下面的源文档。",
+            links: [
+              {
+                title: "对话式 Onboarding",
+                text: "普通 OpenClaw 用户的默认起步页。",
+                href: LINKS.onboardingZh
+              },
+              {
+                title: "OpenClaw 接入文档中心",
+                text: "01 / 15 / 16 / 18 / 24 / 25 的总入口。",
+                href: LINKS.openclawHubZh
+              },
+              {
+                title: "评测与验证摘要",
+                text: "当前公开可引用的验证基线、benchmark 和注意事项。",
+                href: LINKS.evaluationZh
+              }
+            ],
+            truthTitle: "这页背后的真值锚点",
+            truthFiles: [
+              "`README.md` / `README_CN.md`",
+              "`docs/openclaw-doc/01 / 15 / 16 / 18 / 24 / 25`",
+              "`docs/TOOLS.md` / `docs/EVALUATION.md`",
+              "`backend/tests/benchmark/memory_native_full_report.json`",
+              "`backend/tests/benchmark/memory_native_full_session_report.json`"
+            ],
+            finalNote:
+              "要确认一台目标机器是否 ready，在那台机器上重跑 `setup -> verify -> doctor -> smoke`。别的机器上的绿灯不算数。"
+          }
+        },
+        en: {
+          meta: {
+            title: "Memory Palace for OpenClaw | GitHub Landing Page",
+            description:
+              "Memory Palace for OpenClaw: install path, configuration, benchmark results, architecture, ACL isolation, MCP tools, and dashboard."
+          },
+          rail: {
+            eyebrow: "GitHub Landing Page",
+            title: "Memory Palace",
+            subtitle: "OpenClaw memory plugin + bundled skills",
+            intro:
+              "One-page summary of the repo README, OpenClaw docs, evaluation, and benchmark artifacts. Follows browser language; you can switch manually.",
+            foot:
+              "All claims on this page are backed by current code, docs, and recorded validation runs."
+          },
+          nav: [
+            { id: "overview", label: "Positioning" },
+            { id: "install", label: "Install and config" },
+            { id: "usage", label: "How it works in OpenClaw" },
+            { id: "why", label: "Why this design" },
+            { id: "architecture", label: "Architecture and data flow" },
+            { id: "benchmark", label: "Benchmark reality" },
+            { id: "acl", label: "ACL isolation" },
+            { id: "tools-dashboard", label: "MCP tools and Dashboard" },
+            { id: "next", label: "Keep reading" }
+          ],
+          hero: {
+            eyebrow: "OpenClaw Memory Plugin",
+            title:
+              "Add <em>durable memory</em> to OpenClaw\nas a plugin, not a separate product.",
+            intro:
+              "Memory Palace is an OpenClaw <code>kind: \"memory\"</code> plugin, plus bundled skills and a shared FastAPI + MCP + SQLite runtime. This page covers the project scope, install path, configuration boundaries, usage inside OpenClaw, Memory-Native Benchmark results, architecture, ACL, MCP tools, and the Dashboard.",
+            chips: [
+              "Plugin path is primary; direct MCP / skills is the secondary route",
+              "Default onboarding runs inside the chat",
+              "Dashboard is a support surface -- open it when you need runtime visibility",
+              "ACL is experimental, not a hardened security boundary"
+            ],
+            buttons: [
+              {
+                label: "Start with Conversational Onboarding",
+                href: LINKS.onboardingEn,
+                kind: "primary"
+              },
+              {
+                label: "Read the Evaluation Summary",
+                href: LINKS.evaluationEn
+              },
+              {
+                label: "Open the OpenClaw Docs Hub",
+                href: LINKS.openclawHubEn
+              },
+              {
+                label: "OpenClaw host install guide",
+                href: LINKS.officialInstall
+              }
+            ],
+            sideTitle: "Current public contract",
+            sideBullets: [
+              "Install the OpenClaw host first, then feed it the onboarding doc.",
+              "If the plugin is not installed, run the shortest setup fallback before using onboarding tools.",
+              "Stable command surface: `openclaw memory-palace ...`, not the repo wrapper.",
+              "Profile B is the bootstrap baseline. C / D require real provider health checks to pass."
+            ],
+            sideCaption: "Recommended reading order for OpenClaw users.",
+            figureAlt: "Memory Palace x OpenClaw route map"
+          },
+          metrics: [
+            { value: "11", label: "Documented MCP tools" },
+            { value: "5", label: "Dashboard pages" },
+            { value: "4", label: "Profiles (A / B / C / D)" },
+            { value: "2", label: "Benchmark layers (Layer A / Layer B)" }
+          ],
+          overview: {
+            title: "What this project is (and is not)",
+            intro:
+              "Three common misreadings: it is not a standalone replacement for OpenClaw, it is not prompt-only fake memory, and the Dashboard is not the primary entry point. Clear those up and the rest of the docs make sense.",
+            cards: [
+              {
+                tag: "What it is",
+                title: "What ships in this repo",
+                items: [
+                  "A `memory-palace` plugin that occupies the OpenClaw memory slot.",
+                  "Bundled skills that decide when the agent uses default recall vs. explicit tools.",
+                  "A `FastAPI + MCP + SQLite` runtime that also serves review, maintenance, and observability."
+                ]
+              },
+              {
+                tag: "What it is not",
+                title: "What it does not do",
+                items: [
+                  "Does not patch OpenClaw source code.",
+                  "Does not replace the host-side `USER.md / MEMORY.md / memory/*.md`.",
+                  "The npm spec and `openclaw plugins install memory-palace` are not the current default install path."
+                ]
+              },
+              {
+                tag: "Start here",
+                title: "Where normal users should begin",
+                items: [
+                  "OpenClaw users: `18 -> 01 -> 15`.",
+                  "Open `16` only when you really need the Dashboard.",
+                  "Direct skill + MCP users should branch to `docs/skills` and `docs/TOOLS`."
+                ]
+              }
+            ],
+            figureTitle: "Overall positioning",
+            figureCaption:
+              "README ordering: OpenClaw plugin first, bundled skills and runtime second."
+          },
+          install: {
+            title: "Install path and configuration",
+            intro:
+              "Install the OpenClaw host first. Hand the onboarding doc to OpenClaw. If the plugin is still missing, run the shortest setup fallback. Finish with `verify / doctor / smoke`.",
+            steps: [
+              {
+                tag: "Step 1",
+                title: "Install the host",
+                text:
+                  "This repo does not cover OpenClaw host installation. If the host is not present, start from the official install guide."
+              },
+              {
+                tag: "Step 2",
+                title: "Hand the onboarding doc to OpenClaw",
+                text:
+                  "Give `18-CONVERSATIONAL_ONBOARDING` to CLI or WebUI. This is faster than editing config files by hand."
+              },
+              {
+                tag: "Step 3",
+                title: "Fallback: setup from source checkout",
+                text:
+                  "If the plugin is not installed yet, use `setup --mode basic --profile b` from the source checkout. There is no marketplace install at this time."
+              },
+              {
+                tag: "Step 4",
+                title: "Start with Profile B",
+                text:
+                  "Profile B needs no external providers. Profile C / D require embedding and reranker endpoints that actually respond -- filling in env vars is not enough."
+              },
+              {
+                tag: "Step 5",
+                title: "Sign off with verify / doctor / smoke",
+                text:
+                  "Final acceptance: `openclaw memory-palace verify / doctor / smoke --json`. These are the stable signoff commands."
+              }
+            ],
+            routeTitle: "Current recommended execution order",
+            routeCaption:
+              "Matches the `docs/openclaw-doc/01-*` contract: chat first, terminal fallback second, signoff last.",
+            compareTitle: "Do not mix these two command surfaces",
+            compareLeftTitle: "repo wrapper",
+            compareLeftText:
+              "Used during setup, onboarding, and provider-probe to wire this repo into the host.",
+            compareRightTitle: "stable user commands",
+            compareRightText:
+              "After installation, users run `openclaw memory-palace ...`. That is the stable surface.",
+            profileTitle: "How to choose a profile",
+            profileText:
+              "B = no external providers needed. C = provider-backed retrieval. D = embedding + reranker + LLM all healthy.",
+            command: `python3 scripts/openclaw_memory_palace.py setup --mode basic --profile b --transport stdio --json
+openclaw memory-palace verify --json
+openclaw memory-palace doctor --json
+openclaw memory-palace smoke --json`,
+            note:
+              "Note: `memory_onboarding_status / probe / apply` do not exist until the plugin is installed. Do not call them before installation."
+          },
+          usage: {
+            title: "Using it inside OpenClaw",
+            intro:
+              "Onboarding, recall, explicit reads, visual memory, and answers all stay on the same OpenClaw chat surface. The Dashboard exists for runtime inspection, not as the primary entry.",
+            media: [
+              {
+                title: "One onboarding doc, two host states",
+                text:
+                  "Plugin installed: continue with `memory_onboarding_status -> probe -> apply`. Not installed: the doc gives the shortest install chain first instead of assuming the tools exist.",
+                asset: ASSETS.onboardingInstalled,
+                alt: "Installed-host onboarding screenshot in OpenClaw"
+              },
+              {
+                title: "Visible in the Skills panel",
+                text:
+                  "Memory Palace shows up as a real plugin + skill entry in the OpenClaw UI, not something that only exists in docs.",
+                asset: ASSETS.skillEntry,
+                alt: "Memory Palace entry in OpenClaw Skills"
+              },
+              {
+                title: "Recall stays in the chat thread",
+                text:
+                  "Recall blocks, tool cards, and answer blocks appear in sequence in the same thread. No redirect to a separate UI.",
+                asset: ASSETS.recall,
+                alt: "Recall confirmed inside OpenClaw chat"
+              },
+              {
+                title: "Dashboard for runtime inspection",
+                text:
+                  "Memory Hall, Review, and Observability are available when you need them. They support the chat flow; they do not replace it.",
+                asset: ASSETS.dashboardMemory,
+                alt: "Memory page inside the Dashboard"
+              }
+            ]
+          },
+          why: {
+            title: "Design rationale",
+            intro:
+              "Memory Palace uses the memory slot, hooks, chat thread, and agent scope that OpenClaw already provides. It extends the host rather than competing with it for the entry point.",
+            cards: [
+              {
+                tag: "Slot-first",
+                title: "Uses the memory slot, does not patch the host",
+                text:
+                  "It evolves as a standard OpenClaw memory plugin. No source-level fork that has to track every host release."
+              },
+              {
+                tag: "Chat-first",
+                title: "Default workflow stays in CLI / WebUI",
+                text:
+                  "Users interact through OpenClaw chat and only open the Dashboard when they need runtime visibility. No mandatory 5-page ops SPA before getting started."
+              },
+              {
+                tag: "Auditable",
+                title: "Memory is searchable, reviewable, and maintainable",
+                text:
+                  "Recall, review, maintenance, and observability share the same runtime. Debugging a recall miss has concrete data to look at."
+              },
+              {
+                tag: "Secondary path",
+                title: "Direct MCP / skills route is still available",
+                text:
+                  "Claude Code, Codex, Gemini CLI, and OpenCode can use the direct MCP / skills path. It is a secondary route, not the primary story for OpenClaw users."
+              }
+            ]
+          },
+          architecture: {
+            title: "Architecture and data flow",
+            intro:
+              "Plugin = wiring layer, skills = usage layer, backend = engine, profile = gear, ACL = isolation gate. The diagrams below show the system layers and per-turn data flow.",
+            quote:
+              "The plugin is the wiring layer, skills are the usage layer, the backend is the engine, the profile is the gear, and ACL is the isolation gate.",
+            quoteCaption:
+              "Derived from `25-MEMORY_ARCHITECTURE_AND_PROFILES`.",
+            layers: [
+              {
+                tag: "Host",
+                title: "OpenClaw host",
+                text:
+                  "Provides the memory slot, hook lifecycle, CLI / WebUI / Agents, and the user-facing execution environment."
+              },
+              {
+                tag: "Plugin",
+                title: "memory-palace plugin",
+                text:
+                  "Registers hooks, explicit tools, onboarding, host bridge, and the memory runtime. Connects the host to the backend."
+              },
+              {
+                tag: "Skills",
+                title: "Bundled skills",
+                text:
+                  "Define when the agent uses default recall and when it escalates to `memory_search`, `memory_get`, or `memory_learn`."
+              },
+              {
+                tag: "Runtime",
+                title: "FastAPI + MCP + SQLite",
+                text:
+                  "Durable storage, retrieval, write queue, reflection, index worker, review, and maintenance."
+              },
+              {
+                tag: "Profile",
+                title: "Profile A / B / C / D",
+                text:
+                  "Controls retrieval depth and which advanced assists are active. The user-facing surface stays the same across profiles."
+              },
+              {
+                tag: "ACL",
+                title: "Multi-agent memory isolation",
+                text:
+                  "Narrows read/write scope per agent via `allowedUriPrefixes` and `writeRoots`. Still experimental."
+              }
+            ],
+            flow: [
+              {
+                step: "1",
+                title: "User sends a message",
+                text: "Enters the OpenClaw thread directly."
+              },
+              {
+                step: "2",
+                title: "before_prompt_build",
+                text: "Plugin runs auto recall and injects relevant durable memory into the prompt context."
+              },
+              {
+                step: "3",
+                title: "Model answers",
+                text: "Answer block appears in the same OpenClaw thread."
+              },
+              {
+                step: "4",
+                title: "message:preprocessed",
+                text: "Visual context and some webchat fallback context get harvested here."
+              },
+              {
+                step: "5",
+                title: "agent_end",
+                text: "Auto capture, reflection, and visual harvest write into the backend."
+              },
+              {
+                step: "6",
+                title: "runtime / review / dashboard",
+                text: "SQLite, index worker, review, observability, and Dashboard share the same runtime."
+              }
+            ],
+            figureTitle: "Layered system view",
+            figureCaption:
+              "Plugin, skills, backend, profiles, and ACL are separate layers in the codebase.",
+            figureTitle2: "Default chain view",
+            figureCaption2:
+              "Hooks run first; explicit tools are invoked only when needed. Memory works without the user calling any tool manually."
+          },
+          benchmark: {
+            title: "Memory-Native Benchmark",
+            intro:
+              "Two benchmark layers exist. Layer A is the full `memory_native_full` retrieval baseline. Layer B checks session-merge quality. They answer different questions and are not interchangeable.",
+            layerATitle: "Layer A · memory_native_full_report.json",
+            layerAText:
+              "Records `corpus=70`, `aliases=5`, `queries=48` and compares Profile A / B / C / D. Use this to see how much each tier improves under the same repo-native benchmark.",
+            profileLabels: {
+              A: "keyword-only minimum validation",
+              B: "zero-config bootstrap tier",
+              C: "provider-backed retrieval",
+              D: "full advanced tier"
+            },
+            noteTitle: "How this page reads the benchmark",
+            noteBullets: [
+              "Profile B is a usable zero-config baseline, not a ceiling.",
+              "Profile D scores highest but requires the heaviest provider chain and adds latency.",
+              "Layer B validates `search_memory_impl` session-merge quality only, not end-to-end MCP tool behavior.",
+              "All public claims should trace back to the artifacts and evaluation docs."
+            ],
+            layerBTitle: "Layer B · memory_native_full_session_report.json",
+            layerBText:
+              "Validates per-group session ID isolation and session-merge quality, not the full MCP tool surface. Artifact: `corpus=70`, `session_fixtures=10`, `queries=6`.",
+            retrievalTitle: "Provider-backed retrieval has limits",
+            retrievalText:
+              "SQuAD / BEIR numbers from the evaluation docs: `Profile C / D` score well on guard-rail datasets but drop on harder domain-gap stress tests.",
+            retrievalRows: [
+              ["SQuAD v2", "C=0.99 / D=0.99", "near saturation"],
+              ["BEIR NFCorpus", "C=0.38 / D=0.42", "materially harder"],
+              ["Conclusion", "Do not use SQuAD success as proof of generic memory retrieval maturity", "public docs already downgrade that claim"]
+            ]
+          },
+          acl: {
+            title: "ACL multi-agent isolation (experimental)",
+            intro:
+              "What the current evidence shows: memory written under `alpha` cannot be read by `beta` on the experimental path, so `beta` answers `UNKNOWN`. This is not a hardened security boundary.",
+            cards: [
+              {
+                title: "Off by default",
+                text:
+                  "ACL is disabled by default. It is not a hardened backend security boundary at this stage."
+              },
+              {
+                title: "Configuration location",
+                text:
+                  "Config path: `plugins.entries.memory-palace.config.acl`. Key fields: `allowedUriPrefixes` and `writeRoots`."
+              },
+              {
+                title: "How to verify",
+                text:
+                  "Acceptance path: `Agents -> alpha writes -> beta asks -> UNKNOWN`."
+              }
+            ],
+            proofTitle: "The three public proof anchors",
+            snippet: `{
+  "enabled": true,
+  "agents": {
+    "alpha": {
+      "allowedUriPrefixes": ["core://agents/alpha"],
+      "writeRoots": ["core://agents/alpha"]
+    },
+    "beta": {
+      "allowedUriPrefixes": ["core://agents/beta"],
+      "writeRoots": ["core://agents/beta"]
+    }
+  }
+}`
+          },
+          toolsDashboard: {
+            title: "MCP tools and Dashboard",
+            intro:
+              "MCP tools handle reads, writes, retrieval, and governance. The Dashboard visualizes setup, memory, review, maintenance, and observability.",
+            tools: [
+              {
+                tag: "Read / Search",
+                title: "Read and retrieval",
+                items: [
+                  "`read_memory`: read a URI or a slice of it.",
+                  "`search_memory`: keyword, semantic, or hybrid retrieval."
+                ]
+              },
+              {
+                tag: "Write",
+                title: "Writes and aliases",
+                items: [
+                  "`create_memory`, `update_memory`, `delete_memory`.",
+                  "`add_alias`: attach a second URI entry to the same memory."
+                ]
+              },
+              {
+                tag: "Governance",
+                title: "Context governance",
+                items: [
+                  "`compact_context`: compress the current session into a durable summary.",
+                  "`compact_context_reflection`: add a reflection pass to the latest compact result."
+                ]
+              },
+              {
+                tag: "Maintenance",
+                title: "Maintenance and visual support",
+                items: [
+                  "`rebuild_index`, `index_status`.",
+                  "`ensure_visual_namespace_chain`: pre-create the visual namespace parent chain."
+                ]
+              }
+            ],
+            pagesTitle: "What the 5 Dashboard pages are for",
+            pages: [
+              {
+                tag: "Setup",
+                title: "Bootstrap Setup",
+                text: "First-run configuration, profiles, transport, provider probe, and writes."
+              },
+              {
+                tag: "Memory",
+                title: "Memory Hall",
+                text: "Memory tree browsing, writes, and visual-memory inspection."
+              },
+              {
+                tag: "Review",
+                title: "Review Ledger",
+                text: "Snapshot diff, integrate, rollback, and human review."
+              },
+              {
+                tag: "Maintenance",
+                title: "Brain Cleanup",
+                text: "Orphan cleanup, vitality cleanup, and maintenance actions."
+              },
+              {
+                tag: "Observability",
+                title: "Observability Console",
+                text: "Retrieval diagnostics, transport diagnostics, queues, and runtime status."
+              }
+            ],
+            figureCaption:
+              "Dashboard runs on the same runtime as the plugin. It is a support surface, not a separate product."
+          },
+          next: {
+            title: "Next steps",
+            intro:
+              "This page is an overview, not a replacement for the full docs. For exact install steps, the validation matrix, ACL config, or tool parameters, read the source docs below.",
+            links: [
+              {
+                title: "Conversational Onboarding",
+                text: "The default start page for normal OpenClaw users.",
+                href: LINKS.onboardingEn
+              },
+              {
+                title: "OpenClaw Docs Hub",
+                text: "The routed entry for `01 / 15 / 16 / 18 / 24 / 25`.",
+                href: LINKS.openclawHubEn
+              },
+              {
+                title: "Evaluation Summary",
+                text: "The current public validation baseline, benchmark notes, and limitations.",
+                href: LINKS.evaluationEn
+              }
+            ],
+            truthTitle: "Truth anchors behind this page",
+            truthFiles: [
+              "`README.md` / `README_CN.md`",
+              "`docs/openclaw-doc/01 / 15 / 16 / 18 / 24 / 25`",
+              "`docs/TOOLS.md` / `docs/EVALUATION.md`",
+              "`backend/tests/benchmark/memory_native_full_report.json`",
+              "`backend/tests/benchmark/memory_native_full_session_report.json`"
+            ],
+            finalNote:
+              "To confirm a target machine is ready, rerun `setup -> verify -> doctor -> smoke` on that machine. A green run on a different host does not count."
+          }
+        }
+      };
+
+      /* ─── Roman numeral helper ─── */
+      const ROMAN = ['I','II','III','IV','V','VI','VII','VIII','IX'];
+
+      /* ─── Nav group config ─── */
+      const NAV_GROUPS = {
+        en: [
+          { label: 'Getting started', items: [0,1,2] },
+          { label: 'Deep dive',       items: [3,4,5] },
+          { label: 'Reference',       items: [6,7,8] }
+        ],
+        zh: [
+          { label: '快速开始', items: [0,1,2] },
+          { label: '深入了解', items: [3,4,5] },
+          { label: '参考资料', items: [6,7,8] }
+        ]
+      };
+
+      const LOCALE_KEY = "memory-palace-landing-locale";
+
+      function assetPath(asset, locale) {
+        return typeof asset === "string" ? asset : asset[locale];
+      }
+
+      function detectLocale() {
+        const query = new URLSearchParams(window.location.search).get("lang");
+        if (query === "zh" || query === "en") return query;
+        const saved = window.localStorage.getItem(LOCALE_KEY);
+        if (saved === "zh" || saved === "en") return saved;
+        const langs = navigator.languages && navigator.languages.length
+          ? navigator.languages
+          : [navigator.language || "en"];
+        return langs.some((lang) => String(lang).toLowerCase().startsWith("zh")) ? "zh" : "en";
+      }
+
+      let currentLocale = detectLocale();
+
+      /* ─── Syntax-light JSON highlighter ─── */
+      function highlightJSON(str) {
+        // XSS: entity-escape MUST come before span wrapping
+        const esc = str
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+        return esc
+          .replace(/(&quot;(?:[^&]|&(?!quot;))*&quot;)\s*:/g, '<span class="str">$1</span>:')
+          .replace(/:\s*(&quot;(?:[^&]|&(?!quot;))*&quot;)/g, ': <span class="str">$1</span>')
+          .replace(/(\/\/.*$)/gm, '<span class="cm">$1</span>')
+          .replace(/\b(true|false|null)\b/g, '<span class="str">$1</span>');
+      }
+
+      /* ─── RENDER FUNCTIONS ─── */
+
+      function renderHero(c) {
+        const firstCmd = c.install.command.split('\n')[0];
+        return `
+          <section class="hero-section" id="hero">
+            <div class="kicker">S I &middot; Overview &middot; v1.1.2</div>
+            <div class="hero-grid">
+              <div class="hero-copy">
+                <h1>${c.hero.title.replace("\n", "<br />")}</h1>
+                <p class="hero-lede">${c.hero.intro}</p>
+                <div class="hero-ctas">
+                  <a class="btn primary" href="#install" aria-keyshortcuts="g i">${currentLocale === 'zh' ? '开始安装' : 'Get started'}</a>
+                  <a class="btn ghost" href="#benchmark" aria-keyshortcuts="g b">${currentLocale === 'zh' ? '看 Benchmark' : 'Read benchmarks'}</a>
+                </div>
+                <div class="cli-hint">
+                  <span class="dollar">$</span>
+                  <code>${firstCmd}</code>
+                  <button class="copy" type="button" data-copy>Copy</button>
+                </div>
+              </div>
+              <div>
+                <div class="stat-cluster">
+                  ${c.metrics.map(m => `
+                    <div class="stat-cell">
+                      <div class="stat-num" data-count-to="${m.value}">${m.value}</div>
+                      <div class="stat-label">${m.label}</div>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            </div>
+            <div class="hero-figure-wrap">
+              <img src="${assetPath(ASSETS.routeMap, currentLocale)}" alt="${c.hero.figureAlt}" loading="eager" />
+              <div class="fig-caption"><span class="kicker" style="margin-bottom:0">Fig. I</span> ${c.hero.sideCaption}</div>
+            </div>
+          </section>`;
+      }
+
+      function renderOverview(c) {
+        const cards = c.overview.cards;
+        return `
+          <section class="ed-section" id="overview">
+            <div class="section-head">
+              <div class="kicker">S I &middot; ${currentLocale === 'zh' ? '项目定位' : 'Positioning'}</div>
+              <h2>${c.overview.title}</h2>
+            </div>
+            <div class="overview-grid">
+              <div class="overview-intro">
+                <span class="drop">${c.overview.intro.charAt(0)}</span>${c.overview.intro.slice(1)}
+              </div>
+              <div class="overview-list">
+                ${cards.map((card, i) => `
+                  <div class="overview-item">
+                    <span class="ov-num">(${ROMAN[i]})</span>
+                    <div>
+                      <h3>${card.title}</h3>
+                      <p>${card.items[0]}</p>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+            <figure class="overview-figure">
+              <img src="${assetPath(ASSETS.systemArchitecture, currentLocale)}" alt="${c.overview.figureTitle}" loading="lazy" />
+              <figcaption><strong>${c.overview.figureTitle}</strong> &mdash; ${c.overview.figureCaption}</figcaption>
+            </figure>
+          </section>`;
+      }
+
+      function renderInstall(c) {
+        return `
+          <section class="ed-section" id="install">
+            <div class="section-head">
+              <div class="kicker">S II &middot; ${currentLocale === 'zh' ? '安装与配置' : 'Install'}</div>
+              <h2>${c.install.title}</h2>
+              <p class="intro">${c.install.intro}</p>
+            </div>
+            <div class="pipeline-strip">
+              ${c.install.steps.map((s, i) => `
+                <div class="pipeline-step">
+                  <div class="ps-num">${ROMAN[i]}</div>
+                  <h3>${s.title}</h3>
+                  <p>${s.text}</p>
+                </div>
+              `).join('')}
+            </div>
+            <table class="install-table">
+              <thead><tr>
+                <th>${c.install.compareTitle}</th>
+                <th>${c.install.compareLeftTitle}</th>
+                <th>${c.install.compareRightTitle}</th>
+              </tr></thead>
+              <tbody><tr>
+                <td>${currentLocale === 'zh' ? '用途' : 'Purpose'}</td>
+                <td>${c.install.compareLeftText}</td>
+                <td>${c.install.compareRightText}</td>
+              </tr></tbody>
+            </table>
+            <div class="code-block">
+              ${c.install.command.split('\n').map((line, i) => `<span class="line-num">${i+1}</span>${line}`).join('\n')}
+            </div>
+            <div class="inline-note">${c.install.note}</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-4);margin-top:var(--sp-5)">
+              <figure class="overview-figure" style="margin-top:0">
+                <img src="${assetPath(ASSETS.installFlow, currentLocale)}" alt="${c.install.routeTitle}" loading="lazy" />
+                <figcaption><strong>${c.install.routeTitle}</strong> &mdash; ${c.install.routeCaption}</figcaption>
+              </figure>
+              <figure class="overview-figure" style="margin-top:0">
+                <img src="${assetPath(ASSETS.profileLadder, currentLocale)}" alt="${c.install.profileTitle}" loading="lazy" />
+                <figcaption><strong>${c.install.profileTitle}</strong> &mdash; ${c.install.profileText}</figcaption>
+              </figure>
+            </div>
+          </section>`;
+      }
+
+      function renderUsage(c) {
+        return `
+          <section class="ed-section" id="usage">
+            <div class="section-head">
+              <div class="kicker">S III &middot; ${currentLocale === 'zh' ? '使用方式' : 'Usage'}</div>
+              <h2>${c.usage.title}</h2>
+              <p class="intro">${c.usage.intro}</p>
+            </div>
+            ${c.usage.media.map((item, i) => `
+              <div class="usage-block">
+                <div class="usage-inner">
+                  <div>
+                    <h3>${item.title}</h3>
+                    <p>${item.text}</p>
+                  </div>
+                  <figure class="usage-fig">
+                    <img src="${assetPath(item.asset, currentLocale)}" alt="${item.alt}" loading="lazy" />
+                    <figcaption>Fig. ${ROMAN[i + 1]}</figcaption>
+                  </figure>
+                </div>
+              </div>
+            `).join('')}
+          </section>`;
+      }
+
+      function renderWhy(c) {
+        return `
+          <section class="ed-section" id="why">
+            <div class="section-head">
+              <div class="kicker">S IV &middot; ${currentLocale === 'zh' ? '设计思路' : 'Design'}</div>
+              <h2>${c.why.title}</h2>
+              <p class="intro">${c.why.intro}</p>
+            </div>
+            <div class="why-list">
+              ${c.why.cards.map((card, i) => `
+                <div class="why-item">
+                  <div class="why-num">${String(i+1).padStart(2,'0')}</div>
+                  <div>
+                    <span class="why-tag">${card.tag}</span>
+                    <h3>${card.title}</h3>
+                    <p>${card.text}</p>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </section>`;
+      }
+
+      function renderArchitecture(c) {
+        return `
+          <section class="ed-section" id="architecture">
+            <div class="section-head">
+              <div class="kicker">S V &middot; ${currentLocale === 'zh' ? '架构' : 'Architecture'}</div>
+              <h2>${c.architecture.title}</h2>
+              <p class="intro">${c.architecture.intro}</p>
+            </div>
+            <div class="arch-reader">
+              <div class="arch-narrative">
+                <span class="drop">${c.architecture.intro.charAt(0)}</span>${c.architecture.intro.slice(1)}
+                <blockquote>
+                  ${c.architecture.quote}
+                  <cite>${c.architecture.quoteCaption}</cite>
+                </blockquote>
+              </div>
+              <div class="arch-legend">
+                <h4>${currentLocale === 'zh' ? '系统层次' : 'System layers'}</h4>
+                ${c.architecture.layers.map(l => `
+                  <div class="arch-legend-item">
+                    <div class="al-tag">${l.tag}</div>
+                    <div class="al-title">${l.title}</div>
+                    <div class="al-text">${l.text}</div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+            <div class="arch-figures">
+              <figure class="arch-fig">
+                <img src="${assetPath(ASSETS.memoryEngine, currentLocale)}" alt="${c.architecture.figureTitle}" loading="lazy" />
+                <figcaption>${c.architecture.figureTitle} &mdash; ${c.architecture.figureCaption}</figcaption>
+              </figure>
+              <figure class="arch-fig">
+                <img src="${assetPath(ASSETS.defaultChain, currentLocale)}" alt="${c.architecture.figureTitle2}" loading="lazy" />
+                <figcaption>${c.architecture.figureTitle2} &mdash; ${c.architecture.figureCaption2}</figcaption>
+              </figure>
+            </div>
+            <div class="arch-flow">
+              ${c.architecture.flow.map(f => `
+                <div class="arch-flow-step">
+                  <div class="afs-num">${f.step}</div>
+                  <h4>${f.title}</h4>
+                  <p>${f.text}</p>
+                </div>
+              `).join('')}
+            </div>
+          </section>`;
+      }
+
+      function renderBenchmark(c) {
+        const metrics = ['hr','mrr','ndcg'];
+        const metricNames = ['HR@10','MRR','NDCG'];
+        return `
+          <section class="ed-section" id="benchmark">
+            <div class="section-head">
+              <div class="kicker">S VI &middot; Benchmark</div>
+              <h2>${c.benchmark.title}</h2>
+              <p class="intro">${c.benchmark.intro}</p>
+            </div>
+            <div class="bench-cards">
+              ${metrics.map((m, mi) => `
+                <div class="bench-card">
+                  <div class="bc-title">${metricNames[mi]}</div>
+                  ${BENCHMARK_PROFILES.map(p => `
+                    <div class="bench-bar-wrap">
+                      <div class="bench-bar-head">
+                        <span class="profile-name">${p.name}</span>
+                        <span class="profile-val">${p[m].toFixed(3)}</span>
+                      </div>
+                      <div class="bench-bar">
+                        <div class="bench-bar-fill" data-animated="false" style="width:${Math.round(p[m] * 100)}%"></div>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              `).join('')}
+            </div>
+            <div class="bench-meta">
+              <span class="bench-pill">corpus = 70</span>
+              <span class="bench-pill">aliases = 5</span>
+              <span class="bench-pill">queries = 48</span>
+              <span class="bench-pill">source: memory_native_full_report.json</span>
+            </div>
+            <table class="bench-table">
+              <thead><tr>
+                <th>${currentLocale === 'zh' ? '数据集' : 'Dataset'}</th>
+                <th>${currentLocale === 'zh' ? '当前数字' : 'Current numbers'}</th>
+                <th>${currentLocale === 'zh' ? '怎么读' : 'How to read it'}</th>
+              </tr></thead>
+              <tbody>
+                ${c.benchmark.retrievalRows.map(row => `
+                  <tr><td>${row[0]}</td><td>${row[1]}</td><td>${row[2]}</td></tr>
+                `).join('')}
+              </tbody>
+            </table>
+            <div class="bench-notes">
+              <h3>${c.benchmark.noteTitle}</h3>
+              <ul>${c.benchmark.noteBullets.map(b => `<li>${b}</li>`).join('')}</ul>
+            </div>
+          </section>`;
+      }
+
+      function renderAcl(c) {
+        return `
+          <section class="ed-section" id="acl">
+            <div class="section-head">
+              <div class="kicker">S VII &middot; ACL</div>
+              <h2>${c.acl.title}</h2>
+              <p class="intro">${c.acl.intro}</p>
+            </div>
+            <div class="acl-grid">
+              ${c.acl.cards.slice(0, 2).map((card, i) => `
+                <div class="acl-pane">
+                  <div class="acl-pane-head">
+                    <h3>${card.title}</h3>
+                    ${i === 0 ? '<span class="badge weak"><span class="bd"></span>EXPERIMENTAL</span>' : ''}
+                  </div>
+                  <div class="acl-pane-body"><p>${card.text}</p></div>
+                </div>
+              `).join('')}
+            </div>
+            <div class="acl-proof-grid">
+              <figure class="acl-proof">
+                <img src="${ASSETS.aclAgents}" alt="${c.acl.proofTitle}" loading="lazy" />
+                <figcaption><strong>${currentLocale === 'zh' ? '先看 Agents 范围' : 'Start from the Agents scope'}</strong>${currentLocale === 'zh' ? '先确认 `main / alpha / beta` 三个 scope 存在。' : 'Confirm that `main / alpha / beta` are real visible scopes.'}</figcaption>
+              </figure>
+              <figure class="acl-proof">
+                <img src="${assetPath(ASSETS.aclAlpha, currentLocale)}" alt="${c.acl.proofTitle}" loading="lazy" />
+                <figcaption><strong>${currentLocale === 'zh' ? '再证明 alpha 已写入' : 'Then prove alpha already wrote memory'}</strong>${currentLocale === 'zh' ? '先确认记忆写入成功，后面的隔离验证才有意义。' : 'The write must succeed first; otherwise the isolation check is meaningless.'}</figcaption>
+              </figure>
+              <figure class="acl-proof">
+                <img src="${assetPath(ASSETS.aclBeta, currentLocale)}" alt="${c.acl.proofTitle}" loading="lazy" />
+                <figcaption><strong>${currentLocale === 'zh' ? '最后看 beta -> UNKNOWN' : 'Finally inspect beta -> UNKNOWN'}</strong>${currentLocale === 'zh' ? '`UNKNOWN` 表示 beta 没有读到 alpha 的长期记忆，不是说系统没有存。' : '`UNKNOWN` means beta did not read alpha\'s durable memory, not that nothing was stored.'}</figcaption>
+              </figure>
+            </div>
+            <pre class="acl-snippet"><code>${highlightJSON(c.acl.snippet)}</code></pre>
+          </section>`;
+      }
+
+      function renderToolsDashboard(c) {
+        return `
+          <section class="ed-section" id="tools-dashboard">
+            <div class="section-head">
+              <div class="kicker">S VIII &middot; Tools</div>
+              <h2>${c.toolsDashboard.title}</h2>
+              <p class="intro">${c.toolsDashboard.intro}</p>
+            </div>
+            <div class="tools-dl">
+              ${c.toolsDashboard.tools.map(tool => `
+                <div class="tools-group">
+                  <div class="tg-tag">${tool.tag}</div>
+                  <h3>${tool.title}</h3>
+                  <dl>
+                    ${tool.items.map(item => `<dd>${item}</dd>`).join('')}
+                  </dl>
+                </div>
+              `).join('')}
+            </div>
+            <div class="dash-pages">
+              ${c.toolsDashboard.pages.map(page => `
+                <div class="dash-page">
+                  <div class="dp-tag">${page.tag}</div>
+                  <h3>${page.title}</h3>
+                  <p>${page.text}</p>
+                </div>
+              `).join('')}
+            </div>
+            <div class="dash-gallery" style="margin-top:var(--sp-5)">
+              <figure class="lead">
+                <img src="${assetPath(ASSETS.dashboardMap, currentLocale)}" alt="${c.toolsDashboard.pagesTitle}" loading="lazy" />
+                <figcaption>${c.toolsDashboard.pagesTitle}</figcaption>
+              </figure>
+              <figure>
+                <img src="${assetPath(ASSETS.dashboardMemory, currentLocale)}" alt="Dashboard Memory" loading="lazy" />
+                <figcaption>Memory Hall</figcaption>
+              </figure>
+              <figure>
+                <img src="${assetPath(ASSETS.dashboardObservability, currentLocale)}" alt="Dashboard Observability" loading="lazy" />
+                <figcaption>${c.toolsDashboard.figureCaption}</figcaption>
+              </figure>
+            </div>
+          </section>`;
+      }
+
+      function renderNext(c) {
+        return `
+          <section class="ed-section" id="next">
+            <div class="next-cta">
+              <div class="kicker" style="justify-content:center">S IX &middot; ${currentLocale === 'zh' ? '继续阅读' : 'Next'}</div>
+              <h2 style="font-family:var(--f-display);font-size:var(--fs-5);font-weight:500;letter-spacing:-0.02em">${c.next.title}</h2>
+              <p>${c.next.intro}</p>
+            </div>
+            <div class="next-links">
+              ${c.next.links.map(link => `
+                <a class="next-link" href="${link.href}" target="_blank" rel="noreferrer">
+                  <strong>${link.title}</strong>
+                  <span>${link.text}</span>
+                </a>
+              `).join('')}
+            </div>
+            <div class="next-truth">
+              <h3>${c.next.truthTitle}</h3>
+              <ul>${c.next.truthFiles.map(f => `<li>${f}</li>`).join('')}</ul>
+            </div>
+            <div class="next-final">${c.next.finalNote}</div>
+          </section>`;
+      }
+
+      /* ─── MAIN RENDER ─── */
+      function renderPage() {
+        const copy = CONTENT[currentLocale];
+        const app = document.getElementById("app");
+        const nav = document.getElementById("side-nav");
+        const foot = document.getElementById("rail-foot");
+        const metaDescription = document.querySelector('meta[name="description"]');
+        const docsLink = document.getElementById("docs-link");
+
+        document.title = copy.meta.title;
+        metaDescription.setAttribute("content", copy.meta.description);
+        document.documentElement.lang = currentLocale === "zh" ? "zh-CN" : "en";
+
+        foot.textContent = copy.rail.foot;
+
+        if (docsLink) {
+          docsLink.href = currentLocale === 'zh' ? LINKS.readmeZh : LINKS.readmeEn;
+        }
+
+        /* Build grouped nav with Roman numerals */
+        const groups = NAV_GROUPS[currentLocale];
+        nav.innerHTML = groups.map(group => `
+          <div class="rail-nav-group">
+            <span class="rail-nav-label">${group.label}</span>
+            ${group.items.map(idx => {
+              const item = copy.nav[idx];
+              return `<a href="#${item.id}" data-nav-id="${item.id}"><span class="rom">${ROMAN[idx]}</span>${item.label}</a>`;
+            }).join('')}
+          </div>
+        `).join('');
+
+        app.innerHTML = [
+          renderHero(copy),
+          renderOverview(copy),
+          renderInstall(copy),
+          renderUsage(copy),
+          renderWhy(copy),
+          renderArchitecture(copy),
+          renderBenchmark(copy),
+          renderAcl(copy),
+          renderToolsDashboard(copy),
+          renderNext(copy)
+        ].join("");
+
+        document.querySelectorAll("[data-locale]").forEach((button) => {
+          const isActive = button.getAttribute("data-locale") === currentLocale;
+          button.classList.toggle("active", isActive);
+          button.setAttribute("aria-pressed", isActive ? "true" : "false");
+        });
+
+        initInteractions();
+      }
+
+      /* ─── INTERACTION LAYER ─── */
+      let _scrollObs = null, _counterObs = null, _barObs = null;
+
+      function initInteractions() {
+        /* Cleanup previous observers to prevent memory leaks on locale switch */
+        if (_scrollObs) _scrollObs.disconnect();
+        if (_counterObs) _counterObs.disconnect();
+        if (_barObs) _barObs.disconnect();
+
+        /* Scrollspy */
+        const sectionIds = ['overview','install','usage','why','architecture','benchmark','acl','tools-dashboard','next'];
+        const crumbEl = document.getElementById('crumb-section');
+        const navLinks = document.querySelectorAll('#side-nav a[data-nav-id]');
+
+        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        _scrollObs = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              const id = entry.target.id;
+              navLinks.forEach(link => {
+                const isMatch = link.getAttribute('data-nav-id') === id;
+                link.setAttribute('aria-current', isMatch ? 'true' : 'false');
+              });
+              if (crumbEl) {
+                const copy = CONTENT[currentLocale];
+                const navItem = copy.nav.find(n => n.id === id);
+                if (navItem) crumbEl.textContent = navItem.label;
+              }
+            }
+          });
+        }, { rootMargin: '-20% 0px -70% 0px', threshold: 0 });
+
+        sectionIds.forEach(id => {
+          const el = document.getElementById(id);
+          if (el) _scrollObs.observe(el);
+        });
+        const heroEl = document.getElementById('hero');
+        if (heroEl) _scrollObs.observe(heroEl);
+
+        /* Nav click + copy button handlers are now delegated at boot (see below) */
+
+        /* Stat counter animation — requestAnimationFrame for smooth 60/120fps */
+        if (!reducedMotion) {
+          const statCells = document.querySelectorAll('[data-count-to]');
+          _counterObs = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+              if (entry.isIntersecting) {
+                const el = entry.target;
+                const target = parseInt(el.getAttribute('data-count-to'), 10);
+                if (isNaN(target)) return;
+                let startTs = null;
+                const dur = 1200;
+                const tick = (ts) => {
+                  if (!startTs) startTs = ts;
+                  const p = Math.min((ts - startTs) / dur, 1);
+                  const ease = 1 - Math.pow(1 - p, 3);
+                  el.textContent = Math.floor(ease * target);
+                  if (p < 1) { requestAnimationFrame(tick); }
+                  else { el.textContent = target; }
+                };
+                requestAnimationFrame(tick);
+                _counterObs.unobserve(el);
+              }
+            });
+          }, { threshold: 0.3 });
+          statCells.forEach(c => _counterObs.observe(c));
+        }
+
+        /* Benchmark bar animation */
+        if (!reducedMotion) {
+          const bars = document.querySelectorAll('.bench-bar-fill[data-animated="false"]');
+          _barObs = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+              if (entry.isIntersecting) {
+                entry.target.setAttribute('data-animated', 'true');
+                _barObs.unobserve(entry.target);
+              }
+            });
+          }, { threshold: 0.2 });
+          bars.forEach(b => _barObs.observe(b));
+        } else {
+          document.querySelectorAll('.bench-bar-fill[data-animated="false"]').forEach(b => {
+            b.setAttribute('data-animated', 'true');
+          });
+        }
+      }
+
+      /* ─── Mobile drawer with focus trap + inert ─── */
+      const hamburgerBtn = document.getElementById('hamburger-btn');
+      const railOverlay = document.getElementById('rail-overlay');
+      const railAside = document.getElementById('rail-aside');
+      const mainEl = document.getElementById('app').closest('.main-col');
+      const topbarEl = document.querySelector('header.topbar');
+
+      function openDrawer() {
+        document.body.setAttribute('data-rail-open', '');
+        hamburgerBtn.setAttribute('aria-expanded', 'true');
+        if (mainEl) mainEl.setAttribute('inert', '');
+        if (topbarEl) topbarEl.setAttribute('inert', '');
+        const firstLink = railAside.querySelector('.rail-nav a');
+        if (firstLink) {
+          const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+          if (!reduced) firstLink.focus({ preventScroll: true });
+          else firstLink.focus();
+        }
+      }
+
+      function closeDrawer() {
+        document.body.removeAttribute('data-rail-open');
+        hamburgerBtn.setAttribute('aria-expanded', 'false');
+        if (mainEl) mainEl.removeAttribute('inert');
+        if (topbarEl) topbarEl.removeAttribute('inert');
+        hamburgerBtn.focus();
+      }
+
+      function toggleDrawer() {
+        document.body.hasAttribute('data-rail-open') ? closeDrawer() : openDrawer();
+      }
+
+      /* Tab-trap fallback for browsers without inert support */
+      railAside.addEventListener('keydown', (e) => {
+        if (e.key !== 'Tab' || !document.body.hasAttribute('data-rail-open')) return;
+        const focusable = railAside.querySelectorAll('a[href],button:not([disabled]),[tabindex]:not([tabindex="-1"])');
+        if (!focusable.length) return;
+        const first = focusable[0], last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      });
+
+      hamburgerBtn.addEventListener('click', toggleDrawer);
+      railOverlay.addEventListener('click', closeDrawer);
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && document.body.hasAttribute('data-rail-open')) closeDrawer();
+      });
+
+      /* ─── Locale switch ─── */
+      document.querySelectorAll("[data-locale]").forEach((button) => {
+        button.addEventListener("click", () => {
+          currentLocale = button.getAttribute("data-locale");
+          window.localStorage.setItem(LOCALE_KEY, currentLocale);
+          renderPage();
+        });
+      });
+
+      /* ─── Keyboard shortcuts ─── */
+      let pendingG = false;
+      document.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        if (e.key === 'g') { pendingG = true; setTimeout(() => { pendingG = false; }, 800); return; }
+        if (pendingG) {
+          pendingG = false;
+          const map = { h: '#hero', i: '#install', b: '#benchmark' };
+          const target = map[e.key];
+          if (target) {
+            const el = document.querySelector(target);
+            if (el) el.scrollIntoView({ behavior: 'smooth' });
+          }
+        }
+      });
+
+      /* ─── Delegated event handlers (attached ONCE, survive re-renders) ─── */
+      document.getElementById('side-nav').addEventListener('click', (e) => {
+        const link = e.target.closest('a[data-nav-id]');
+        if (!link) return;
+        e.preventDefault();
+        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const target = document.querySelector(link.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth' });
+          history.replaceState(null, '', link.getAttribute('href'));
+        }
+        document.body.removeAttribute('data-rail-open');
+        hamburgerBtn.setAttribute('aria-expanded', 'false');
+        hamburgerBtn.focus();
+      });
+
+      document.getElementById('app').addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-copy]');
+        if (!btn) return;
+        const code = btn.closest('.cli-hint, .code-block')?.querySelector('code');
+        if (!code) return;
+        const text = code.textContent;
+        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        function showFeedback(msg, dur) {
+          const orig = btn.textContent;
+          btn.textContent = msg;
+          if (!reducedMotion) btn.style.transition = 'opacity 120ms ease';
+          setTimeout(() => { btn.textContent = orig; }, dur || 1200);
+        }
+        function fallbackCopy() {
+          try {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.cssText = 'position:fixed;left:-9999px;opacity:0';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            showFeedback('Copied');
+          } catch (_) {
+            showFeedback(currentLocale === 'zh' ? '复制失败' : 'Copy failed -- select manually', 1600);
+          }
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text)
+            .then(() => showFeedback('Copied'))
+            .catch(fallbackCopy);
+        } else {
+          fallbackCopy();
+        }
+      });
+
+      /* ─── Boot ─── */
+      renderPage();
+    </script>
+  </body>
+</html>
