@@ -16455,7 +16455,7 @@ class MemoryPalaceMcpClient {
     };
     this.config = {
       clientName: config2.clientName ?? "openclaw-memory-palace",
-      clientVersion: config2.clientVersion ?? "1.1.1",
+      clientVersion: config2.clientVersion ?? "1.1.2",
       transport: config2.transport,
       timeoutMs: normalizePositiveInteger(config2.timeoutMs, DEFAULT_OPERATION_TIMEOUT_MS),
       stdio: config2.stdio,
@@ -20103,7 +20103,8 @@ function registerLifecycleHooks(api2, options) {
   const extractPreprocessedUserText = (event) => {
     const text = flattenPreprocessedText(isRecord2(event.message) ? event.message.bodyForAgent ?? event.message : event.message).map((entry) => entry.trim()).filter(Boolean).join(`
 `);
-    return text || undefined;
+    const cleaned = text ? deps.cleanMessageTextForReasoning(text) : "";
+    return cleaned || undefined;
   };
   const isWebchatContext = (event, ctx, fallbackText) => {
     const channelCandidates = [
@@ -20116,11 +20117,11 @@ function registerLifecycleHooks(api2, options) {
       isRecord2(event.origin) ? deps.readString(event.origin.provider) : undefined,
       isRecord2(event.origin) ? deps.readString(event.origin.surface) : undefined
     ].map((entry) => entry?.trim().toLowerCase()).filter((entry) => Boolean(entry));
-    if (channelCandidates.some((entry) => entry === "webchat")) {
+    if (channelCandidates.some((entry) => entry === "webchat" || entry.includes("wechat") || entry.includes("weixin"))) {
       return true;
     }
     const text = (fallbackText ?? "").toLowerCase();
-    return text.includes("openclaw-control-ui");
+    return text.includes("openclaw-control-ui") || text.includes("wechat") || text.includes("weixin");
   };
   const resolveLifecycleSessionRef = (event, ctx) => {
     const sessionFileCandidates = [
@@ -20386,7 +20387,7 @@ function isTagSensitiveChatSurface(event, ctx, readString2) {
     isRecordLike(event.origin) ? readString2(event.origin.provider) : undefined,
     isRecordLike(event.origin) ? readString2(event.origin.surface) : undefined
   ].map((entry) => entry?.trim().toLowerCase()).filter((entry) => Boolean(entry));
-  return surfaceHints.some((entry) => entry.includes("openclaw-control-ui") || entry.includes("control-ui"));
+  return surfaceHints.some((entry) => entry.includes("openclaw-control-ui") || entry.includes("control-ui") || entry.includes("wechat") || entry.includes("weixin"));
 }
 function shouldSuppressHostBridgePromptContext(event, ctx, readString2) {
   return isTagSensitiveChatSurface(event, ctx, readString2);
@@ -26468,6 +26469,29 @@ function sanitizeHostBridgePromptHit(entry) {
   }
   return entry.snippet;
 }
+function sanitizeHostBridgeStoredText(hit) {
+  const cleaned = cleanMessageTextForReasoning3(hit.text);
+  if (!cleaned) {
+    return;
+  }
+  const profileBlock = mapCaptureCategoryToProfileBlock(hit.category);
+  if (!profileBlock) {
+    return cleaned;
+  }
+  return sanitizeProfileCaptureText(profileBlock, cleaned) ?? cleaned;
+}
+function sanitizeHostBridgeHitForStorage(hit) {
+  const sanitizedText = sanitizeHostBridgeStoredText(hit);
+  if (!sanitizedText) {
+    return;
+  }
+  const sanitizedSnippet = sanitizeHostBridgePromptHit(hit) ?? truncate(sanitizedText, Math.max(hit.snippet.length, 1));
+  return {
+    ...hit,
+    text: sanitizedText,
+    snippet: sanitizedSnippet
+  };
+}
 var hostBridgeHelpers = createHostBridgeHelpers({
   normalizeText,
   tokenizeForHostBridge,
@@ -26739,28 +26763,32 @@ async function runHostBridgeImport(client, config2, policy, hits) {
     if (looksSensitiveHostBridgeText(hit.text)) {
       continue;
     }
-    const profileBlock = config2.profileMemory.enabled ? mapCaptureCategoryToProfileBlock(hit.category) : undefined;
+    const sanitizedHit = sanitizeHostBridgeHitForStorage(hit);
+    if (!sanitizedHit) {
+      continue;
+    }
+    const profileBlock = config2.profileMemory.enabled ? mapCaptureCategoryToProfileBlock(sanitizedHit.category) : undefined;
     if (profileBlock && isUriWritableByAcl2(buildProfileMemoryUri(config2, policy, profileBlock), policy, config2.mapping.defaultDomain)) {
-      const sanitized = sanitizeProfileCaptureText(profileBlock, hit.text);
-      if (sanitized) {
-        await upsertProfileMemoryBlockWithTransientRetry(client, config2, policy, profileBlock, sanitized);
+      const sanitizedProfileText = sanitizeProfileCaptureText(profileBlock, sanitizedHit.text) ?? sanitizeProfileCaptureText(profileBlock, hit.text);
+      if (sanitizedProfileText) {
+        await upsertProfileMemoryBlockWithTransientRetry(client, config2, policy, profileBlock, sanitizedProfileText);
       }
     }
-    const targetUri = buildHostBridgeUri(policy, hit.category, hit.text);
+    const targetUri = buildHostBridgeUri(policy, sanitizedHit.category, sanitizedHit.text);
     if (!isUriWritableByAcl2(targetUri, policy, config2.mapping.defaultDomain)) {
       continue;
     }
-    const result = await upsertHostBridgeMemoryRecord(client, policy, hit);
+    const result = await upsertHostBridgeMemoryRecord(client, policy, sanitizedHit);
     if (result.ok) {
       imported += 1;
       recordPluginCapturePath(config2, client, {
         at: new Date().toISOString(),
         layer: "host_bridge",
-        category: hit.category,
+        category: sanitizedHit.category,
         sourceMode: "host_workspace_import",
         uri: result.uri,
         pending: false,
-        details: hit.citation
+        details: sanitizedHit.citation
       });
     }
   }
@@ -28711,7 +28739,7 @@ function persistTransportDiagnosticsSnapshot2(config2, client, report) {
     buildPluginRuntimeSignature,
     getTransportFallbackOrder,
     instanceId: transportSnapshotInstanceId,
-    pluginVersion: "1.1.1",
+    pluginVersion: "1.1.2",
     sanitizeText: redactVisualSensitiveText2,
     snapshotPluginRuntimeState,
     processId: process.pid
@@ -30934,6 +30962,7 @@ var services = createPluginServices({
     }
   },
   lifecycle: {
+    cleanMessageTextForReasoning: cleanMessageTextForReasoning3,
     extractMessageTexts: extractMessageTexts3,
     harvestVisualContextFromEvent,
     isCommandNewStartupEvent: isCommandNewStartupEvent2,

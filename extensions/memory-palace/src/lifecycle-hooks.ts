@@ -5,6 +5,7 @@ import type {
 } from "./types.js";
 
 export type RegisterLifecycleHookDeps = {
+  cleanMessageTextForReasoning: (text: string) => string;
   extractMessageTexts: (
     messages: unknown[],
     allowedRoles?: string[],
@@ -107,7 +108,8 @@ export function registerLifecycleHooks(
       .map((entry) => entry.trim())
       .filter(Boolean)
       .join("\n");
-    return text || undefined;
+    const cleaned = text ? deps.cleanMessageTextForReasoning(text) : "";
+    return cleaned || undefined;
   };
   const isWebchatContext = (
     event: Record<string, unknown>,
@@ -126,11 +128,22 @@ export function registerLifecycleHooks(
     ]
       .map((entry) => entry?.trim().toLowerCase())
       .filter((entry): entry is string => Boolean(entry));
-    if (channelCandidates.some((entry) => entry === "webchat")) {
+    if (
+      channelCandidates.some(
+        (entry) =>
+          entry === "webchat" ||
+          entry.includes("wechat") ||
+          entry.includes("weixin"),
+      )
+    ) {
       return true;
     }
     const text = (fallbackText ?? "").toLowerCase();
-    return text.includes("openclaw-control-ui");
+    return (
+      text.includes("openclaw-control-ui") ||
+      text.includes("wechat") ||
+      text.includes("weixin")
+    );
   };
   const resolveLifecycleSessionRef = (
     event: Record<string, unknown>,

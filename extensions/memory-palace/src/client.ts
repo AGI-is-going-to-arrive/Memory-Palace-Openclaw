@@ -541,7 +541,7 @@ export class MemoryPalaceMcpClient {
       };
     this.config = {
       clientName: config.clientName ?? "openclaw-memory-palace",
-      clientVersion: config.clientVersion ?? "1.1.1",
+      clientVersion: config.clientVersion ?? "1.1.2",
       transport: config.transport,
       timeoutMs: normalizePositiveInteger(config.timeoutMs, DEFAULT_OPERATION_TIMEOUT_MS),
       stdio: config.stdio,

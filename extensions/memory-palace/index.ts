@@ -2121,6 +2121,33 @@ function sanitizeHostBridgePromptHit(entry: HostWorkspaceHit): string | undefine
   return entry.snippet;
 }
 
+function sanitizeHostBridgeStoredText(hit: HostWorkspaceHit): string | undefined {
+  const cleaned = cleanMessageTextForReasoning(hit.text);
+  if (!cleaned) {
+    return undefined;
+  }
+  const profileBlock = mapCaptureCategoryToProfileBlock(hit.category);
+  if (!profileBlock) {
+    return cleaned;
+  }
+  return sanitizeProfileCaptureText(profileBlock, cleaned) ?? cleaned;
+}
+
+function sanitizeHostBridgeHitForStorage(hit: HostWorkspaceHit): HostWorkspaceHit | undefined {
+  const sanitizedText = sanitizeHostBridgeStoredText(hit);
+  if (!sanitizedText) {
+    return undefined;
+  }
+  const sanitizedSnippet =
+    sanitizeHostBridgePromptHit(hit) ??
+    truncate(sanitizedText, Math.max(hit.snippet.length, 1));
+  return {
+    ...hit,
+    text: sanitizedText,
+    snippet: sanitizedSnippet,
+  };
+}
+
 const hostBridgeHelpers = createHostBridgeHelpers({
   normalizeText,
   tokenizeForHostBridge,
@@ -2493,28 +2520,42 @@ async function runHostBridgeImport(
     if (looksSensitiveHostBridgeText(hit.text)) {
       continue;
     }
-    const profileBlock = config.profileMemory.enabled ? mapCaptureCategoryToProfileBlock(hit.category) : undefined;
+    const sanitizedHit = sanitizeHostBridgeHitForStorage(hit);
+    if (!sanitizedHit) {
+      continue;
+    }
+    const profileBlock = config.profileMemory.enabled
+      ? mapCaptureCategoryToProfileBlock(sanitizedHit.category)
+      : undefined;
     if (profileBlock && isUriWritableByAcl(buildProfileMemoryUri(config, policy, profileBlock), policy, config.mapping.defaultDomain)) {
-      const sanitized = sanitizeProfileCaptureText(profileBlock, hit.text);
-      if (sanitized) {
-        await upsertProfileMemoryBlockWithTransientRetry(client, config, policy, profileBlock, sanitized);
+      const sanitizedProfileText =
+        sanitizeProfileCaptureText(profileBlock, sanitizedHit.text) ??
+        sanitizeProfileCaptureText(profileBlock, hit.text);
+      if (sanitizedProfileText) {
+        await upsertProfileMemoryBlockWithTransientRetry(
+          client,
+          config,
+          policy,
+          profileBlock,
+          sanitizedProfileText,
+        );
       }
     }
-    const targetUri = buildHostBridgeUri(policy, hit.category, hit.text);
+    const targetUri = buildHostBridgeUri(policy, sanitizedHit.category, sanitizedHit.text);
     if (!isUriWritableByAcl(targetUri, policy, config.mapping.defaultDomain)) {
       continue;
     }
-    const result = await upsertHostBridgeMemoryRecord(client, policy, hit);
+    const result = await upsertHostBridgeMemoryRecord(client, policy, sanitizedHit);
     if (result.ok) {
       imported += 1;
       recordPluginCapturePath(config, client, {
         at: new Date().toISOString(),
         layer: "host_bridge",
-        category: hit.category,
+        category: sanitizedHit.category,
         sourceMode: "host_workspace_import",
         uri: result.uri,
         pending: false,
-        details: hit.citation,
+        details: sanitizedHit.citation,
       });
     }
   }
@@ -5249,7 +5290,7 @@ function persistTransportDiagnosticsSnapshot(
     buildPluginRuntimeSignature,
     getTransportFallbackOrder,
     instanceId: transportSnapshotInstanceId,
-    pluginVersion: "1.1.1",
+    pluginVersion: "1.1.2",
     sanitizeText: redactVisualSensitiveText,
     snapshotPluginRuntimeState,
     processId: process.pid,
@@ -8176,6 +8217,7 @@ const services = createPluginServices({
     },
   },
   lifecycle: {
+    cleanMessageTextForReasoning,
     extractMessageTexts,
     harvestVisualContextFromEvent,
     isCommandNewStartupEvent,

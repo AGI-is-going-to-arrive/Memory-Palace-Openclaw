@@ -341,6 +341,8 @@ One conservative boundary is worth keeping explicit:
 - it no longer falls back to scanning the latest unrelated transcript under the sessions directory
 - workflow-related recall is also sanitized before prompt assembly
 - onboarding doc paths, provider diagnostics, and confirmation-code text are now supposed to be filtered out instead of being treated as durable workflow context
+- the `message:preprocessed` fallback capture path also strips injected `memory-palace-profile` / `memory-palace-recall` blocks first, so internal recall scaffolding is not written back as new workflow
+- control-ui / WeChat-style tag-sensitive chat surfaces are no longer supposed to echo raw recall tags back into visible replies on the default path
 - on the capture side, a single workflow statement that only quotes a documentation example is skipped instead of being treated as a stable long-term workflow
 - when smart extraction builds its transcript, assistant thinking blocks are skipped and the budget is kept for actual user / assistant workflow turns
 
@@ -358,8 +360,9 @@ So this is better understood as â€œbridging old file memory into the new systemâ
 
 One more boundary matters here:
 
-- `hostBridge` is not supposed to dump matched files into the prompt verbatim
-- especially for workflow hits, the current path sanitizes prompt-side recall before injection
+- `hostBridge` is not supposed to dump matched files into the prompt or durable workflow verbatim
+- especially for workflow hits, the current path sanitizes the text first and only then decides whether anything should reach profile / host-bridge durable storage
+- onboarding doc paths, provider diagnostics, confirmation-code text, and durable-memory scaffold noise are not supposed to be written back by host bridge as stable workflow
 - this fix changes the plugin's own bridge/recall behavior; it does not rewrite the host files themselves
 
 ### 5.3 Explicit recall

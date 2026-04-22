@@ -382,16 +382,15 @@ Layer A 定稿结果（2026-04-06 frozen baseline）：
   - `current-host strict C/D` 在该次复跑里都重新跑到 `6/6 PASS`
   - `isolated A/B/C/D` 在启用可选 `V7` 后都跑到 `7/7 PASS`
   - `V7` 只代表短会话 recall 用户体验通过；是否真的触发 early flush，以 host-level probe 为准
-- `2026-04-22` 又补跑了一次 fresh isolated `Profile B` base gate（不复用 `current-host main`，也不打开可选 `V7`）：
-  - 最终报告是 `.tmp/replacement-acceptance/isolated-clean-lane-b-final/webui_report.json`
-  - 结果是 `6/6 PASS`
-  - `V4` 当前已能在 fresh isolated lane 上确认 `write_guard_blocked -> 用户确认 -> force 写入 -> recall`，并命中 `core://agents/alpha/captured/workflow/sha256-e99b298bd064`
-  - `V5 / V6` 同一轮也都命中 isolated `alpha` 的独立 fact capture，不再需要借 `current-host main` 来解释结果
-- `2026-04-22` 又补跑了一次 fresh isolated `Profile B` strict UI negative gate（仍然不复用 `current-host main`，也不打开可选 `V7`）：
-  - 最终报告是 `.tmp/replacement-acceptance/isolated-clean-lane-b-ui-noise-fix3/webui_report.json`
-  - 结果是 `6/6 PASS`
-  - 这轮额外要求 `V2 / V4 / V5 / V6` 的聊天可见正文里不再出现 `memory-palace-profile` / `memory-palace-recall` 这类 raw memory block，也不再出现此前那种 control-ui metadata 噪声
-  - 这说明本次 `v1.1.1` 修补不只是保持 recall / confirm / force-write 主链路可用，也把用户侧最直观的“聊天里回显一大段 memory scaffolding”问题压下来了
+- `2026-04-22` 这轮又补跑了两次 fresh isolated strict UI gate（都不复用 `current-host main`，也不打开可选 `V7`）：
+  - `Profile B` 按项目原本设置复跑，最终报告是 `.tmp/replacement-acceptance/repair-b-strict-ui/webui_report.json`
+  - `Profile D` 按本地 provider-backed 路径复跑，最终报告是 `.tmp/replacement-acceptance/repair-d-strict-ui/webui_report.json`
+  - 两条路径结果都是 `6/6 PASS`
+  - `V2 / V4 / V5 / V6` 都额外要求聊天可见正文里不再出现 `memory-palace-profile` / `memory-palace-recall` 这类 raw memory block，也不再出现此前那种 control-ui / 微信聊天面 metadata 噪声
+  - `Profile B` 这轮继续在 isolated `alpha` lane 上确认 `write_guard_blocked -> 用户确认 -> force 写入 -> recall`，并命中 `core://agents/alpha/captured/workflow/sha256-f6d6651a3716`
+  - `Profile D` 这轮也在 isolated `alpha` lane 上跑通同样的 `V4` 主链，并命中 `core://agents/alpha/captured/workflow/sha256-7c9d90b04028`
+  - 同一轮 targeted test 还补上了 control-ui / wechat-style surface 回归、host-bridge durable import 净化、以及 `message:preprocessed` fallback 先剥掉 injected memory block 的回归
+  - 这说明本次 `v1.1.2` 修补不只是保持 recall / confirm / force-write 主链路可用，也把用户侧最直观的 raw tag 回显问题继续压在不可见边界里
 
 - current-host strict 复跑命令：
   - `OPENCLAW_ONBOARDING_USE_CURRENT_HOST=true OPENCLAW_ACCEPTANCE_STRICT_UI=true OPENCLAW_PROFILE=c node scripts/test_replacement_acceptance_webui.mjs`

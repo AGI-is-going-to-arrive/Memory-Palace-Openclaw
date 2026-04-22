@@ -339,6 +339,8 @@ flowchart TD
 - 不再回退去读 sessions 目录里“最新但无关”的 transcript
 - `workflow` 相关 recall 在拼 prompt 前也会先做净化
 - onboarding 文档路径、provider 诊断、confirmation code 这类明显不该进入长期 workflow 的内容，当前会尽量在这一步被挡掉
+- `message:preprocessed` fallback capture 在回退前也会先剥掉 injected `memory-palace-profile` / `memory-palace-recall` block，避免把内部 recall scaffold 再写回 workflow
+- control-ui / 微信这类 tag-sensitive 聊天面，默认链路也不再把 raw recall tag 直接回显到可见回复里
 - capture 侧如果只看到“引用文档示例”的单条 workflow，当前会直接跳过，不把它当成稳定长期流程
 - smart extraction 组 transcript 时会跳过 assistant thinking block，并把预算优先留给真正的 user / assistant workflow turn
 
@@ -357,8 +359,9 @@ flowchart TD
 
 但这里也要补一个边界：
 
-- `hostBridge` 不是“看到文件就原样塞进 prompt”
-- 尤其是 `workflow` 命中，当前也会先做一层 prompt 侧净化
+- `hostBridge` 不是“看到文件就原样塞进 prompt 或 durable workflow”
+- 尤其是 `workflow` 命中，当前会先做一层净化，再决定是否继续写到 profile / host-bridge durable 侧
+- onboarding 文档路径、provider 诊断、confirmation code、durable-memory scaffold 这类明显不该进长期 workflow 的噪声，不该再被 host bridge 当成稳定 workflow 落盘
 - 这次修的是插件自己的桥接/召回逻辑，不是去改宿主文件本身
 
 ### 5.3 显式召回

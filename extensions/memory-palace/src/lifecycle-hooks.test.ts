@@ -97,6 +97,12 @@ const createHarness = (options?: {
   });
 
   const deps: RegisterLifecycleHookDeps = {
+    cleanMessageTextForReasoning(text) {
+      return text
+        .replace(/<memory-palace-profile>[\s\S]*?<\/memory-palace-profile>/giu, "")
+        .replace(/<memory-palace-recall>[\s\S]*?<\/memory-palace-recall>/giu, "")
+        .trim();
+    },
     extractMessageTexts(messages) {
       return messages.flatMap((entry) => {
         if (!entry || typeof entry !== "object") {

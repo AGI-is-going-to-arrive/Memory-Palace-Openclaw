@@ -42,7 +42,9 @@ function isTagSensitiveChatSurface(
     .filter((entry): entry is string => Boolean(entry));
   return surfaceHints.some((entry) =>
     entry.includes("openclaw-control-ui") ||
-    entry.includes("control-ui"),
+    entry.includes("control-ui") ||
+    entry.includes("wechat") ||
+    entry.includes("weixin"),
   );
 }
 

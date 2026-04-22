@@ -219,7 +219,7 @@
             <h2>先看成片：plugin + skill 在 WebUI 里的完整走法</h2>
             <p class="section-copy">
               这支视频现在不只是“介绍有个 skill”，而是把
-              `Skills 列表 -> Skills 详情 -> Chat 里的 recall block -> visual memory tool card -> 最终 answer block`
+              `Skills 列表 -> Skills 详情 -> Chat 里的 recall 生效 -> visual memory tool card -> 最终 answer block`
               串成一条因果链，而且字幕已经直接烧录进 MP4。
             </p>
           </div>
@@ -228,7 +228,7 @@
             <ul>
               <li>`Skills` 页里出现 Memory Palace 相关条目；不要把显示名硬编码成唯一 slug。</li>
               <li>点开 `Skills` 详情层，直接看到这条 skill 负责在何时提示显式介入。</li>
-              <li>`memory-palace-profile / memory-palace-recall` 作为 plugin 默认 recall block 出现在对话里。</li>
+              <li>plugin 默认 recall 会在对话里生效，但公开能力边界不是把 `memory-palace-profile / memory-palace-recall` 这类原始内部 block 直接回显给用户。</li>
               <li>`memory_get / media_ref` 作为显式工具升级路径里的 tool card 和 answer block 被用户直接看到。</li>
               <li>最后回到整条会话，解释 plugin 默认链路如何把同一线程变成“有记忆的对话”。</li>
             </ul>
