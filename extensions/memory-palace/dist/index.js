@@ -16455,7 +16455,7 @@ class MemoryPalaceMcpClient {
     };
     this.config = {
       clientName: config2.clientName ?? "openclaw-memory-palace",
-      clientVersion: config2.clientVersion ?? "1.1.2",
+      clientVersion: config2.clientVersion ?? "1.2.0",
       transport: config2.transport,
       timeoutMs: normalizePositiveInteger(config2.timeoutMs, DEFAULT_OPERATION_TIMEOUT_MS),
       stdio: config2.stdio,
@@ -28787,7 +28787,7 @@ function persistTransportDiagnosticsSnapshot2(config2, client, report) {
     buildPluginRuntimeSignature,
     getTransportFallbackOrder,
     instanceId: transportSnapshotInstanceId,
-    pluginVersion: "1.1.2",
+    pluginVersion: "1.2.0",
     sanitizeText: redactVisualSensitiveText2,
     snapshotPluginRuntimeState,
     processId: process.pid
