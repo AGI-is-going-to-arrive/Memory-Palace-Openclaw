@@ -58,7 +58,6 @@ async def run_write_lane_impl(
     operation: str,
     fn: Callable[[], Awaitable[Any]],
 ) -> Any:
-    await runtime_state.ensure_started(get_sqlite_client)
     write_lanes = getattr(runtime_state, "write_lanes", None)
     if write_lanes is not None:
         return await write_lanes.run_write(
@@ -66,6 +65,7 @@ async def run_write_lane_impl(
             operation=operation,
             task=fn,
         )
+    await runtime_state.ensure_started(get_sqlite_client)
     async with _get_fallback_write_lock():
         return await fn()
 

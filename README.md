@@ -158,7 +158,9 @@ On Windows PowerShell, run the same repo-wrapper fallback with `py -3`.
 
 Profile C requires an embedding provider and reranker. On Profile C, the LLM
 assist suite remains optional and should be enabled explicitly in onboarding.
-On Profile D, `setup` / `onboarding` accept one shared LLM tuple
+Smart extraction is also off by default on Profile C; turn it on explicitly if
+you want LLM-extracted profile / workflow candidates. On Profile D,
+`setup` / `onboarding` accept one shared LLM tuple
 (`LLM_API_BASE`, `LLM_API_KEY`, `LLM_MODEL`) and fan it out to
 `write_guard + compact_gist + intent_llm` by default. Profile D is only ready
 after those final resolved `WRITE_GUARD_*`, `COMPACT_GIST_*`, and `INTENT_*`
@@ -168,6 +170,12 @@ onboarding/setup, explicitly fill the resolved fields below as well so
 placeholder values do not trigger downgrade / fallback. Profile B itself does
 not require external embedding / reranker services, but optional LLM settings
 can still be reused when they already exist on the host.
+
+When smart extraction is enabled, the plugin now runs it in the background after
+the foreground capture hook returns. The default request window is 60 seconds
+with 2 attempts, and the circuit breaker opens after 2 failures. A slow LLM is
+less likely to drop useful extraction, but it should no longer make normal turns
+wait on the model.
 
 Use the following environment variables, or let the repo wrapper generate a
 chat-friendly readiness report first:

@@ -192,6 +192,9 @@ Important boundary:
 - search quality depends on the active profile and provider readiness
 - `Profile B` is the safe bootstrap baseline
 - `Profile C/D` unlock real embedding + reranker depth
+- when `include_session` is enabled, session and global results are filtered before they are merged
+- merged hits are revalidated with a small concurrency cap before the final response, so deleted stale hits are dropped
+- if that revalidation fails, `search_revalidation_failed` can appear in `degrade_reasons` while the request still returns the best available search result
 
 <a id="compact_context"></a>
 
@@ -216,6 +219,8 @@ Use it when:
 
 - you want to recover missed signals from the last compact
 - you want a more stable reusable summary lane
+
+If the internal reflection write fails, clients receive a sanitized internal-error message; detailed exception text stays in server logs.
 
 <a id="rebuild_index"></a>
 

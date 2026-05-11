@@ -187,7 +187,7 @@ bash scripts/apply_profile.sh linux b
 
 > B 档位默认使用本地 hash Embedding 且不启用 Reranker；它仍然是**默认起步档位**。
 >
-> 如果你已经准备好模型服务，**更推荐尽快升级到 Profile C**：它需要你在 `.env` 中把 Embedding / Reranker 链路填好；如果还要启用 LLM 辅助的 write guard / gist / intent routing，再继续填写 `WRITE_GUARD_LLM_*`、`COMPACT_GIST_LLM_*`、可选的 `INTENT_LLM_*`。详见 [DEPLOYMENT_PROFILES.md](DEPLOYMENT_PROFILES.md)。
+> 如果你已经准备好模型服务，**更推荐尽快升级到 Profile C**：它需要你在 `.env` 中把 Embedding / Reranker 链路填好；如果还要启用 LLM 辅助的 write guard / gist / intent routing，再继续填写 `WRITE_GUARD_LLM_*`、`COMPACT_GIST_LLM_*`、可选的 `INTENT_LLM_*`。smart extraction 在 Profile C 上仍然默认关闭，需要时再显式开启。详见 [DEPLOYMENT_PROFILES.md](DEPLOYMENT_PROFILES.md)。
 >
 > 上表这里写的是 `.env.example` 当前真实模板值；如果某些检索环境变量在运行时完全缺失，后端内部还会使用自己的回退值（例如 `hash` / `hash-v1` / `64`）。
 >
@@ -557,6 +557,7 @@ curl -fsS "http://127.0.0.1:8000/browse/node?domain=core&path=" \
 >
 > - 如果你配置了 `MCP_API_KEY`，请像上面这样带 `X-MCP-API-Key`
 > - 如果你启用了 `MCP_API_KEY_ALLOW_INSECURE_LOCAL=true`，并且请求来自本机回环地址（且没有 forwarded headers），也可以直接省略鉴权头
+> - create/update 会走和 MCP 写入相同的 write lane；只有写入路径接受后，响应里才会报告 deferred index 统计
 
 ### 5.3 查看 API 文档
 
@@ -577,7 +578,7 @@ Memory Palace 通过 [MCP 协议](https://modelcontextprotocol.io/) 提供 **11 
 | `add_alias` | 为记忆节点添加别名 |
 | `search_memory` | 搜索记忆（keyword / semantic / hybrid 三种模式） |
 | `compact_context` | 压缩上下文（清理旧会话日志） |
-| `compact_context_reflection` | 将压缩结果写入 reflection lane（反思记忆通道）；通常由插件自动调用 |
+| `compact_context_reflection` | 将压缩结果写入 reflection lane（反思记忆通道）；通常由插件自动调用；返回给客户端的 internal error 会先净化 |
 | `rebuild_index` | 重建搜索索引 |
 | `index_status` | 查看索引状态 |
 | `ensure_visual_namespace_chain` | visual / OpenClaw 场景下预建 namespace；普通用户一般不用手动调用 |

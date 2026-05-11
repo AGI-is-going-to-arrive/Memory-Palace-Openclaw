@@ -128,6 +128,7 @@ Additional implementation notes:
 - Between `before_prompt_build` and the legacy `before_agent_start` path, the plugin now uses a session-scoped marker so the same turn does not recall twice
 - `command:new` reflection is now also deduped per session, with TTL and cache bounds, so long-running hosts do not keep rewriting the same reflection or growing the cache without limit
 - if `command:new` reflection or smart extraction cannot identify the target session transcript, the current behavior is to skip that read rather than scanning the latest unrelated transcript
+- smart extraction now runs after the foreground capture hook returns; repeated work for the same agent/session is queued rather than run concurrently
 
 But keep this boundary in mind as well:
 

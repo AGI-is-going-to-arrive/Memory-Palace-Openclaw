@@ -356,7 +356,10 @@ search_memory(
 
 **补一句当前真实行为：**
 
-- session 和 global 结果合并后，当前会先做一次重验证，尽量把已经删掉的 stale hit 过滤掉
+- session 和 global 结果会先套用同一组 domain / path_prefix / scope 过滤，再合并
+- `path_prefix` 会按路径边界匹配，不会把相邻的同名前缀路径误当成命中
+- 合并后当前最多 4 个并发读做重验证，尽量把已经删掉的 stale hit 过滤掉
+- 如果重验证失败，响应会把 `search_revalidation_failed` 放进 `degrade_reasons`，但不会把整次 search 直接打失败
 - 然后会按分数稳定排序，再做最终截断
 - backend 当前默认优先走 `search_advanced()`；只有底层 client 不支持这条入口时，才会回退到 legacy `search()`
 - 如果真的走到了 legacy fallback，响应里会直接带 `search_api_kind="legacy_fallback"`，并在 `degrade_reasons` 里出现 `search_api_compat_fallback:search`
@@ -465,6 +468,7 @@ compact_context_reflection(
 2. 将生成的 gist 写入 `{reflection_root_uri}/{reflection_agent_key}/{session_ref}` 路径
 3. 自动设置 `priority`、`disclosure` 和 retention 元信息
 4. 适合 OpenClaw 插件在会话结束时自动调用
+5. 内部 reflection 写入失败时，客户端只会收到净化后的 internal error；详细异常只进服务端日志
 
 **使用示例：**
 
@@ -626,6 +630,8 @@ ensure_visual_namespace_chain("core://visual/2026/03/13/sha256-demo")
 | `index_queued` | 实际入队任务数 |
 | `index_dropped` | 未成功入队的任务数（如队列已满） |
 | `index_deduped` | 去重后未重复入队的任务数 |
+
+`/browse/node` 的 create / update 也走同一条 write lane；只有写入路径接受后，响应才会把 deferred index 统计带出来。
 
 > ⚠️ 当 `index_dropped > 0` 时，表示有索引任务未能入队。客户端应将其视为降级信号，结合 `degrade_reasons` 进行告警或补偿。
 

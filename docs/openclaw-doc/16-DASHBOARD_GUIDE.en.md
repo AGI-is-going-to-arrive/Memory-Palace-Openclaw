@@ -124,8 +124,8 @@ What you actually see on the page is:
 These entry points plus the `Path Strategy` section are mainly there to say:
 
 - `Profile B` is the default first-run value
-- `Profile C` is the recommended target once model services are ready
-- `Profile D` is the full advanced-suite target
+- `Profile C` is the recommended target once embedding / reranker services are ready; smart extraction stays off unless you opt in
+- `Profile D` is the full advanced-suite target; smart extraction is default-on but backgrounded
 
 Screenshot:
 

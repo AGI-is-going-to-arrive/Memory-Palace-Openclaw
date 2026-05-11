@@ -59,7 +59,7 @@
 
 - `add_alias`：给已有记忆加 URI 别名
 - `compact_context`：把长会话压成短摘要
-- `compact_context_reflection`：压缩并写入 reflection lane，通常由插件自动调用
+- `compact_context_reflection`：压缩并写入 reflection lane，通常由插件自动调用；返回给客户端的 internal error 会先净化
 - `rebuild_index`：重建搜索索引，前面先看 `index_status`
 - `index_status`：查看索引状态
 - `ensure_visual_namespace_chain`：补齐可视化命名空间链路

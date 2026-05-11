@@ -41,6 +41,7 @@
   - `write_guard`
   - `compact_gist`
   - `intent_llm`
+- smart extraction 在 Profile C 上和这组开关分开：默认关闭，只有你想要 LLM 自动提取 profile / workflow 候选时再显式打开
 - 适合已经准备好本地或内网模型服务的人
 
 ### Profile D
@@ -48,6 +49,7 @@
 - 完整高级目标档
 - 需要真实 embedding / reranker / LLM
 - 默认目标是 embedding + reranker + LLM 辅助全开
+- smart extraction 在这个高级档默认仍然开启，但现在会在前台 capture hook 返回后放到后台跑；默认请求窗口是 60 秒，默认尝试 2 次，连续 2 次失败后打开 circuit breaker
 - 可以是本地、内网或远程 provider；关键不是部署拓扑，而是三条 provider 链路都健康
 - 质量强，但时延也更高
 
@@ -77,7 +79,9 @@
 - 这组结果当前应按“**聊天里的下一步指导通过**”理解，而不是“只靠一轮聊天已经把最终 profile apply 全部做完”
 - `Profile C` 当前默认值明确是 `embedding + reranker`
 - `Profile C` 的 `write_guard / compact_gist / intent_llm` 仅在 opt-in 时启用
+- `Profile C` 的 smart extraction 默认关闭，但 reconcile 和这个开关已经解耦
 - `Profile D` 当前默认值明确包含 `write_guard / compact_gist / intent_llm`
+- `Profile D` 的 smart extraction 也默认开启，但它现在属于后台工作，不再属于前台 turn 等待路径
 - 当前兼容层已经接好，不会改掉 `plugins.slots.memory=memory-palace`
 - `Profile C / D` 继续依赖你自己的 provider 健康状态；不是“填了 env 就已经 provider-ready”
 - 最新留档的 shell / onboarding / profile-matrix 复跑都对上了当前代码行为；如果你的目标模型端点不健康，`doctor / smoke` 仍然可能返回 `warn`
@@ -169,6 +173,7 @@
 - `A/B/C/D` 主要影响的是 retrieval 深度和相关高级能力默认值
 - `Profile C` 不应被理解成“默认 LLM 全开”
 - `Profile D` 也不应再被理解成“只有 write_guard 用到 LLM”；当前安装器会把共享 LLM 复用到 `write_guard / compact_gist / intent_llm`
+- smart extraction 也不应再被理解成“前台必须等完”的路径；关掉它仍能减少后台 LLM 请求，但正常对话不应该再靠关它来降低前台延迟
 - 自动 recall / auto-capture / visual auto-harvest 并不只属于某个单独 profile
 - 这条自动链路本身仍然依赖支持 hooks 的 OpenClaw 宿主
 - public 文档不写任何私有模型地址、私有 key、私有 env 路径

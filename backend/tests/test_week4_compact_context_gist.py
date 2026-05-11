@@ -607,7 +607,11 @@ async def test_compact_context_reflection_does_not_leave_intermediate_flush_on_r
     payload = json.loads(raw)
 
     assert payload["ok"] is False
-    assert "reflection create failed" in payload["error"]
+    assert (
+        payload["error"]
+        == "compact_context_reflection failed. Check server logs for details."
+    )
+    assert "reflection create failed" not in payload["error"]
     assert fake_tracker.marked is False
     assert all(
         not record["path"].startswith("auto_flush_") for record in fake_client.created_records

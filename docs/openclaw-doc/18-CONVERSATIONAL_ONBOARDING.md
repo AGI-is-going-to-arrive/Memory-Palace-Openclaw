@@ -380,14 +380,21 @@ openclaw memory-palace smoke --json
 OpenClaw 后续对 profile 的解释应该统一成下面这套：
 
 - **Profile B**：默认零配置起步档，推荐给“先跑通再说”的用户
-- **Profile C**：默认启用 embedding + reranker；然后要明确问用户是否开启可选 LLM 辅助套件
-- **Profile D**：面向“全功能高级面”，默认目标就是 embedding + reranker + LLM 辅助套件一起开启
+- **Profile C**：默认启用 embedding + reranker；然后要明确问用户是否开启可选 LLM 辅助套件；smart extraction 也默认关闭，除非用户明确选择开启
+- **Profile D**：面向“全功能高级面”，默认目标就是 embedding + reranker + LLM 辅助套件一起开启；smart extraction 默认开启，但会在后台跑
 
 如果用户问 “这些 LLM 辅助到底在干嘛”，OpenClaw 应该直接解释：
 
 - `write_guard`：在 durable write 落盘前筛掉低质量、矛盾或不该写入的内容
 - `compact_gist`：把 `compact_context` 压缩结果做得更稳定、更像可复用摘要
 - `intent_llm`：补强模糊查询的 intent 分类与路由判断
+
+如果用户问 smart extraction 的延迟，OpenClaw 应该直接说清：
+
+- Profile C 默认关闭
+- Profile D 默认开启
+- 启用后，插件现在会在前台 capture hook 返回之后再放到后台跑
+- 默认请求窗口是 60 秒，默认尝试 2 次，连续 2 次失败后打开 circuit breaker
 
 ### shared LLM 自动扇出与 Profile D ready 边界
 
@@ -444,8 +451,8 @@ OpenClaw 后续应该用人话把下一步说清楚：
 当前这页对应的公开口径可以稳定表达为：
 
 - `Profile B`：默认零配置起步档
-- `Profile C`：先升级到 provider-backed retrieval，embedding + reranker 默认开启
-- `Profile D`：embedding + reranker + LLM 辅助套件都要开的全功能高级档；如果 onboarding/setup 只收到一套 shared LLM，就默认扇出到 `WRITE_GUARD_*`、`COMPACT_GIST_*`、`INTENT_*`
+- `Profile C`：先升级到 provider-backed retrieval，embedding + reranker 默认开启；smart extraction 仍然是 opt-in
+- `Profile D`：embedding + reranker + LLM 辅助套件都要开的全功能高级档；如果 onboarding/setup 只收到一套 shared LLM，就默认扇出到 `WRITE_GUARD_*`、`COMPACT_GIST_*`、`INTENT_*`；smart extraction 默认开启但已后台化
 - “ready” 不等于“env 填了”
 - 只有 `probe / verify / doctor / smoke` 在你的目标环境真实通过，才算真正就绪
 - 对 `Profile D` 来说，最终解析后的 `WRITE_GUARD_*`、`COMPACT_GIST_*`、`INTENT_*` 还必须都不是占位值

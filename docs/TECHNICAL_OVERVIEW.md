@@ -385,6 +385,7 @@ frontend/src/
    - LLM 决策开启后，prompt 会显式要求模型判断新内容是否与已有记忆矛盾（偏好反转、模式回滚、功能禁用等），并在返回的 JSON 中包含 `contradiction` 布尔字段。
 3. 生成 **snapshot** 与版本变更（按 `path` 和 `memory` 两维度分别记录）。
 4. 入队 **索引任务**（队列满会返回 `index_dropped` / `queue_full`）。
+   - `/browse/node` 的 create / update 也走同一条 write lane；只有写入路径真正接受后，才会记录 deferred index，并在响应里回填索引入队统计。
 
 ### 并发安全与锁重试
 
@@ -405,7 +406,10 @@ frontend/src/
 3. 执行 **keyword / semantic / hybrid** 检索。
 4. 可选 **reranker** 重排序（通过远程 API 调用）。
 5. 支持额外的查询侧约束，例如 `scope_hint`、`domain`、`path_prefix`、`max_priority`。
-6. 返回 `results` 与 `degrade_reasons`。
+   - session/global 结果会先套用这些本地过滤，再合并。
+   - `path_prefix` 按路径边界匹配，不会把 sibling 前缀误当成同一支。
+6. 合并结果用有界并发重验证，过滤已删除的 stale hit；重验证失败会进入 `degrade_reasons`，不会直接让整次 search 失败。
+7. 返回 `results` 与 `degrade_reasons`。
 
 > 意图分类使用 `keyword_scoring_v2` 方法实现（`db/sqlite_client.py` `classify_intent` 方法），通过关键词匹配评分与排名进行意图推断，无需外部模型调用。
 >

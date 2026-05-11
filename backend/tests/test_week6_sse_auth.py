@@ -25,6 +25,17 @@ _WINDOWS_NEW_PROCESS_GROUP = int(
 ) if os.name == "nt" else 0
 
 
+@pytest.fixture(autouse=True)
+def _isolate_default_sse_rate_limit_state(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv(
+        "SSE_RATE_LIMIT_STATE_FILE",
+        str(tmp_path / "sse-rate-limit-state.json"),
+    )
+
+
 def _build_client(*, client=("testclient", 50000)) -> TestClient:
     app = FastAPI()
 

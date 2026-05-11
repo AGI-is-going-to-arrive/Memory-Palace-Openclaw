@@ -343,6 +343,8 @@ flowchart TD
 - control-ui / 微信这类 tag-sensitive 聊天面，默认链路也不再把 raw recall tag 直接回显到可见回复里
 - capture 侧如果只看到“引用文档示例”的单条 workflow，当前会直接跳过，不把它当成稳定长期流程
 - smart extraction 组 transcript 时会跳过 assistant thinking block，并把预算优先留给真正的 user / assistant workflow turn
+- smart extraction 现在会在前台 capture hook 返回后作为后台任务启动
+- 同一个 agent/session 的 smart extraction 会排队串行，不会并发互撞；不同 session 仍可各自推进
 
 ### 5.2 host bridge 的角色
 
@@ -634,6 +636,8 @@ flowchart TD
 - reranker：`true`
 - 默认权重：`0.30`
 - LLM 辅助：可选
+- Smart extraction：默认关闭
+- Reconcile：已经和 smart extraction 开关解耦，仍可独立启用
 - 适合：
   - provider 已经就绪
   - 希望进入真实语义检索主路径
@@ -648,6 +652,8 @@ flowchart TD
 - reranker：`true`
 - 默认权重：`0.35`
 - 默认更倾向高级辅助套件
+- Smart extraction：默认开启，但会在前台 capture 路径返回后放到后台执行
+- Smart extraction 默认限制：请求窗口 60 秒、尝试 2 次、连续 2 次失败后打开 circuit breaker
 - 安装器对 `WRITE_GUARD_LLM_*` 也更重视
 - 适合：
   - 想把 retrieval 和辅助链路都开到比较完整的状态

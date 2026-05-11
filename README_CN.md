@@ -157,9 +157,10 @@ python3 scripts/openclaw_memory_palace.py setup --mode basic --profile d --trans
 <summary><strong>Profile C/D provider 配置示例</strong></summary>
 
 Profile C 需要 embedding 服务和 reranker。Profile C 上的 LLM 辅助套件
-仍然是可选增强，应该在 onboarding 里显式开启；Profile D 默认把
-`write_guard + compact_gist + intent_llm` 视为完整高级目标的一部分。
-在 `setup` / `onboarding` 里，如果你只提供一套共享 LLM
+仍然是可选增强，应该在 onboarding 里显式开启；smart extraction 在
+Profile C 上也默认关闭，如果你想要 LLM 自动提取 profile / workflow 候选，
+需要显式打开。Profile D 默认把 `write_guard + compact_gist + intent_llm`
+视为完整高级目标的一部分。在 `setup` / `onboarding` 里，如果你只提供一套共享 LLM
 （`LLM_API_BASE`、`LLM_API_KEY`、`LLM_MODEL`），安装器会默认把它扇出到
 这三组 resolved 字段。`Profile D` 只有在最终解析后的
 `WRITE_GUARD_*`、`COMPACT_GIST_*`、`INTENT_*` 都不是占位值，并且真实
@@ -167,6 +168,10 @@ Profile C 需要 embedding 服务和 reranker。Profile C 上的 LLM 辅助套�
 onboarding/setup，而是手工编辑静态 env 文件，最好也把下面这些 resolved
 字段显式填满，避免 placeholder 触发降级 / 回退。Profile B 本身不要求外部
 embedding / reranker，但如果宿主已经有可复用的可选 LLM 配置，仍可能被继续复用。
+
+smart extraction 启用后，现在会在前台 capture hook 返回之后放到后台跑。默认请求窗口是
+60 秒，默认尝试 2 次，连续 2 次失败后打开 circuit breaker；慢 LLM 更不容易直接丢掉提取结果，
+但正常对话也不该再卡着等模型返回。
 
 可以直接设置这些环境变量，或者先让仓库 wrapper 生成一份对话友好的 readiness
 报告：

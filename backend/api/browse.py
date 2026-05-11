@@ -649,8 +649,6 @@ async def create_node(
         domain,
         "/".join(part for part in (parent_path, title or "") if part),
     )
-    defer_index = await _should_defer_index_on_write()
-
     async def _write_task():
         # ── Guard check (inside write lane to prevent TOCTOU) ──
         try:
@@ -726,6 +724,7 @@ async def create_node(
                 }
 
         # ── Actual write ──
+        defer_index = await _should_defer_index_on_write()
         result = await client.create_memory(
             parent_path=parent_path,
             content=body.content,
@@ -748,6 +747,7 @@ async def create_node(
             "ok": True,
             "created": True,
             **result,
+            "__defer_index": defer_index,
             **_guard_fields(guard_decision),
             **(_guard_user_feedback("create_node", guard_decision) if blocked else {}),
             "guard_overridden": blocked and body.force_write,
@@ -786,7 +786,7 @@ async def create_node(
 
     if result.get("created"):
         index_enqueue = {"queued": [], "dropped": [], "deduped": []}
-        if defer_index:
+        if result.get("__defer_index"):
             index_enqueue = await _enqueue_index_targets(result, reason="browse.create_node")
         result["index_queued"] = len(index_enqueue["queued"])
         result["index_dropped"] = len(index_enqueue["dropped"])
@@ -813,6 +813,7 @@ async def create_node(
             pass
     # Strip internal marker before returning to client.
     result.pop("__guard_blocked", None)
+    result.pop("__defer_index", None)
     return result
 
 
@@ -840,7 +841,6 @@ async def update_node(
     if not memory:
         raise HTTPException(status_code=404, detail=f"Path not found: {domain}://{path}")
     full_uri = _make_uri_impl(domain, path)
-    defer_index = await _should_defer_index_on_write()
 
     async def _write_task():
         # ── Guard check (inside write lane to prevent TOCTOU) ──
@@ -936,6 +936,7 @@ async def update_node(
                 }
 
         # ── Actual write ──
+        defer_index = await _should_defer_index_on_write()
         if body.content is not None:
             await _snapshot_memory_content(full_uri, session_id=session_id)
         if body.priority is not None or body.disclosure is not None:
@@ -957,6 +958,8 @@ async def update_node(
             "memory_id": result["new_memory_id"],
             "uri": str(result.get("uri") or full_uri),
             "index_targets": result.get("index_targets"),
+            "index_pending": result.get("index_pending"),
+            "__defer_index": defer_index,
             **_guard_fields(guard_decision),
             **(_guard_user_feedback("update_node", guard_decision) if blocked else {}),
             "guard_overridden": blocked and body.force_write,
@@ -994,7 +997,7 @@ async def update_node(
 
     if result.get("updated"):
         index_enqueue = {"queued": [], "dropped": [], "deduped": []}
-        if defer_index:
+        if result.get("__defer_index"):
             index_enqueue = await _enqueue_index_targets(result, reason="browse.update_node")
         result["index_queued"] = len(index_enqueue["queued"])
         result["index_dropped"] = len(index_enqueue["dropped"])
@@ -1026,6 +1029,7 @@ async def update_node(
         except Exception:
             pass
     result.pop("__guard_blocked", None)
+    result.pop("__defer_index", None)
     return result
 
 

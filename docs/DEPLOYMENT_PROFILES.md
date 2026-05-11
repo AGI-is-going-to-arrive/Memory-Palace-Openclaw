@@ -193,6 +193,7 @@ RETRIEVAL_RERANKER_WEIGHT=0.30                     # 推荐 0.20 ~ 0.40
 - **Profile C 默认开 embedding + reranker**
 - **Profile C 不默认强开 LLM，而是由对话式安装明确问你是否开启**
 - 但如果你在交互安装里选择开启，或者显式提供了一套完整共享 LLM 配置，当前安装器会把 **write_guard / compact_gist / intent_llm** 一起打开
+- smart extraction 在 Profile C 上也默认关闭；如果你想让 LLM 自动提取 profile / workflow 候选，需要显式打开
 - 如果这组三方里的 **LLM probe 失败**，当前安装器会优先**保留 Profile C**，并把这组可选 LLM 辅助保持关闭，而不是因为可选 LLM 失败直接把整个 Profile C 打回 Profile B
 
 如果你不使用统一 `router`，也可以直接配置 OpenAI-compatible embedding / reranker 服务：
@@ -228,6 +229,7 @@ RETRIEVAL_RERANKER_WEIGHT=0.35                     # 远程推荐略高
   - `compact_gist`
   - `intent_llm`
 - 安装器会把同一套共享 LLM 配置复用到这三项能力；也就是说，`D` 不再适合被理解成“只有 write_guard 用到 LLM”
+- 插件侧 smart extraction 在 Profile D 上默认开启，但现在会在后台跑，不再阻塞前台 turn；默认请求窗口是 60 秒，默认尝试 2 次，连续 2 次失败后打开 circuit breaker。
 - 如果你的目标是“把当前项目的高级功能面一次性全部开齐”，对外推荐口径应优先写成 **Profile D**
 - 但这不等于“所有可能的高级能力都自动强开”；例如其它与 LLM 无关的 rollout / tuning 开关仍然保持各自默认值
 

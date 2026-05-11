@@ -214,7 +214,9 @@ Treat `C/D` as provider-backed profiles:
 - they are not "zero-configuration out of the box"
 - `Profile C` requires `embedding + reranker`
 - `Profile C` only treats `write_guard / compact_gist / intent_llm` as optional opt-in assists
+- `Profile C` keeps smart extraction off by default
 - `Profile D` expects the full `embedding + reranker + LLM` assist surface by default
+- `Profile D` keeps smart extraction on by default, but it now runs in the background after foreground capture returns
 - before sharing a target-host claim, rerun validation in that target environment
 
 One more runtime boundary matters here:

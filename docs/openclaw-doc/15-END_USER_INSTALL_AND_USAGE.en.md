@@ -127,7 +127,9 @@ The public wording is now straightforward:
 - `Profile A / B` stay on the more basic side
 - `Profile C` publicly defaults to `embedding + reranker`
 - `Profile C` exposes `write_guard / compact_gist / intent_llm` only when the optional LLM suite is turned on
+- `Profile C` keeps smart extraction off by default
 - `Profile D` is the full advanced target profile, but it should only be treated as ready after provider checks and the final sign-off commands pass
+- `Profile D` keeps smart extraction on by default, but that work is now backgrounded after the foreground capture path returns
 
 ---
 

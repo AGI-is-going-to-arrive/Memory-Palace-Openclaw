@@ -187,7 +187,7 @@ Below are the most commonly used options in `.env` (see comments in `.env.exampl
 
 > Profile B defaults to local hash Embedding with Reranker disabled; it remains the **default starting profile**.
 >
-> If you already have model services ready, **upgrading to Profile C is strongly recommended**: it requires you to fill in the Embedding / Reranker pipeline in `.env`. If you also want to enable LLM-assisted write guard / gist / intent routing, continue filling in `WRITE_GUARD_LLM_*`, `COMPACT_GIST_LLM_*`, and optionally `INTENT_LLM_*`. See [DEPLOYMENT_PROFILES.en.md](DEPLOYMENT_PROFILES.en.md) for details.
+> If you already have model services ready, **upgrading to Profile C is strongly recommended**: it requires you to fill in the Embedding / Reranker pipeline in `.env`. If you also want to enable LLM-assisted write guard / gist / intent routing, continue filling in `WRITE_GUARD_LLM_*`, `COMPACT_GIST_LLM_*`, and optionally `INTENT_LLM_*`. Smart extraction is still off by default on Profile C and should be enabled explicitly. See [DEPLOYMENT_PROFILES.en.md](DEPLOYMENT_PROFILES.en.md) for details.
 >
 > The table above reflects the current real values in `.env.example`. If certain retrieval environment variables are completely absent at runtime, the backend will still apply its own fallback values internally (for example `hash` / `hash-v1` / `64`).
 >
@@ -557,6 +557,7 @@ curl -fsS "http://127.0.0.1:8000/browse/node?domain=core&path=" \
 >
 > - If you have configured `MCP_API_KEY`, include `X-MCP-API-Key` as shown above
 > - If you have enabled `MCP_API_KEY_ALLOW_INSECURE_LOCAL=true` and the request comes from the local loopback address (without forwarded headers), you can omit the authentication header
+> - Create/update requests use the same write lane as MCP writes; deferred indexing is reported only after the write path accepts the change
 
 ### 5.3 View API Documentation
 
@@ -577,7 +578,7 @@ Memory Palace provides **11 tools** via the [MCP protocol](https://modelcontextp
 | `add_alias` | Add an alias for a memory node |
 | `search_memory` | Search memory (keyword / semantic / hybrid modes) |
 | `compact_context` | Compact context (clean up old session logs) |
-| `compact_context_reflection` | Write compaction results to the reflection lane; typically called automatically by the plugin |
+| `compact_context_reflection` | Write compaction results to the reflection lane; typically called automatically by the plugin; client-facing internal errors are sanitized |
 | `rebuild_index` | Rebuild the search index |
 | `index_status` | View index status |
 | `ensure_visual_namespace_chain` | Pre-build namespace for visual / OpenClaw scenarios; regular users generally do not need to call this manually |

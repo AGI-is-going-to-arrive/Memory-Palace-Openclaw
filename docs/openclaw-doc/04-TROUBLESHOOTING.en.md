@@ -310,6 +310,26 @@ If you confirm that the problem is historical polluted data:
 - you still need a one-time host-data cleanup
 - that is a maintenance action, not something the normal plugin runtime is supposed to do automatically
 
+### 7.2 Smart extraction makes turns feel slow
+
+The current boundary is:
+
+- Profile C keeps smart extraction off by default
+- Profile D keeps it on by default, but the plugin now starts it after the foreground capture hook returns
+- the default request window is 60 seconds with 2 attempts, and the circuit breaker opens after 2 failures, so an unstable LLM has more room to answer
+- the same agent/session is queued instead of running several smart extraction jobs at once
+
+If disabling smart extraction used to make your chat feel faster, that was a real symptom of the older foreground wait path.
+With the current behavior, disabling it can still reduce background LLM traffic, but normal turns should not wait for that LLM call to finish.
+
+If turns are still slow, check provider health and transport first:
+
+```bash
+openclaw memory-palace verify --json
+openclaw memory-palace doctor --json
+openclaw memory-palace smoke --json
+```
+
 ---
 
 ## 8. `Profile C/D` Configured but Still Not Working

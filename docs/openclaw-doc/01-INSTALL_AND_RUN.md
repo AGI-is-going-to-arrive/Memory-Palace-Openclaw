@@ -219,7 +219,9 @@ openclaw memory-palace smoke --json
 - `Profile B`：默认零配置起步档
 - `Profile C`：硬前提是 `embedding + reranker`
 - `Profile C` 里的 `write_guard / compact_gist / intent_llm` 只算可选增强
+- `Profile C` 的 smart extraction 默认关闭
 - `Profile D`：默认期望 `embedding + reranker + LLM` 的完整高级辅助面
+- `Profile D` 的 smart extraction 默认开启，但现在会在前台 capture 返回后放到后台跑
 
 如果你只是想先看 readiness 报告，可以用：
 

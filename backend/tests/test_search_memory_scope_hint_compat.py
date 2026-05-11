@@ -70,6 +70,54 @@ class _ScopeSearchClient:
         }
 
 
+class _SiblingPrefixSearchClient(_ScopeSearchClient):
+    async def search_advanced(
+        self,
+        *,
+        query: str,
+        mode: str,
+        max_results: int,
+        candidate_multiplier: int,
+        filters: Dict[str, Any],
+        intent_profile: Dict[str, Any] | None = None,
+    ) -> Dict[str, Any]:
+        _ = query
+        _ = mode
+        _ = max_results
+        _ = candidate_multiplier
+        _ = intent_profile
+        self.received_filters = dict(filters)
+        return {
+            "mode": "hybrid",
+            "degraded": False,
+            "degrade_reasons": [],
+            "results": [
+                {
+                    "uri": "core://agents/main/profile/workflow",
+                    "memory_id": 1,
+                    "snippet": "in scope",
+                    "priority": 0,
+                    "updated_at": "2026-03-01T12:00:00Z",
+                    "metadata": {
+                        "domain": "core",
+                        "path": "agents/main/profile/workflow",
+                    },
+                },
+                {
+                    "uri": "core://agents/mainland/profile/workflow",
+                    "memory_id": 2,
+                    "snippet": "sibling scope",
+                    "priority": 0,
+                    "updated_at": "2026-03-01T12:00:00Z",
+                    "metadata": {
+                        "domain": "core",
+                        "path": "agents/mainland/profile/workflow",
+                    },
+                },
+            ],
+        }
+
+
 @pytest.mark.asyncio
 async def test_search_memory_scope_hint_applies_uri_prefix_and_echoes_strategy(
     monkeypatch: pytest.MonkeyPatch,
@@ -167,6 +215,33 @@ async def test_search_memory_normalizes_windows_backslashes_in_filter_path_prefi
     assert payload["scope_hint_applied"] is False
     assert payload["scope_effective"] == {"domain": None, "path_prefix": "agent/index"}
     assert fake_client.received_filters == {"path_prefix": "agent/index"}
+
+
+@pytest.mark.asyncio
+async def test_search_memory_path_prefix_does_not_match_sibling_paths(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake_client = _SiblingPrefixSearchClient()
+    monkeypatch.setattr(mcp_server, "get_sqlite_client", lambda: fake_client)
+    monkeypatch.setattr(mcp_server, "_record_session_hit", _noop_async)
+    monkeypatch.setattr(mcp_server, "_record_flush_event", _noop_async)
+
+    raw = await mcp_server.search_memory(
+        query="workflow",
+        mode="hybrid",
+        include_session=False,
+        filters={"domain": "core", "path_prefix": "agents/main"},
+    )
+    payload = json.loads(raw)
+
+    assert payload["ok"] is True
+    assert [item["uri"] for item in payload["results"]] == [
+        "core://agents/main/profile/workflow"
+    ]
+    assert fake_client.received_filters == {
+        "domain": "core",
+        "path_prefix": "agents/main",
+    }
 
 
 @pytest.mark.asyncio

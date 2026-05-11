@@ -188,6 +188,7 @@ The LLM rule for `Profile C` should now be read like this:
 - **Profile C defaults to embedding + reranker**
 - **Profile C does not force LLM on by default; the conversational installer should explicitly ask whether to enable it**
 - But if you opt in during interactive setup, or explicitly provide one complete shared LLM configuration, the installer enables **write_guard / compact_gist / intent_llm** together
+- Smart extraction also stays off by default on Profile C; enable it explicitly if you want LLM-extracted profile / workflow candidates
 - If only the optional LLM probe fails while embedding + reranker are healthy, the installer now prefers to **keep Profile C** and leave the optional LLM assists disabled, instead of downgrading the whole setup to Profile B
 
 If you do not use a unified `router`, you can also directly configure OpenAI-compatible embedding / reranker services:
@@ -223,6 +224,7 @@ The current `Profile D` rule is now:
   - `compact_gist`
   - `intent_llm`
 - The installer reuses one shared LLM configuration across those three features, so `D` should no longer be read as “only write_guard uses LLM”
+- Plugin smart extraction is on by default on Profile D, but it now runs in the background instead of blocking the foreground turn. Its default request window is 60 seconds, with 2 attempts, and the circuit breaker opens after 2 failures.
 - If the product message is “turn on the full advanced feature surface,” the public recommendation should point to **Profile D**
 - This still does **not** mean every advanced toggle in the project is auto-enabled; it only applies to the LLM assist surface
 

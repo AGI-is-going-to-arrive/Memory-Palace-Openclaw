@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 from pathlib import Path
@@ -8,6 +9,7 @@ import pytest
 import mcp_server
 from api import maintenance as maintenance_api
 from db.sqlite_client import SQLiteClient
+from mcp_tool_search import _revalidate_search_results
 
 
 async def _noop_async(*_: Any, **__: Any) -> None:
@@ -217,10 +219,12 @@ class _SearchRevalidationClient(_FakeSearchClient):
         *,
         results: list[dict[str, Any]],
         current_memories: dict[tuple[str, str], dict[str, Any] | None],
+        failing_paths: set[tuple[str, str]] | None = None,
     ) -> None:
         super().__init__()
         self._results = results
         self._current_memories = current_memories
+        self._failing_paths = failing_paths or set()
         self.path_reads: list[tuple[str, str, bool]] = []
 
     async def search_advanced(
@@ -259,7 +263,148 @@ class _SearchRevalidationClient(_FakeSearchClient):
         reinforce_access: bool = True,
     ) -> dict[str, Any] | None:
         self.path_reads.append((domain, path, reinforce_access))
+        if (domain, path) in self._failing_paths:
+            raise RuntimeError("forced revalidation failure")
         return self._current_memories.get((domain, path))
+
+
+class _ConcurrentRevalidationClient:
+    def __init__(
+        self,
+        *,
+        current_memories: dict[tuple[str, str], dict[str, Any] | None],
+        failing_paths: set[tuple[str, str]] | None = None,
+    ) -> None:
+        self._current_memories = current_memories
+        self._failing_paths = failing_paths or set()
+        self.path_reads: list[tuple[str, str, bool]] = []
+        self.active_reads = 0
+        self.max_active_reads = 0
+
+    async def get_memory_by_path(
+        self,
+        path: str,
+        domain: str = "core",
+        reinforce_access: bool = True,
+    ) -> dict[str, Any] | None:
+        self.path_reads.append((domain, path, reinforce_access))
+        self.active_reads += 1
+        self.max_active_reads = max(self.max_active_reads, self.active_reads)
+        try:
+            await asyncio.sleep(0.001)
+            if (domain, path) in self._failing_paths:
+                raise RuntimeError("forced revalidation failure")
+            return self._current_memories.get((domain, path))
+        finally:
+            self.active_reads -= 1
+
+
+@pytest.mark.asyncio
+async def test_revalidate_search_results_handles_empty_result_set() -> None:
+    client = _ConcurrentRevalidationClient(current_memories={})
+
+    kept, metrics = await _revalidate_search_results(
+        [],
+        client=client,
+        parse_uri=mcp_server.parse_uri,
+    )
+
+    assert kept == []
+    assert client.path_reads == []
+    assert metrics == {
+        "revalidation_attempted": True,
+        "revalidation_dropped": 0,
+        "revalidation_refreshed": 0,
+        "revalidation_errors": 0,
+    }
+
+
+@pytest.mark.asyncio
+async def test_revalidate_search_results_bounded_concurrency_preserves_order() -> None:
+    result_count = 1005
+    missing_index = 17
+    failing_index = 23
+    results = [
+        {
+            "uri": f"core://bulk/item-{index}",
+            "memory_id": index,
+            "snippet": f"stale snippet {index}",
+        }
+        for index in range(result_count)
+    ]
+    current_memories = {
+        ("core", f"bulk/item-{index}"): {
+            "id": index,
+            "content": f"fresh snippet {index}",
+            "created_at": "2026-03-24T00:00:00Z",
+        }
+        for index in range(result_count)
+        if index != missing_index
+    }
+    client = _ConcurrentRevalidationClient(
+        current_memories=current_memories,
+        failing_paths={("core", f"bulk/item-{failing_index}")},
+    )
+
+    kept, metrics = await _revalidate_search_results(
+        results,
+        client=client,
+        parse_uri=mcp_server.parse_uri,
+    )
+
+    assert len(client.path_reads) == result_count
+    assert client.max_active_reads == 4
+    assert metrics["revalidation_dropped"] == 1
+    assert metrics["revalidation_errors"] == 1
+    assert metrics["revalidation_refreshed"] == result_count - 2
+    assert [item["uri"] for item in kept] == [
+        item["uri"] for index, item in enumerate(results) if index != missing_index
+    ]
+
+    by_uri = {item["uri"]: item for item in kept}
+    assert by_uri["core://bulk/item-0"]["snippet"] == "fresh snippet 0"
+    assert (
+        by_uri[f"core://bulk/item-{failing_index}"]["snippet"]
+        == f"stale snippet {failing_index}"
+    )
+    assert all(read[2] is False for read in client.path_reads)
+
+
+@pytest.mark.asyncio
+async def test_search_memory_surfaces_revalidation_errors_as_degraded(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake_client = _SearchRevalidationClient(
+        results=[
+            {
+                "uri": "core://agent/retry-visible",
+                "memory_id": 77,
+                "snippet": "stale but still usable",
+                "priority": 1,
+                "score": 0.83,
+                "updated_at": "2026-03-24T00:00:00Z",
+            }
+        ],
+        current_memories={},
+        failing_paths={("core", "agent/retry-visible")},
+    )
+    monkeypatch.setattr(mcp_server, "get_sqlite_client", lambda: fake_client)
+    monkeypatch.setattr(mcp_server, "_record_session_hit", _noop_async)
+    monkeypatch.setattr(mcp_server, "_record_flush_event", _noop_async)
+
+    raw = await mcp_server.search_memory(
+        query="retry visible",
+        mode="hybrid",
+        include_session=False,
+        verbose=False,
+    )
+    payload = json.loads(raw)
+
+    assert payload["ok"] is True
+    assert payload["degraded"] is True
+    assert payload["results"][0]["uri"] == "core://agent/retry-visible"
+    assert "search_revalidation_failed" in payload.get("degrade_reasons", [])
+    assert "session_first_metrics" not in payload
 
 
 @pytest.mark.asyncio

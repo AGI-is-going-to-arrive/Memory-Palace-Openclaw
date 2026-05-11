@@ -124,8 +124,8 @@ flowchart LR
 这三条引导入口和 `Path Strategy` 区域，主要是在讲：
 
 - `Profile B` 是默认值
-- `Profile C` 是模型服务已经配好后的推荐目标
-- `Profile D` 是全功能高级面的目标路径
+- `Profile C` 是 embedding / reranker 服务已经配好后的推荐目标；smart extraction 仍然需要显式选择
+- `Profile D` 是全功能高级面的目标路径；smart extraction 默认开启但已后台化
 
 配图：
 

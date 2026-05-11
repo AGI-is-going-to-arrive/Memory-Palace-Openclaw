@@ -72,7 +72,7 @@ Use this skill whenever a task involves the Memory Palace memory system itself.
 
 - `add_alias` - Add a URI alias for an existing memory
 - `compact_context` - Distill a long/noisy session into a compact summary
-- `compact_context_reflection` - Compact and commit into the reflection lane (usually auto-called by plugin)
+- `compact_context_reflection` - Compact and commit into the reflection lane (usually auto-called by plugin; client-facing internal errors are sanitized)
 - `rebuild_index` - Rebuild the search index (check `index_status` first)
 - `index_status` - Check index health before rebuilding
 - `ensure_visual_namespace_chain` - Ensure visual memory URI hierarchy exists

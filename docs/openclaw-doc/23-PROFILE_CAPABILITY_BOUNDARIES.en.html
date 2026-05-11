@@ -457,12 +457,12 @@
 
           <article class="profile-card">
             <span class="chip">Profile C</span>
-            <h3>The WebUI shape barely changes. The deeper change is recall and extraction quality.</h3>
+            <h3>The WebUI shape barely changes. The deeper change is retrieval and reconcile quality.</h3>
             <p>
-              For the user, C is not a new page. It is the same WebUI thread now running on a real embedding / reranker / model chain. The visible form is similar; the depth and reliability of recall improve.
+              For the user, C is not a new page. It is the same WebUI thread now running on a real embedding / reranker chain. The visible form is similar; retrieval depth and reconcile quality improve.
             </p>
             <p>
-              The current public default also needs to stay explicit: `Profile C` guarantees `embedding + reranker` by default, while `write_guard / compact_gist / intent_llm` remain opt-in instead of default-on.
+              The current public default also needs to stay explicit: `Profile C` guarantees `embedding + reranker` by default, while `write_guard / compact_gist / intent_llm` remain opt-in instead of default-on. Smart extraction is off by default on Profile C.
             </p>
             <p>
               The public story now keeps only the screenshots that are still directly embedded by the public pages. Older `profile-matrix/*`
@@ -488,7 +488,7 @@
               Provider location can still be local, intranet, or remote. The real boundary is provider health, network conditions, and latency budget rather than “remote by definition.”
             </p>
             <p>
-              The current public default is now: `Profile D` includes `write_guard / compact_gist / intent_llm` by default, while `plugins.slots.memory` still stays on `memory-palace` and `memory-core` remains only a facade-compat shim.
+              The current public default is now: `Profile D` includes `write_guard / compact_gist / intent_llm` by default, while smart extraction is also default-on but backgrounded. `plugins.slots.memory` still stays on `memory-palace` and `memory-core` remains only a facade-compat shim.
             </p>
             <table>
               <thead>

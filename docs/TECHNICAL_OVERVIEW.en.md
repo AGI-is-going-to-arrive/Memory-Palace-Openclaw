@@ -94,6 +94,8 @@ The backend is split into a few stable areas:
   - FastAPI entry, lifecycle, router registration, health endpoint
 - `backend/mcp_server.py`
   - MCP server assembly and stable tool surface
+- `backend/mcp_tool_search.py`
+  - search orchestration, session/global merge, local filters, and bounded stale-hit revalidation
 - `backend/runtime_state.py`
   - write lane, index worker, vitality cleanup, flush tracker
 - `backend/api/`
@@ -119,6 +121,7 @@ In plain language:
 
 - `/browse`
   - read and write durable memories
+  - create/update writes decide deferred indexing after the write path is accepted
 - `/review`
   - inspect diffs, roll back, confirm integration
 - `/maintenance`
@@ -132,6 +135,9 @@ In plain language:
 | `POST` | `/browse/node` | create a memory |
 | `PUT` | `/browse/node` | update a memory |
 | `DELETE` | `/browse/node` | delete a memory path |
+
+Create/update requests go through the same write-lane boundary as MCP writes.
+Deferred indexing is recorded only after the write path accepts the change, and the response can expose enqueue counters for that accepted write.
 
 ### `/review`
 

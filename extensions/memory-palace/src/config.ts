@@ -547,8 +547,11 @@ export function parsePluginConfig(
     api.logger,
     warnedRuntimeEnvIssues,
   );
-  const defaultSmartExtractionEnabled = effectiveProfile === "c" || effectiveProfile === "d";
-  const defaultSmartExtractionTimeoutMs = defaultSmartExtractionEnabled ? 60_000 : 8_000;
+  const explicitSmartExtractionEnabled = readBoolean(smartExtractionRaw.enabled);
+  const defaultSmartExtractionEnabled = effectiveProfile === "d";
+  const smartExtractionEnabled = explicitSmartExtractionEnabled ?? defaultSmartExtractionEnabled;
+  const defaultSmartExtractionTimeoutMs = smartExtractionEnabled ? 60_000 : 8_000;
+  const defaultReconcileEnabled = effectiveProfile === "c" || effectiveProfile === "d";
   const resolvedSmartExtractionModel = resolveSmartExtractionModelConfig(runtimeEnv);
   const hasExplicitStdioConfig = Boolean(stdioCommand || stdioArgs || stdioCwd || stdioEnv);
   const hasSseConfig = Boolean(readString(sseRaw.url));
@@ -704,7 +707,7 @@ export function parsePluginConfig(
       traceEnabled: readBoolean(hostBridgeRaw.traceEnabled) ?? true,
     },
     smartExtraction: {
-      enabled: readBoolean(smartExtractionRaw.enabled) ?? defaultSmartExtractionEnabled,
+      enabled: smartExtractionEnabled,
       mode:
         readString(smartExtractionRaw.mode) === "disabled" ||
         readString(smartExtractionRaw.mode) === "local" ||
@@ -715,7 +718,7 @@ export function parsePluginConfig(
       maxTranscriptChars: readPositiveNumber(smartExtractionRaw.maxTranscriptChars) ?? 8_000,
       timeoutMs: readPositiveNumber(smartExtractionRaw.timeoutMs) ?? defaultSmartExtractionTimeoutMs,
       retryAttempts: readPositiveNumber(smartExtractionRaw.retryAttempts) ?? 2,
-      circuitBreakerFailures: readPositiveNumber(smartExtractionRaw.circuitBreakerFailures) ?? 3,
+      circuitBreakerFailures: readPositiveNumber(smartExtractionRaw.circuitBreakerFailures) ?? 2,
       circuitBreakerCooldownMs: readPositiveNumber(smartExtractionRaw.circuitBreakerCooldownMs) ?? 300_000,
       categories:
         readSmartExtractionCategoryArray(smartExtractionRaw.categories) ??
@@ -727,7 +730,7 @@ export function parsePluginConfig(
       modelName: resolvedSmartExtractionModel.model,
     },
     reconcile: {
-      enabled: readBoolean(reconcileRaw.enabled) ?? defaultSmartExtractionEnabled,
+      enabled: readBoolean(reconcileRaw.enabled) ?? defaultReconcileEnabled,
       profileMergePolicy:
         readString(reconcileRaw.profileMergePolicy) === "replace" ? "replace" : "always_merge",
       eventMergePolicy:

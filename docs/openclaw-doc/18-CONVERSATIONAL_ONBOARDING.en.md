@@ -378,14 +378,21 @@ So the correct model is:
 OpenClaw should explain profiles using this model:
 
 - **Profile B**: default zero-config first-run path
-- **Profile C**: embedding + reranker on by default, then explicitly ask whether to enable the optional LLM assist suite
-- **Profile D**: full advanced suite, where embedding + reranker + the LLM assist suite are all part of the default target
+- **Profile C**: embedding + reranker on by default, then explicitly ask whether to enable the optional LLM assist suite; smart extraction is also off by default unless the user opts in
+- **Profile D**: full advanced suite, where embedding + reranker + the LLM assist suite are all part of the default target; smart extraction stays on by default but runs in the background
 
 If the user asks what the optional LLM assists do, OpenClaw should explain:
 
 - `write_guard`: filters risky, contradictory, or low-quality durable writes before commit
 - `compact_gist`: makes `compact_context` output more stable and more reusable as a summary
 - `intent_llm`: improves ambiguous-query intent classification and routing
+
+If the user asks about smart extraction latency, OpenClaw should explain it plainly:
+
+- Profile C keeps it off by default
+- Profile D keeps it on by default
+- when enabled, the plugin now runs it after the foreground capture hook returns
+- the default request window is 60 seconds with 2 attempts, and the circuit breaker opens after 2 failures
 
 ### Shared LLM fan-out and Profile D readiness
 
@@ -446,8 +453,8 @@ OpenClaw should explain it in plain language and keep the next action explicit:
 The stable public wording for this page is:
 
 - `Profile B`: default zero-config first-run path
-- `Profile C`: provider-backed retrieval step, with embedding + reranker enabled by default
-- `Profile D`: full advanced path when embedding + reranker + the LLM assist suite are all part of the target; a shared LLM tuple provided in onboarding/setup should fan out to `WRITE_GUARD_*`, `COMPACT_GIST_*`, and `INTENT_*`
+- `Profile C`: provider-backed retrieval step, with embedding + reranker enabled by default; smart extraction stays opt-in
+- `Profile D`: full advanced path when embedding + reranker + the LLM assist suite are all part of the target; a shared LLM tuple provided in onboarding/setup should fan out to `WRITE_GUARD_*`, `COMPACT_GIST_*`, and `INTENT_*`; smart extraction is default-on but backgrounded
 - “ready” does not mean “env is filled”
 - the real threshold is still whether `probe / verify / doctor / smoke` pass in the target environment
 - for `Profile D`, the final resolved `WRITE_GUARD_*`, `COMPACT_GIST_*`, and `INTENT_*` fields must also all be non-placeholder

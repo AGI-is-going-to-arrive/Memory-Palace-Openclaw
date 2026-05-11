@@ -41,6 +41,7 @@ If you want to see the full environment variables and advanced tuning options, g
   - `write_guard`
   - `compact_gist`
   - `intent_llm`
+- Smart extraction is separate from that list on Profile C: it is off by default and should be turned on explicitly if you want LLM-extracted profile / workflow candidates
 - Suitable for users who already have local or intranet model services ready
 
 ### Profile D
@@ -48,6 +49,7 @@ If you want to see the full environment variables and advanced tuning options, g
 - Full advanced target profile
 - Requires real embedding / reranker / LLM
 - Default target is embedding + reranker + the full LLM assist suite
+- Smart extraction stays on by default in this advanced profile, but it now runs after the foreground capture hook returns; the default request window is 60 seconds with 2 attempts, and the circuit breaker opens after 2 failures
 - Those providers can be local, intranet, or remote; the real boundary is provider health, not deployment topology
 - Higher quality, but also higher latency
 
@@ -77,7 +79,9 @@ The current rerun facts this page can cite are:
 - read that result as “the in-chat next-step guidance passed,” not as “one chat turn alone completed the final profile apply state”
 - `Profile C` now publicly defaults to `embedding + reranker`
 - `Profile C` enables `write_guard / compact_gist / intent_llm` only when the LLM suite is explicitly opted in
+- `Profile C` keeps smart extraction off by default, while reconcile stays independent of that switch
 - `Profile D` now publicly defaults to `write_guard / compact_gist / intent_llm` being on
+- `Profile D` also keeps smart extraction on by default, but that work is now background work rather than foreground turn latency
 - the current compatibility layer is already wired and does not change `plugins.slots.memory=memory-palace`
 - `Profile C / D` still depend on your own provider health rather than “env is filled, therefore provider-ready”
 - the latest recorded shell / onboarding / profile-matrix reruns all match the current code behavior; if the target model endpoint is unhealthy, `doctor / smoke` can still warn
@@ -170,6 +174,7 @@ That is also why this page keeps repeating one boundary:
 - `A/B/C/D` primarily affect retrieval depth and default values for related advanced capabilities
 - `Profile C` should not be read as “LLM on by default”
 - `Profile D` should no longer be read as “only write_guard uses LLM”; the installer now reuses the shared LLM configuration across `write_guard / compact_gist / intent_llm`
+- smart extraction should no longer be read as part of the foreground wait path; disabling it can still reduce background LLM traffic, but it should not be needed just to keep normal turns responsive
 - Automatic recall / auto-capture / visual auto-harvest are not exclusive to any single profile
 - This automatic chain still depends on an OpenClaw host that supports hooks
 - Public documentation does not include any private model addresses, private keys, or private environment paths

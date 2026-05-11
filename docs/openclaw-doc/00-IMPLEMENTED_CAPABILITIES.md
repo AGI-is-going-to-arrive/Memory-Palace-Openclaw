@@ -41,6 +41,7 @@
 - durable / reflection auto recall 当前会把本 session 一起纳入检索合并，不再那么容易出现“当前会话里的上下文没带回来”
 - `command:new` reflection 去重现在带 session 边界、TTL 和容量上限，不再容易在长会话里重复写入或把缓存越跑越大
 - `command:new` reflection 和 smart extraction 在找不到目标 session transcript 时，当前会直接跳过（fail-closed），不再偷读“最新但无关”的 transcript
+- smart extraction 现在会在前台 capture 返回后放到后台跑，同一个 agent/session 的任务会排队
 - `workflow` 相关的 profile / durable recall / host bridge prompt block 当前会先做净化；onboarding 文档路径、provider 诊断、confirmation code 这类噪声不会再被当成稳定 workflow 写回或注入 prompt
 - control-ui / 微信这类聊天面当前不会再把 `memory-palace-profile` / `memory-palace-recall` 这类原始 memory block 或 `openclaw-control-ui` metadata 噪声直接塞回可见回复里
 - WAL 模式已默认启用（解决并发 FTS 锁冲突）

@@ -4,6 +4,7 @@ import { dirname, join, relative, resolve, sep } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import plugin, { __testing } from "./index.js";
 import { __testing as distTesting } from "./dist/index.js";
+import { drainSmartExtractionBackgroundCapturesForTesting } from "./src/auto-capture.ts";
 import { MemoryPalaceMcpClient } from "./src/client.ts";
 import { readEnvAssignment, resolveConfiguredEffectiveProfile } from "./src/config.ts";
 import { isSensitiveHostBridgeText } from "./src/host-bridge-security.ts";
@@ -73,6 +74,19 @@ async function waitForProcessExit(pid: number, timeoutMs = 1_000): Promise<void>
       return;
     }
     await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+}
+
+async function waitForCondition(
+  condition: () => boolean,
+  timeoutMs = 250,
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (condition()) {
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 10));
   }
 }
 
@@ -151,7 +165,8 @@ describe("memory-palace plugin helpers", () => {
     };
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    await drainSmartExtractionBackgroundCapturesForTesting();
     MemoryPalaceMcpClient.prototype.ensureVisualNamespaceChain = originalEnsureVisualNamespaceChain;
     globalThis.fetch = originalFetch;
     setVisualTerminationPlatformForTesting();
@@ -1690,7 +1705,7 @@ describe("memory-palace plugin helpers", () => {
       maxTranscriptChars: 8000,
       timeoutMs: 8000,
       retryAttempts: 2,
-      circuitBreakerFailures: 3,
+      circuitBreakerFailures: 2,
       circuitBreakerCooldownMs: 300000,
       categories: ["profile", "preference", "workflow", "entity", "event", "case", "pattern", "reminder"],
       effectiveProfile: undefined,
@@ -1771,7 +1786,7 @@ describe("memory-palace plugin helpers", () => {
     }
   });
 
-  it("enables smart extraction and reconcile defaults for profile c with model env", () => {
+  it("keeps smart extraction off by default for profile c while preserving reconcile", () => {
     const config = __testing.parsePluginConfig({
       stdio: {
         env: {
@@ -1782,13 +1797,47 @@ describe("memory-palace plugin helpers", () => {
       },
     });
 
-    expect(config.smartExtraction.enabled).toBe(true);
+    expect(config.smartExtraction.enabled).toBe(false);
     expect(config.smartExtraction.effectiveProfile).toBe("c");
-    expect(config.smartExtraction.effectiveMode).toBe("local");
+    expect(config.smartExtraction.effectiveMode).toBe("off");
     expect(config.smartExtraction.modelAvailable).toBe(true);
     expect(config.smartExtraction.modelName).toBe("gpt-5.4");
-    expect(config.smartExtraction.timeoutMs).toBe(60000);
+    expect(config.smartExtraction.timeoutMs).toBe(8000);
     expect(config.reconcile.enabled).toBe(true);
+  });
+
+  it("uses resilient smart extraction defaults for profile d and explicitly enabled profile c", () => {
+    const profileD = __testing.parsePluginConfig({
+      stdio: {
+        env: {
+          OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "d",
+          OPENAI_BASE_URL: "http://127.0.0.1:8317/v1",
+          OPENAI_MODEL: "gpt-5.4",
+        },
+      },
+    });
+    const explicitProfileC = __testing.parsePluginConfig({
+      stdio: {
+        env: {
+          OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "c",
+          OPENAI_BASE_URL: "http://127.0.0.1:8317/v1",
+          OPENAI_MODEL: "gpt-5.4",
+        },
+      },
+      smartExtraction: {
+        enabled: true,
+      },
+    });
+
+    expect(profileD.smartExtraction.enabled).toBe(true);
+    expect(profileD.smartExtraction.effectiveMode).toBe("remote");
+    expect(profileD.smartExtraction.timeoutMs).toBe(60000);
+    expect(profileD.smartExtraction.retryAttempts).toBe(2);
+    expect(profileD.smartExtraction.circuitBreakerFailures).toBe(2);
+    expect(explicitProfileC.smartExtraction.enabled).toBe(true);
+    expect(explicitProfileC.smartExtraction.effectiveMode).toBe("local");
+    expect(explicitProfileC.smartExtraction.timeoutMs).toBe(60000);
+    expect(explicitProfileC.reconcile.enabled).toBe(true);
   });
 
   it("prefers runtime env file values over inherited host env for profile and smart-extraction model resolution", () => {
@@ -1822,8 +1871,8 @@ describe("memory-palace plugin helpers", () => {
       });
 
       expect(config.capturePipeline.effectiveProfile).toBe("c");
-      expect(config.smartExtraction.enabled).toBe(true);
-      expect(config.smartExtraction.effectiveMode).toBe("local");
+      expect(config.smartExtraction.enabled).toBe(false);
+      expect(config.smartExtraction.effectiveMode).toBe("off");
       expect(config.smartExtraction.modelAvailable).toBe(true);
       expect(config.smartExtraction.modelName).toBe("gpt-5.4-mini");
     } finally {
@@ -13101,7 +13150,7 @@ describe("memory-palace plugin helpers", () => {
       const config = __testing.parsePluginConfig({
         stdio: {
           env: {
-            OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "c",
+            OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "d",
             OPENAI_BASE_URL: "http://127.0.0.1:8317/v1",
             OPENAI_MODEL: "gpt-5.4",
           },
@@ -14267,7 +14316,7 @@ describe("memory-palace plugin helpers", () => {
       const config = __testing.parsePluginConfig({
         stdio: {
           env: {
-            OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "c",
+            OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "d",
             OPENAI_BASE_URL: "http://127.0.0.1:8317/v1",
             OPENAI_MODEL: "gpt-5.4",
           },
@@ -14362,7 +14411,7 @@ describe("memory-palace plugin helpers", () => {
     const config = __testing.parsePluginConfig({
       stdio: {
         env: {
-          OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "c",
+          OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "d",
           OPENAI_BASE_URL: "http://127.0.0.1:8317/v1",
           OPENAI_MODEL: "gpt-5.4",
         },
@@ -14420,7 +14469,7 @@ describe("memory-palace plugin helpers", () => {
     const config = __testing.parsePluginConfig({
       stdio: {
         env: {
-          OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "c",
+          OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "d",
           OPENAI_BASE_URL: "http://127.0.0.1:8317/v1",
           OPENAI_MODEL: "gpt-5.4",
         },
@@ -14476,7 +14525,7 @@ describe("memory-palace plugin helpers", () => {
     const config = __testing.parsePluginConfig({
       stdio: {
         env: {
-          OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "c",
+          OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "d",
           OPENAI_BASE_URL: "http://127.0.0.1:8317/v1",
           OPENAI_MODEL: "gpt-5.4",
         },
@@ -14527,7 +14576,7 @@ describe("memory-palace plugin helpers", () => {
     const config = __testing.parsePluginConfig({
       stdio: {
         env: {
-          OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "c",
+          OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "d",
           OPENAI_BASE_URL: "http://127.0.0.1:8317/v1",
           OPENAI_MODEL: "gpt-5.4",
         },
@@ -14596,7 +14645,7 @@ describe("memory-palace plugin helpers", () => {
       const config = __testing.parsePluginConfig({
         stdio: {
           env: {
-            OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "c",
+            OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "d",
             OPENAI_BASE_URL: "http://127.0.0.1:8317/v1",
             OPENAI_MODEL: "gpt-5.4",
           },
@@ -14695,7 +14744,7 @@ describe("memory-palace plugin helpers", () => {
     const config = __testing.parsePluginConfig({
       stdio: {
         env: {
-          OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "c",
+          OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "d",
           OPENAI_BASE_URL: "http://127.0.0.1:8317/v1",
           OPENAI_MODEL: "gpt-5.4",
         },
@@ -14785,7 +14834,7 @@ describe("memory-palace plugin helpers", () => {
       const config = __testing.parsePluginConfig({
         stdio: {
           env: {
-            OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "c",
+            OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "d",
             OPENAI_BASE_URL: "http://127.0.0.1:8317/v1",
             OPENAI_MODEL: "gpt-5.4",
           },
@@ -14917,7 +14966,7 @@ describe("memory-palace plugin helpers", () => {
       const config = __testing.parsePluginConfig({
         stdio: {
           env: {
-            OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "c",
+            OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "d",
             OPENAI_BASE_URL: "http://127.0.0.1:8317/v1",
             OPENAI_MODEL: "gpt-5.4",
           },
@@ -15033,7 +15082,7 @@ describe("memory-palace plugin helpers", () => {
       const config = __testing.parsePluginConfig({
         stdio: {
           env: {
-            OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "c",
+            OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "d",
             OPENAI_BASE_URL: "http://127.0.0.1:8317/v1",
             OPENAI_MODEL: "gpt-5.4",
           },
@@ -15174,7 +15223,7 @@ describe("memory-palace plugin helpers", () => {
       const config = __testing.parsePluginConfig({
         stdio: {
           env: {
-            OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "c",
+            OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "d",
             OPENAI_BASE_URL: "http://127.0.0.1:8317/v1",
             OPENAI_MODEL: "gpt-5.4",
           },
@@ -15306,7 +15355,7 @@ describe("memory-palace plugin helpers", () => {
       const config = __testing.parsePluginConfig({
         stdio: {
           env: {
-            OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "c",
+            OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "d",
             OPENAI_BASE_URL: "http://127.0.0.1:8317/v1",
             OPENAI_MODEL: "gpt-5.4",
           },
@@ -15431,7 +15480,7 @@ describe("memory-palace plugin helpers", () => {
       const config = __testing.parsePluginConfig({
         stdio: {
           env: {
-            OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "c",
+            OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "d",
             OPENAI_BASE_URL: "http://127.0.0.1:8317/v1",
             OPENAI_MODEL: "gpt-5.4",
           },
@@ -15536,7 +15585,7 @@ describe("memory-palace plugin helpers", () => {
       const config = __testing.parsePluginConfig({
         stdio: {
           env: {
-            OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "c",
+            OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "d",
             OPENAI_BASE_URL: "http://127.0.0.1:8317/v1",
             OPENAI_MODEL: "gpt-5.4",
           },
@@ -15733,7 +15782,7 @@ describe("memory-palace plugin helpers", () => {
     const config = __testing.parsePluginConfig({
       stdio: {
         env: {
-          OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "c",
+          OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "d",
           OPENAI_BASE_URL: "http://127.0.0.1:8317/v1",
           OPENAI_MODEL: "gpt-5.4",
         },
@@ -15808,7 +15857,7 @@ describe("memory-palace plugin helpers", () => {
       const config = __testing.parsePluginConfig({
         stdio: {
           env: {
-            OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "c",
+            OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "d",
             OPENAI_BASE_URL: "http://127.0.0.1:8317/v1",
             OPENAI_MODEL: "gpt-5.4",
           },
@@ -15941,7 +15990,7 @@ describe("memory-palace plugin helpers", () => {
       const config = __testing.parsePluginConfig({
         stdio: {
           env: {
-            OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "c",
+            OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "d",
             OPENAI_BASE_URL: "http://127.0.0.1:8317/v1",
             OPENAI_MODEL: "gpt-5.4",
           },
@@ -16069,7 +16118,7 @@ describe("memory-palace plugin helpers", () => {
       const config = __testing.parsePluginConfig({
         stdio: {
           env: {
-            OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "c",
+            OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "d",
             OPENAI_BASE_URL: "http://127.0.0.1:8317/v1",
             OPENAI_MODEL: "gpt-5.4",
           },
@@ -16195,7 +16244,7 @@ describe("memory-palace plugin helpers", () => {
       const config = __testing.parsePluginConfig({
         stdio: {
           env: {
-            OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "c",
+            OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "d",
             OPENAI_BASE_URL: "http://127.0.0.1:8317/v1",
             OPENAI_MODEL: "gpt-5.4",
           },
@@ -16329,7 +16378,7 @@ describe("memory-palace plugin helpers", () => {
       const config = __testing.parsePluginConfig({
         stdio: {
           env: {
-            OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "c",
+            OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "d",
             OPENAI_BASE_URL: "http://127.0.0.1:8317/v1",
             OPENAI_MODEL: "gpt-5.4",
           },
@@ -16420,10 +16469,219 @@ describe("memory-palace plugin helpers", () => {
         } as never,
       );
 
+      await waitForCondition(() =>
+        stored.has("core://agents/main/captured/llm-extracted/workflow/current")
+      );
       expect(stored.has("core://agents/main/captured/llm-extracted/workflow/current")).toBe(true);
     } finally {
       rmSync(tempDir, { recursive: true, force: true });
     }
+  });
+
+  it("keeps smart extraction background work independent across sessions", async () => {
+    const config = __testing.parsePluginConfig({
+      stdio: {
+        env: {
+          OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "d",
+          OPENAI_BASE_URL: "http://127.0.0.1:8317/v1",
+          OPENAI_MODEL: "gpt-5.4",
+        },
+      },
+      autoCapture: {
+        enabled: false,
+      },
+      capturePipeline: {
+        captureAssistantDerived: false,
+      },
+      profileMemory: {
+        enabled: false,
+      },
+    });
+    const stored = new Map<string, string>();
+    const fakeClient = {
+      async readMemory(args: Record<string, unknown>) {
+        const uri = String(args.uri ?? "");
+        return stored.has(uri) ? { text: stored.get(uri) } : "Error: not found";
+      },
+      async createMemory(args: Record<string, unknown>) {
+        const parentUri = String(args.parent_uri ?? "");
+        const title = String(args.title ?? "");
+        const uri = parentUri.endsWith("://") ? `${parentUri}${title}` : `${parentUri}/${title}`;
+        stored.set(uri, String(args.content ?? ""));
+        return { ok: true, created: true, uri };
+      },
+      async updateMemory(args: Record<string, unknown>) {
+        const uri = String(args.uri ?? "");
+        stored.set(uri, String(args.new_string ?? ""));
+        return { ok: true, updated: true, uri };
+      },
+    };
+    const fakeSession = {
+      client: fakeClient,
+      withClient: async <T>(run: (client: Record<string, unknown>) => Promise<T>) => run(fakeClient),
+      close: async () => undefined,
+    };
+    let releaseFetch: (() => void) | undefined;
+    const fetchGate = new Promise<void>((resolve) => {
+      releaseFetch = resolve;
+    });
+    let fetchCalls = 0;
+    globalThis.fetch = async () => {
+      fetchCalls += 1;
+      await fetchGate;
+      return new Response(
+        JSON.stringify({
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  candidates: [
+                    {
+                      category: "workflow",
+                      summary: `Default workflow: session ${fetchCalls} code first, tests second`,
+                      confidence: 0.91,
+                    },
+                  ],
+                }),
+              },
+            },
+          ],
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    };
+
+    await __testing.runAutoCaptureHook(
+      { logger: { warn() {}, error() {}, info() {}, debug() {} } } as never,
+      config,
+      fakeSession as never,
+      { success: true },
+      {
+        agentId: "main",
+        sessionId: "smart-extraction-background-a",
+        messages: [
+          { role: "user", content: [{ type: "text", text: "Default workflow for A: code first." }] },
+          { role: "assistant", content: [{ type: "text", text: "I will keep code first." }] },
+          { role: "user", content: [{ type: "text", text: "Then tests second." }] },
+        ],
+      } as never,
+    );
+    await __testing.runAutoCaptureHook(
+      { logger: { warn() {}, error() {}, info() {}, debug() {} } } as never,
+      config,
+      fakeSession as never,
+      { success: true },
+      {
+        agentId: "main",
+        sessionId: "smart-extraction-background-b",
+        messages: [
+          { role: "user", content: [{ type: "text", text: "Default workflow for B: code first." }] },
+          { role: "assistant", content: [{ type: "text", text: "I will keep code first." }] },
+          { role: "user", content: [{ type: "text", text: "Then tests second." }] },
+        ],
+      } as never,
+    );
+
+    await waitForCondition(() => fetchCalls === 2);
+    releaseFetch?.();
+    await drainSmartExtractionBackgroundCapturesForTesting();
+
+    expect(fetchCalls).toBe(2);
+  });
+
+  it("queues same-session smart extraction instead of running it concurrently", async () => {
+    const config = __testing.parsePluginConfig({
+      stdio: {
+        env: {
+          OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "d",
+          OPENAI_BASE_URL: "http://127.0.0.1:8317/v1",
+          OPENAI_MODEL: "gpt-5.4",
+        },
+      },
+      autoCapture: {
+        enabled: false,
+      },
+      capturePipeline: {
+        captureAssistantDerived: false,
+      },
+      profileMemory: {
+        enabled: false,
+      },
+    });
+    const fakeClient = {
+      async readMemory() {
+        return "Error: not found";
+      },
+      async createMemory() {
+        return { ok: true, created: true, uri: "core://agents/main/captured/llm-extracted/workflow/current" };
+      },
+      async updateMemory() {
+        return { ok: true, updated: true, uri: "core://agents/main/captured/llm-extracted/workflow/current" };
+      },
+    };
+    const fakeSession = {
+      client: fakeClient,
+      withClient: async <T>(run: (client: Record<string, unknown>) => Promise<T>) => run(fakeClient),
+      close: async () => undefined,
+    };
+    let releaseFetch: (() => void) | undefined;
+    const fetchGate = new Promise<void>((resolve) => {
+      releaseFetch = resolve;
+    });
+    let fetchCalls = 0;
+    globalThis.fetch = async () => {
+      fetchCalls += 1;
+      await fetchGate;
+      return new Response(
+        JSON.stringify({
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  candidates: [
+                    {
+                      category: "workflow",
+                      summary: "Default workflow: code first, tests second",
+                      confidence: 0.91,
+                    },
+                  ],
+                }),
+              },
+            },
+          ],
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    };
+    const ctx = {
+      agentId: "main",
+      sessionId: "smart-extraction-background-same-session",
+      messages: [
+        { role: "user", content: [{ type: "text", text: "Default workflow: code first." }] },
+        { role: "assistant", content: [{ type: "text", text: "I will keep code first." }] },
+        { role: "user", content: [{ type: "text", text: "Then tests second." }] },
+      ],
+    } as never;
+
+    await __testing.runAutoCaptureHook(
+      { logger: { warn() {}, error() {}, info() {}, debug() {} } } as never,
+      config,
+      fakeSession as never,
+      { success: true },
+      ctx,
+    );
+    await __testing.runAutoCaptureHook(
+      { logger: { warn() {}, error() {}, info() {}, debug() {} } } as never,
+      config,
+      fakeSession as never,
+      { success: true },
+      ctx,
+    );
+
+    expect(fetchCalls).toBe(1);
+    releaseFetch?.();
+    await drainSmartExtractionBackgroundCapturesForTesting();
+    expect(fetchCalls).toBe(2);
   });
 
   it("merges ctx history with the latest inline turn before smart extraction", async () => {
@@ -16433,7 +16691,7 @@ describe("memory-palace plugin helpers", () => {
       const config = __testing.parsePluginConfig({
         stdio: {
           env: {
-            OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "c",
+            OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "d",
             OPENAI_BASE_URL: "http://127.0.0.1:8317/v1",
             OPENAI_MODEL: "gpt-5.4",
           },
@@ -16581,7 +16839,7 @@ describe("memory-palace plugin helpers", () => {
       const config = __testing.parsePluginConfig({
         stdio: {
           env: {
-            OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "c",
+            OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "d",
             OPENAI_BASE_URL: "http://127.0.0.1:8317/v1",
             OPENAI_MODEL: "gpt-5.4",
           },
@@ -16753,7 +17011,7 @@ describe("memory-palace plugin helpers", () => {
       const config = __testing.parsePluginConfig({
         stdio: {
           env: {
-            OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "c",
+            OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "d",
             OPENAI_BASE_URL: "http://127.0.0.1:8317/v1",
             OPENAI_MODEL: "gpt-5.4",
             OPENAI_API_KEY: "sk-" + "12345678",
@@ -16898,7 +17156,7 @@ describe("memory-palace plugin helpers", () => {
       const config = __testing.parsePluginConfig({
         stdio: {
           env: {
-            OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "c",
+            OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "d",
             OPENAI_BASE_URL: "http://127.0.0.1:8317/v1",
             OPENAI_MODEL: "gpt-5.4",
             OPENAI_API_KEY: "sk-" + "12345678",
@@ -17040,7 +17298,7 @@ describe("memory-palace plugin helpers", () => {
       const config = __testing.parsePluginConfig({
         stdio: {
           env: {
-            OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "c",
+            OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "d",
             OPENAI_BASE_URL: "http://127.0.0.1:8317/v1",
             OPENAI_MODEL: "gpt-5.4",
             OPENAI_API_KEY: "sk-" + "12345678",
@@ -17139,7 +17397,7 @@ describe("memory-palace plugin helpers", () => {
     const config = __testing.parsePluginConfig({
       stdio: {
         env: {
-          OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "c",
+          OPENCLAW_MEMORY_PALACE_PROFILE_EFFECTIVE: "d",
           OPENAI_BASE_URL: "http://127.0.0.1:8317/v1",
           OPENAI_MODEL: "gpt-5.4",
         },

@@ -45,6 +45,18 @@ type ProfileMemoryBlockUpsertResult = {
   message?: string;
 };
 
+type SmartExtractionBackgroundTask = {
+  api: OpenClawPluginApi;
+  config: PluginConfig;
+  deps: AutoCaptureDeps;
+  session: SharedClientSession;
+  event: Record<string, unknown>;
+  ctx: Record<string, unknown>;
+};
+
+const smartExtractionInFlightByKey = new Map<string, Promise<void>>();
+const smartExtractionQueuedByKey = new Map<string, SmartExtractionBackgroundTask>();
+
 export type AutoCaptureDeps = {
   analyzeAutoCaptureText: (
     text: string,
@@ -180,6 +192,99 @@ export type AutoCaptureDeps = {
     block: ProfileBlockName,
   ) => string;
 };
+
+function resolveSmartExtractionInFlightKey(
+  deps: AutoCaptureDeps,
+  event: Record<string, unknown>,
+  ctx: Record<string, unknown>,
+): string {
+  const agentRef =
+    deps.resolveContextAgentIdentity(ctx).value ??
+    deps.readString(event.agentId) ??
+    "unknown-agent";
+  const sessionRef =
+    deps.readString(ctx.sessionKey) ??
+    deps.readString(ctx.sessionId) ??
+    deps.readString(event.sessionKey) ??
+    deps.readString(event.sessionId) ??
+    deps.readString(ctx.sessionFile) ??
+    deps.readString(event.sessionFile);
+  if (sessionRef) {
+    return `${agentRef}\0${sessionRef}`;
+  }
+  const transcriptText = [
+    ...(Array.isArray(event.messages)
+      ? deps.extractMessageTexts(event.messages, ["user", "assistant"])
+      : []),
+    ...(Array.isArray(ctx.messages)
+      ? deps.extractMessageTexts(ctx.messages, ["user", "assistant"])
+      : []),
+    ...(Array.isArray(ctx.previousMessages)
+      ? deps.extractMessageTexts(ctx.previousMessages, ["user", "assistant"])
+      : []),
+  ]
+    .map((entry) => deps.normalizeText(entry))
+    .filter(Boolean)
+    .join("\n");
+  const turnHash = transcriptText
+    ? createHash("sha256").update(transcriptText).digest("hex").slice(0, 16)
+    : "unknown-turn";
+  return `${agentRef}\0turn:${turnHash}`;
+}
+
+function runSmartExtractionBackgroundTask(
+  key: string,
+  task: SmartExtractionBackgroundTask,
+): Promise<void> {
+  const promise = task.deps
+    .runSmartExtractionCaptureHook(
+      task.api,
+      task.config,
+      task.session,
+      task.event,
+      task.ctx,
+    )
+    .catch((error) => {
+      task.api.logger.warn(
+        `memory-palace smart extraction failed: ${task.deps.formatError(error)}`,
+      );
+    })
+    .finally(() => {
+      const nextTask = smartExtractionQueuedByKey.get(key);
+      if (nextTask) {
+        smartExtractionQueuedByKey.delete(key);
+        return runSmartExtractionBackgroundTask(key, nextTask);
+      }
+      smartExtractionInFlightByKey.delete(key);
+    });
+  smartExtractionInFlightByKey.set(key, promise);
+  return promise;
+}
+
+function startSmartExtractionCaptureInBackground(
+  task: SmartExtractionBackgroundTask,
+): void {
+  const key = resolveSmartExtractionInFlightKey(task.deps, task.event, task.ctx);
+  if (smartExtractionInFlightByKey.has(key)) {
+    smartExtractionQueuedByKey.set(key, task);
+    task.deps.logPluginTrace(
+      task.api,
+      task.config.smartExtraction.traceEnabled,
+      "memory-palace:smart-extraction-queued",
+      {
+        reason: "smart_extraction_in_flight",
+      },
+    );
+    return;
+  }
+  void runSmartExtractionBackgroundTask(key, task);
+}
+
+export async function drainSmartExtractionBackgroundCapturesForTesting(): Promise<void> {
+  while (smartExtractionInFlightByKey.size > 0) {
+    await Promise.allSettled([...smartExtractionInFlightByKey.values()]);
+  }
+}
 
 export async function runAutoCaptureHook(
   api: OpenClawPluginApi,
@@ -484,13 +589,14 @@ export async function runAutoCaptureHook(
     }
   }
   if (smartExtractionEnabled) {
-    try {
-      await deps.runSmartExtractionCaptureHook(api, config, session, event, ctx);
-    } catch (error) {
-      api.logger.warn(
-        `memory-palace smart extraction failed: ${deps.formatError(error)}`,
-      );
-    }
+    startSmartExtractionCaptureInBackground({
+      api,
+      config,
+      deps,
+      session,
+      event,
+      ctx,
+    });
   }
   deps.logPluginTrace(
     api,

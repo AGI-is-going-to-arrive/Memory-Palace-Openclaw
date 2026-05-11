@@ -466,15 +466,15 @@
 
           <article class="profile-card">
             <span class="chip">Profile C</span>
-            <h3>WebUI 形态基本不变，变化主要发生在 recall / extraction 的质量层</h3>
+            <h3>WebUI 形态基本不变，变化主要发生在 retrieval / reconcile 的质量层</h3>
             <p>
               对用户来说，C 档不是多出一个新页面，而是同样的聊天面已经切到真实 embedding /
-              reranker / model 链路。界面看上去仍然是同一条线程，但 recall、抽取和 visual retrieval
+              reranker 链路。界面看上去仍然是同一条线程，但 retrieval、reconcile 和 visual retrieval
               的质量与深度更像长期使用态。
             </p>
             <p>
               当前公开默认值也要写清楚：`Profile C` 默认只保证 `embedding + reranker`；
-              `write_guard / compact_gist / intent_llm` 仍然是可选启用，不应被写成默认全开。
+              `write_guard / compact_gist / intent_llm` 仍然是可选启用，不应被写成默认全开。Profile C 上 smart extraction 也默认关闭。
             </p>
             <p>
               当前公开叙事只保留仍被公开页面直接嵌入的截图。旧的 `profile-matrix/*`
@@ -502,7 +502,7 @@
             </p>
             <p>
               当前公开默认值是：`Profile D` 默认包含 `write_guard / compact_gist / intent_llm`，
-              但这不改变 `plugins.slots.memory=memory-palace`；`memory-core` 只作为 facade-compat shim 被启用。
+              smart extraction 也默认开启但已后台化；这不改变 `plugins.slots.memory=memory-palace`；`memory-core` 只作为 facade-compat shim 被启用。
             </p>
             <table>
               <thead>

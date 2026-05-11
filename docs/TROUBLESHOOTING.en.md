@@ -271,10 +271,13 @@ A clarification on current terminology to avoid conflating two paths:
    | `reranker_config_missing` | Reranker configuration missing | `backend/db/sqlite_client.py` |
    | `compact_gist_llm_empty` | Compact Gist LLM returned empty result | `backend/mcp_server.py` |
    | `index_enqueue_dropped` | Index task enqueue was dropped | `backend/mcp_server.py` |
+   | `search_revalidation_failed` | Search result revalidation failed; the response keeps the best available results instead of failing the whole search | `backend/mcp_tool_search.py` |
 
    > `write_guard_exception` belongs to the write/learn pipeline (e.g., `create_memory`, `update_memory`, explicit learn triggers). Its semantics indicate that the write was fail-closed rejected; it is not a search quality degradation.
    >
    > If `embedding_fallback_hash` appears here, the current payload will also carry `semantic_search_unavailable=true`. In this case you may still get results, but the correct understanding is "keyword / fallback search is still alive," not "semantic recall is still working normally."
+   >
+   > When `include_session` is enabled, session and global hits are filtered before merge, then revalidated with bounded concurrency. If revalidation itself fails, treat `search_revalidation_failed` as a degradation signal, not as proof that the whole search failed.
    >
    > An additional note to avoid misinterpreting old logs or skips as plugin failures:
    >

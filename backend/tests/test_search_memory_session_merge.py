@@ -228,6 +228,54 @@ async def test_search_memory_drops_stale_session_result_missing_from_storage(
 
 
 @pytest.mark.asyncio
+async def test_search_memory_filters_session_queue_results_before_merge(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake_client = _SessionMergeSearchClient(
+        global_results=[],
+        memories_by_key={
+            ("writer", "private/outside"): {
+                "id": 81,
+                "content": "out of scope session content",
+                "priority": 0,
+                "updated_at": "2026-03-23T00:00:00Z",
+            }
+        },
+    )
+
+    async def _session_search(*_args: Any, **_kwargs: Any) -> List[Dict[str, Any]]:
+        return [
+            {
+                "uri": "writer://private/outside",
+                "memory_id": 81,
+                "snippet": "out of scope session content",
+                "priority": 0,
+                "score": 0.99,
+                "updated_at": "2026-03-23T00:00:00Z",
+            }
+        ]
+
+    monkeypatch.setattr(mcp_server, "get_sqlite_client", lambda: fake_client)
+    monkeypatch.setattr(mcp_server, "_record_session_hit", _noop_async)
+    monkeypatch.setattr(mcp_server, "_record_flush_event", _noop_async)
+    monkeypatch.setattr(mcp_server.runtime_state.session_cache, "search", _session_search)
+
+    raw = await mcp_server.search_memory(
+        query="private",
+        mode="hybrid",
+        max_results=3,
+        include_session=True,
+        filters={"domain": "core", "path_prefix": "agents/main"},
+    )
+    payload = json.loads(raw)
+
+    assert payload["ok"] is True
+    assert payload["results"] == []
+    assert payload["count"] == 0
+    assert payload["session_first_metrics"]["session_candidates"] == 0
+
+
+@pytest.mark.asyncio
 async def test_search_memory_verbose_false_omits_debug_metadata(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

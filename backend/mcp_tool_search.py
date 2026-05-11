@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import inspect
 import re
@@ -51,6 +52,17 @@ def _normalize_path_fragment(value: Optional[Any]) -> str:
     if not raw:
         return ""
     return "/".join(part for part in raw.split("/") if part)
+
+
+def _path_matches_prefix(path: Optional[Any], path_prefix: Optional[Any]) -> bool:
+    normalized_path = _normalize_path_fragment(path)
+    normalized_prefix = _normalize_path_fragment(path_prefix)
+    if not normalized_path or not normalized_prefix:
+        return False
+    return (
+        normalized_path == normalized_prefix
+        or normalized_path.startswith(f"{normalized_prefix}/")
+    )
 
 
 def _coerce_verbose_flag(value: Optional[Any]) -> bool:
@@ -401,23 +413,47 @@ def _extract_search_payload(
 
 
 def _apply_local_filters_to_results(
-    results: List[Dict[str, Any]], filters: Dict[str, Any]
+    results: List[Dict[str, Any]],
+    filters: Dict[str, Any],
+    *,
+    parse_uri: Optional[Callable[[str], Tuple[str, str]]] = None,
 ) -> Tuple[List[Dict[str, Any]], List[str]]:
     """Apply requested filters locally when backend cannot enforce them."""
     filtered = list(results)
     degradation_reasons: List[str] = []
 
+    def _result_domain_path(item: Dict[str, Any]) -> Tuple[Optional[str], Optional[str]]:
+        metadata_obj = item.get("metadata") if isinstance(item.get("metadata"), dict) else {}
+        domain = item.get("domain") or metadata_obj.get("domain")
+        path = item.get("path") or metadata_obj.get("path")
+        uri = item.get("uri")
+        if uri and (domain is None or path is None) and parse_uri is not None:
+            try:
+                parsed_domain, parsed_path = parse_uri(str(uri))
+                domain = domain or parsed_domain
+                path = path or parsed_path
+            except ValueError:
+                pass
+        return (
+            str(domain) if domain is not None else None,
+            _normalize_path_fragment(path) if path is not None else None,
+        )
+
     domain = filters.get("domain")
     if domain:
-        filtered = [item for item in filtered if item.get("domain") == domain]
+        filtered = [
+            item
+            for item in filtered
+            if _result_domain_path(item)[0] == str(domain)
+        ]
 
     path_prefix = filters.get("path_prefix")
     if path_prefix:
         dropped = 0
         kept: List[Dict[str, Any]] = []
         for item in filtered:
-            path = item.get("path")
-            if path and str(path).startswith(path_prefix):
+            _, path = _result_domain_path(item)
+            if _path_matches_prefix(path, path_prefix):
                 kept.append(item)
             else:
                 dropped += 1
@@ -596,22 +632,44 @@ async def _revalidate_search_results(
     refreshed = 0
     errors = 0
 
-    for item in results:
+    semaphore = asyncio.Semaphore(4)
+
+    async def _load_current(
+        item: Dict[str, Any],
+    ) -> Tuple[Dict[str, Any], str, Optional[Dict[str, Any]]]:
         domain, path = _extract_result_domain_path(item, parse_uri=parse_uri)
         if not domain or not path:
-            kept.append(dict(item))
+            return item, "skip", None
+
+        async with semaphore:
+            try:
+                try:
+                    current = await get_memory_by_path(path, domain, reinforce_access=False)
+                except TypeError:
+                    current = await get_memory_by_path(path, domain)
+            except Exception:
+                return item, "error", None
+        return item, "ok", current
+
+    revalidation_rows = await asyncio.gather(
+        *(_load_current(item) for item in results),
+        return_exceptions=True,
+    )
+
+    for original, row in zip(results, revalidation_rows):
+        if isinstance(row, Exception):
+            errors += 1
+            kept.append(dict(original))
             continue
 
-        try:
-            try:
-                current = await get_memory_by_path(path, domain, reinforce_access=False)
-            except TypeError:
-                current = await get_memory_by_path(path, domain)
-        except Exception:
+        item, status, current = row
+        if status == "skip":
+            kept.append(dict(item))
+            continue
+        if status == "error":
             errors += 1
             kept.append(dict(item))
             continue
-
         if current is None:
             dropped += 1
             continue
@@ -924,7 +982,9 @@ async def search_memory_impl(
             make_uri=make_uri,
         )
         filtered_results, local_filter_reasons = _apply_local_filters_to_results(
-            raw_results, normalized_filters
+            raw_results,
+            normalized_filters,
+            parse_uri=parse_uri,
         )
         degraded_reasons.extend(local_filter_reasons)
         backend_degrade_reasons = backend_metadata.get("degrade_reasons")
@@ -976,6 +1036,15 @@ async def search_memory_impl(
                 degraded_reasons.append(
                     "session queue lookup failed; continued with global retrieval only."
                 )
+            if session_results:
+                session_results, session_filter_reasons = _apply_local_filters_to_results(
+                    session_results,
+                    normalized_filters,
+                    parse_uri=parse_uri,
+                )
+                degraded_reasons.extend(
+                    f"session queue {reason}" for reason in session_filter_reasons
+                )
 
         merged_results, session_first_metrics = merge_session_global_results(
             session_results=session_results,
@@ -1005,6 +1074,8 @@ async def search_memory_impl(
             else:
                 global_after += 1
         session_first_metrics.update(revalidation_metrics)
+        if revalidation_metrics.get("revalidation_errors"):
+            degraded_reasons.append("search_revalidation_failed")
         session_first_metrics["session_contributed_before_truncation"] = session_before
         session_first_metrics["global_contributed_before_truncation"] = global_before
         session_first_metrics["merged_candidates_before_truncation"] = merged_before

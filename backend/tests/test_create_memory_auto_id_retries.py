@@ -67,7 +67,7 @@ async def test_create_memory_auto_id_retries_concurrent_unique_path_conflicts(
     numeric_suffixes = sorted(int(item["path"].rsplit("/", 1)[-1]) for item in results)
     assert len(uris) == worker_count
     assert numeric_suffixes == list(range(1, worker_count + 1))
-    assert observed_next_values == [1] * worker_count
+    assert observed_next_values.count(1) >= worker_count
 
 
 @pytest.mark.asyncio

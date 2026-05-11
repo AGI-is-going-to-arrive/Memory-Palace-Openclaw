@@ -128,7 +128,9 @@ flowchart TD
 - `Profile A / B` 更偏基础路径
 - `Profile C` 默认只保证 `embedding + reranker`
 - `Profile C` 里的 `write_guard / compact_gist / intent_llm` 只在 opt-in LLM 时出现
+- `Profile C` 的 smart extraction 默认关闭
 - `Profile D` 是全功能高级目标档，但也只有在 provider 检查和最终签收都通过后，才应该被当成 ready
+- `Profile D` 的 smart extraction 默认开启，但现在会在前台 capture 路径返回后放到后台跑
 
 ---
 

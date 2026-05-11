@@ -35,6 +35,7 @@ These should no longer be described as “planned”:
 - durable / reflection auto recall now merge the current session into recall scope, so “the current chat context did not come back” is less likely on the default path
 - command:new reflection dedupe has session/TTL/budget protection
 - command:new reflection and smart extraction now fail closed when the target session transcript cannot be identified, instead of scanning the latest unrelated transcript
+- smart extraction now runs in the background after foreground capture returns, with same agent/session work queued
 - workflow-related profile recall, durable recall, and host-bridge prompt blocks are now sanitized before prompt injection; onboarding doc paths, provider diagnostics, and confirmation-code noise are no longer supposed to be written back or injected as stable workflow context
 - control-ui / WeChat-style chat surfaces are no longer supposed to echo raw `memory-palace-profile` / `memory-palace-recall` blocks or `openclaw-control-ui` metadata noise back into visible replies
 - onboarding tools avoid passing secrets on the command line

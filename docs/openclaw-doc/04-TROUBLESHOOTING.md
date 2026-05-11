@@ -310,6 +310,26 @@ openclaw memory-palace doctor --query 'What is my default workflow?' --json
 - 需要做一次性宿主数据清理
 - 这属于维护动作，不是插件日常运行会自动替你做的事情
 
+### 7.2 smart extraction 让对话变慢
+
+当前边界是：
+
+- Profile C 默认关闭 smart extraction
+- Profile D 默认开启，但插件现在会在前台 capture hook 返回后再把它放到后台跑
+- 默认请求窗口是 60 秒，默认尝试 2 次，连续 2 次失败后打开 circuit breaker，给不稳定 LLM 留了更实际的响应空间
+- 同一个 agent/session 的 smart extraction 会排队，不会同时跑好几份
+
+如果以前“关掉 smart extraction 就快了”，这个现象本身是旧版前台等待路径的真实症状。
+现在关掉它仍然可以减少后台 LLM 请求，但正常对话不应该再等这次 LLM 调用结束。
+
+如果对话仍然慢，先查 provider 健康和 transport：
+
+```bash
+openclaw memory-palace verify --json
+openclaw memory-palace doctor --json
+openclaw memory-palace smoke --json
+```
+
 ---
 
 ## 8. `Profile C/D` 配了还是不工作

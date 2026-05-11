@@ -18702,8 +18702,11 @@ function parsePluginConfig(raw, api2, options) {
   const warnedRuntimeEnvIssues = new Set;
   const runtimeEnv = resolveRuntimeEnvConfig(stdioEnv, api2.logger, warnedRuntimeEnvIssues);
   const effectiveProfile = resolveConfiguredEffectiveProfile(stdioEnv, api2.logger, warnedRuntimeEnvIssues);
-  const defaultSmartExtractionEnabled = effectiveProfile === "c" || effectiveProfile === "d";
-  const defaultSmartExtractionTimeoutMs = defaultSmartExtractionEnabled ? 60000 : 8000;
+  const explicitSmartExtractionEnabled = readBoolean(smartExtractionRaw.enabled);
+  const defaultSmartExtractionEnabled = effectiveProfile === "d";
+  const smartExtractionEnabled = explicitSmartExtractionEnabled ?? defaultSmartExtractionEnabled;
+  const defaultSmartExtractionTimeoutMs = smartExtractionEnabled ? 60000 : 8000;
+  const defaultReconcileEnabled = effectiveProfile === "c" || effectiveProfile === "d";
   const resolvedSmartExtractionModel = resolveSmartExtractionModelConfig(runtimeEnv);
   const hasExplicitStdioConfig = Boolean(stdioCommand || stdioArgs || stdioCwd || stdioEnv);
   const hasSseConfig = Boolean(readString(sseRaw.url));
@@ -18816,13 +18819,13 @@ function parsePluginConfig(raw, api2, options) {
       traceEnabled: readBoolean(hostBridgeRaw.traceEnabled) ?? true
     },
     smartExtraction: {
-      enabled: readBoolean(smartExtractionRaw.enabled) ?? defaultSmartExtractionEnabled,
+      enabled: smartExtractionEnabled,
       mode: readString(smartExtractionRaw.mode) === "disabled" || readString(smartExtractionRaw.mode) === "local" || readString(smartExtractionRaw.mode) === "remote" ? readString(smartExtractionRaw.mode) : "auto",
       minConversationMessages: readPositiveNumber(smartExtractionRaw.minConversationMessages) ?? 2,
       maxTranscriptChars: readPositiveNumber(smartExtractionRaw.maxTranscriptChars) ?? 8000,
       timeoutMs: readPositiveNumber(smartExtractionRaw.timeoutMs) ?? defaultSmartExtractionTimeoutMs,
       retryAttempts: readPositiveNumber(smartExtractionRaw.retryAttempts) ?? 2,
-      circuitBreakerFailures: readPositiveNumber(smartExtractionRaw.circuitBreakerFailures) ?? 3,
+      circuitBreakerFailures: readPositiveNumber(smartExtractionRaw.circuitBreakerFailures) ?? 2,
       circuitBreakerCooldownMs: readPositiveNumber(smartExtractionRaw.circuitBreakerCooldownMs) ?? 300000,
       categories: readSmartExtractionCategoryArray(smartExtractionRaw.categories) ?? [...SMART_EXTRACTION_CATEGORY_NAMES],
       effectiveProfile,
@@ -18832,7 +18835,7 @@ function parsePluginConfig(raw, api2, options) {
       modelName: resolvedSmartExtractionModel.model
     },
     reconcile: {
-      enabled: readBoolean(reconcileRaw.enabled) ?? defaultSmartExtractionEnabled,
+      enabled: readBoolean(reconcileRaw.enabled) ?? defaultReconcileEnabled,
       profileMergePolicy: readString(reconcileRaw.profileMergePolicy) === "replace" ? "replace" : "always_merge",
       eventMergePolicy: readString(reconcileRaw.eventMergePolicy) === "replace" ? "replace" : "append_only",
       similarityThreshold: Math.max(0, Math.min(1, typeof reconcileRaw.similarityThreshold === "number" && Number.isFinite(reconcileRaw.similarityThreshold) ? reconcileRaw.similarityThreshold : 0.7)),
@@ -20565,6 +20568,48 @@ async function runAutoRecallHook(api2, options) {
 
 // src/auto-capture.ts
 import { createHash as createHash4 } from "node:crypto";
+var smartExtractionInFlightByKey = new Map;
+var smartExtractionQueuedByKey = new Map;
+function resolveSmartExtractionInFlightKey(deps, event, ctx) {
+  const agentRef = deps.resolveContextAgentIdentity(ctx).value ?? deps.readString(event.agentId) ?? "unknown-agent";
+  const sessionRef = deps.readString(ctx.sessionKey) ?? deps.readString(ctx.sessionId) ?? deps.readString(event.sessionKey) ?? deps.readString(event.sessionId) ?? deps.readString(ctx.sessionFile) ?? deps.readString(event.sessionFile);
+  if (sessionRef) {
+    return `${agentRef}\x00${sessionRef}`;
+  }
+  const transcriptText = [
+    ...Array.isArray(event.messages) ? deps.extractMessageTexts(event.messages, ["user", "assistant"]) : [],
+    ...Array.isArray(ctx.messages) ? deps.extractMessageTexts(ctx.messages, ["user", "assistant"]) : [],
+    ...Array.isArray(ctx.previousMessages) ? deps.extractMessageTexts(ctx.previousMessages, ["user", "assistant"]) : []
+  ].map((entry) => deps.normalizeText(entry)).filter(Boolean).join(`
+`);
+  const turnHash = transcriptText ? createHash4("sha256").update(transcriptText).digest("hex").slice(0, 16) : "unknown-turn";
+  return `${agentRef}\x00turn:${turnHash}`;
+}
+function runSmartExtractionBackgroundTask(key, task) {
+  const promise2 = task.deps.runSmartExtractionCaptureHook(task.api, task.config, task.session, task.event, task.ctx).catch((error2) => {
+    task.api.logger.warn(`memory-palace smart extraction failed: ${task.deps.formatError(error2)}`);
+  }).finally(() => {
+    const nextTask = smartExtractionQueuedByKey.get(key);
+    if (nextTask) {
+      smartExtractionQueuedByKey.delete(key);
+      return runSmartExtractionBackgroundTask(key, nextTask);
+    }
+    smartExtractionInFlightByKey.delete(key);
+  });
+  smartExtractionInFlightByKey.set(key, promise2);
+  return promise2;
+}
+function startSmartExtractionCaptureInBackground(task) {
+  const key = resolveSmartExtractionInFlightKey(task.deps, task.event, task.ctx);
+  if (smartExtractionInFlightByKey.has(key)) {
+    smartExtractionQueuedByKey.set(key, task);
+    task.deps.logPluginTrace(task.api, task.config.smartExtraction.traceEnabled, "memory-palace:smart-extraction-queued", {
+      reason: "smart_extraction_in_flight"
+    });
+    return;
+  }
+  runSmartExtractionBackgroundTask(key, task);
+}
 async function runAutoCaptureHook(api2, options) {
   const { config: config2, deps, event, session, ctx } = options;
   const assistantDerivedEnabled = config2.capturePipeline.mode === "v2" && config2.capturePipeline.captureAssistantDerived;
@@ -20749,11 +20794,14 @@ async function runAutoCaptureHook(api2, options) {
     }
   }
   if (smartExtractionEnabled) {
-    try {
-      await deps.runSmartExtractionCaptureHook(api2, config2, session, event, ctx);
-    } catch (error2) {
-      api2.logger.warn(`memory-palace smart extraction failed: ${deps.formatError(error2)}`);
-    }
+    startSmartExtractionCaptureInBackground({
+      api: api2,
+      config: config2,
+      deps,
+      session,
+      event,
+      ctx
+    });
   }
   deps.logPluginTrace(api2, config2.autoCapture.traceEnabled, "memory-palace:auto-capture", {
     agentId: identity.value,

@@ -270,10 +270,13 @@
    | `reranker_config_missing` | Reranker 配置缺失 | `backend/db/sqlite_client.py` |
    | `compact_gist_llm_empty` | Compact Gist LLM 返回空结果 | `backend/mcp_server.py` |
    | `index_enqueue_dropped` | 索引任务入队被丢弃 | `backend/mcp_server.py` |
+   | `search_revalidation_failed` | 搜索结果重验证失败；响应会保留当前可用结果，而不是把整次搜索打失败 | `backend/mcp_tool_search.py` |
 
    > `write_guard_exception` 属于写入/学习链路（如 `create_memory`、`update_memory`、显式学习触发），语义为写入已 fail-closed 拒绝，并非检索质量降级。
    >
    > 如果这里出现了 `embedding_fallback_hash`，当前 payload 还会同时带 `semantic_search_unavailable=true`。这时你可能仍然拿到结果，但更准确的理解应该是“关键词 / fallback 检索还活着”，而不是“语义召回仍然正常”。
+   >
+   > `include_session` 开启时，session 和 global 命中会先过滤再合并，然后用有界并发做重验证。如果重验证本身失败，把 `search_revalidation_failed` 当成降级信号看，不要直接理解成整次 search 已失败。
    >
    > 另外补一句，避免把旧日志或 skip 误看成插件故障：
    >

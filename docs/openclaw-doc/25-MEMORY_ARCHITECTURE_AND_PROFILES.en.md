@@ -345,6 +345,8 @@ One conservative boundary is worth keeping explicit:
 - control-ui / WeChat-style tag-sensitive chat surfaces are no longer supposed to echo raw recall tags back into visible replies on the default path
 - on the capture side, a single workflow statement that only quotes a documentation example is skipped instead of being treated as a stable long-term workflow
 - when smart extraction builds its transcript, assistant thinking blocks are skipped and the budget is kept for actual user / assistant workflow turns
+- smart extraction now starts as background work after the foreground capture hook returns
+- repeated smart extraction for the same agent/session is queued instead of running concurrently, while different sessions can still proceed independently
 
 ### 5.2 What host bridge is for
 
@@ -637,6 +639,8 @@ On the product/deployment side, the profiles are best understood as follows.
 - Reranker: `true`
 - Default reranker weight: `0.30`
 - LLM assists: optional
+- Smart extraction: off by default
+- Reconcile: still enabled independently of smart extraction
 - Good for:
   - provider setup is ready
   - you want the real semantic retrieval path
@@ -651,6 +655,8 @@ On the product/deployment side, the profiles are best understood as follows.
 - Reranker: `true`
 - Default reranker weight: `0.35`
 - More aligned with the advanced assist suite by default
+- Smart extraction: on by default, backgrounded after the foreground capture path returns
+- Default smart extraction limits: 60 second request window, 2 attempts, circuit breaker after 2 failures
 - Installer also cares more about `WRITE_GUARD_LLM_*`
 - Good for:
   - the most complete advanced path in current deployment

@@ -131,6 +131,7 @@ OpenClaw
 - `before_prompt_build` 和旧版 `before_agent_start` 之间，当前会按 session 做一次性标记，避免同一轮重复 recall
 - `command:new` reflection 现在也会按 session 做去重，并带 TTL 和容量上限，避免长会话里重复写入或缓存越跑越大
 - 如果 `command:new` reflection 或 smart extraction 找不到目标 session transcript，当前会直接跳过，不再回退去读“最新但无关”的 transcript
+- smart extraction 现在会在前台 capture hook 返回后再跑；同一个 agent/session 的重复任务会排队，不会并发互撞
 
 但要把另一个边界也一起记住：
 
