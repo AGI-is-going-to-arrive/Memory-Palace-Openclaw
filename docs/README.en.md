@@ -14,6 +14,8 @@ The most important thing first:
 
 > The current public release should be read as an **OpenClaw memory plugin + bundled skills**.
 
+Current public version: `v1.3.0`.
+
 > If this repo helps with your OpenClaw workflow, please give it a GitHub star ⭐.
 
 Start with the live landing page:

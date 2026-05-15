@@ -14,6 +14,8 @@
 
 > 当前公开发布请先按 **OpenClaw memory plugin + bundled skills** 来理解。
 
+当前公开版本：`v1.3.0`。
+
 > 如果这个项目对你的 OpenClaw 使用有帮助，欢迎顺手点个 Star ⭐。
 
 先看公开 landing page：

@@ -73,7 +73,7 @@ memory-palace/
 │   │   ├── maintenance_index.py  # Index worker / rebuild / retry logic
 │   │   └── maintenance_transport.py # Transport / observability aggregation helper
 ├── frontend/             # React + Vite + Tailwind Dashboard
-│   ├── package.json      # Version 1.0.1
+│   ├── package.json      # Version 1.3.0
 │   └── vite.config.js    # Dev server port 5173, proxied to backend 8000
 ├── extensions/           # OpenClaw plugin
 │   └── memory-palace/

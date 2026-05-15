@@ -10,6 +10,8 @@
 
 > **怎么把 `memory-palace` 作为 OpenClaw 的 memory plugin 接进来。**
 
+当前公开版本：`v1.3.0`。
+
 > 如果这个项目对你的 OpenClaw 使用有帮助，欢迎顺手点个 Star ⭐。
 
 如果你想先看一页式总览，再回到正文文档，先看：

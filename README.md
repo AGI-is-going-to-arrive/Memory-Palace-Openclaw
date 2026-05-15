@@ -41,6 +41,7 @@
 ## Live Entry
 
 - **Live landing page**: `https://agi-is-going-to-arrive.github.io/Memory-Palace-Openclaw/`
+- **Current public version**: `v1.3.0`
 - **Default doc entry for OpenClaw users**: `docs/openclaw-doc/README.en.md`
 - **Current validation baseline**: `docs/EVALUATION.en.md`
 

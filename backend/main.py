@@ -600,7 +600,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Memory Palace API",
     description="AI Agent 长期记忆系统后端",
-    version="1.0.1",
+    version="1.3.0",
     lifespan=lifespan
 )
 
@@ -625,7 +625,7 @@ async def root():
     """根路径"""
     return {
         "message": "Memory Palace API",
-        "version": "1.0.1",
+        "version": "1.3.0",
         "docs": "/docs"
     }
 

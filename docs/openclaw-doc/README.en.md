@@ -10,6 +10,8 @@ This documentation covers one thing:
 
 > **How to integrate `memory-palace` as a memory plugin for OpenClaw.**
 
+Current public version: `v1.3.0`.
+
 > If this repo helps with your OpenClaw workflow, please give it a GitHub star ⭐.
 
 If you want the one-page public overview before diving into the docs, start here:

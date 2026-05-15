@@ -41,6 +41,7 @@
 ## 先看这里
 
 - **公开 landing page**：`https://agi-is-going-to-arrive.github.io/Memory-Palace-Openclaw/`
+- **当前公开版本**：`v1.3.0`
 - **OpenClaw 用户默认文档入口**：`docs/openclaw-doc/README.md`
 - **当前验证基线**：`docs/EVALUATION.md`
 
