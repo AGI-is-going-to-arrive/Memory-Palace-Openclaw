@@ -45,9 +45,12 @@ const createHarness = (options?: {
   const internalHooks = new Map<string, HookHandler>();
   const recallCalls: string[] = [];
   const reflectionCalls: string[] = [];
+  const warnCalls: string[] = [];
   const api = {
     logger: {
-      warn() {},
+      warn(message?: unknown) {
+        warnCalls.push(String(message));
+      },
       error() {},
       info() {},
       debug() {},
@@ -184,6 +187,7 @@ const createHarness = (options?: {
     internalHooks,
     recallCalls,
     reflectionCalls,
+    warnCalls,
   };
 };
 
@@ -438,12 +442,14 @@ describe("registerLifecycleHooks", () => {
     expect(beforePromptBuild).toBeDefined();
     expect(beforeAgentStart).toBeDefined();
 
+    // Hooks must never propagate exceptions to the host workflow; the recall
+    // failure should be swallowed (logged) instead of rejecting the promise.
     await expect(
       beforePromptBuild?.(
         { prompt: "session-error prompt" },
         { sessionId: "session-error" },
       ),
-    ).rejects.toBe(error);
+    ).resolves.toBeUndefined();
 
     await flushTimers();
 
@@ -457,5 +463,56 @@ describe("registerLifecycleHooks", () => {
       "session-error",
       "session-after-error",
     ]);
+  });
+
+  it("skips repeated hook failures until the cooldown allows a retry", async () => {
+    const originalNow = Date.now;
+    let now = 1_000_000;
+    let attempts = 0;
+    let shouldFail = true;
+    const harness = createHarness({
+      async runAutoRecallHook() {
+        attempts += 1;
+        if (shouldFail) {
+          throw new Error("persistent recall failure");
+        }
+        return { sessionRef: `recovered-${attempts}` };
+      },
+    });
+    const beforeAgentStart = harness.typedHooks.get("before_agent_start");
+    expect(beforeAgentStart).toBeDefined();
+
+    try {
+      Date.now = () => now;
+
+      for (let index = 0; index < 5; index += 1) {
+        now += 1_000;
+        await expect(
+          beforeAgentStart?.(
+            { prompt: `failure ${index}` },
+            { sessionId: `failure-${index}` },
+          ),
+        ).resolves.toBeUndefined();
+      }
+
+      shouldFail = false;
+      const skipped = await beforeAgentStart?.(
+        { prompt: "before cooldown" },
+        { sessionId: "before-cooldown" },
+      );
+
+      now += 60_001;
+      const recovered = await beforeAgentStart?.(
+        { prompt: "after cooldown" },
+        { sessionId: "after-cooldown" },
+      );
+
+      expect(skipped).toBeUndefined();
+      expect(recovered).toEqual({ sessionRef: "recovered-6" });
+      expect(attempts).toBe(6);
+      expect(harness.warnCalls).toHaveLength(5);
+    } finally {
+      Date.now = originalNow;
+    }
   });
 });

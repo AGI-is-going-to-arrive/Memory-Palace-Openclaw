@@ -231,12 +231,16 @@ INTENT_LLM_MODEL=your-llm-model
 - **Chat-first onboarding**: once the plugin is installed, users can stay in CLI / WebUI chat for `memory_onboarding_status -> memory_onboarding_probe -> memory_onboarding_apply`; after apply, finish the sign-off with `openclaw memory-palace verify / doctor / smoke`.
 - **Experimental multi-agent isolation**: current ACL evidence still shows `alpha -> stored -> beta -> UNKNOWN`, but ACL should be treated as an experimental feature rather than a hardened security boundary.
 - **Clear rollout path**: `Profile B` is the zero-config bootstrap, `Profile C` is the provider-backed retrieval step, and `Profile D` is the full advanced target when embedding / reranker / LLM are all ready.
+- **Temporal and auditable memory**: memories now expose validity windows, supersession, typed links, and partial provenance; inactive history is only included when explicitly requested.
+- **Opt-in RRF tuning**: `RETRIEVAL_FUSION_METHOD=rrf` is available for hybrid retrieval, while `weighted_sum` remains the default because the latest rerun showed gains are useful but not uniform.
+- **Cleaner visible recall**: compact-context recall uses gist text for chat-facing prompts and does not expose raw flush metadata such as session hashes or gist method fields.
 
 ## Architecture At A Glance
 
 - **OpenClaw side**: the `memory` slot, plugin tools, and lifecycle hooks are what users actually touch.
 - **Plugin side**: recall, auto-capture, visual memory, onboarding, ACL, and host-bridge logic live in `extensions/memory-palace/`.
 - **Runtime side**: `backend/` provides the FastAPI + MCP + SQLite runtime, including durable storage and hybrid retrieval.
+- **Recall boundary**: normal search and browsing use active memories; `include_expired=true` is only for historical, future-validity, or superseded records.
 - **Support surfaces**: Dashboard, `verify / doctor / smoke`, and packaged-install checks sit on top of the same runtime.
 
 ---
@@ -290,6 +294,8 @@ Use this section as a boundary, not as a marketing claim.
 - `Profile B` remains the safest first-run path.
 - `Profile C / D` remain provider-dependent and should be treated as ready only after real checks pass in your environment.
 - `Profile D` additionally requires the final resolved `WRITE_GUARD_*`, `COMPACT_GIST_*`, and `INTENT_*` fields to be non-placeholder; manual static env users should fill those fields explicitly instead of relying on template placeholders.
+- `RETRIEVAL_FUSION_METHOD=rrf` is an opt-in retrieval tuning knob, not the new default.
+- Memory Browser now has an explicit inactive-memory view for expired / future-validity / superseded records; keep it off unless you are looking for history.
 - the stable user command surface is still `openclaw memory-palace ...`
 - the repo wrapper remains useful for readiness reports and guided setup, but it is not the stable user CLI surface
 - the current public chat-first claim covers handing the checked-out local document page or local doc path to OpenClaw; it does not claim that every host can fetch arbitrary public GitHub URLs on its own

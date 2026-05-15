@@ -84,8 +84,15 @@ Write Guard may decide:
 - create is safe
 - update an existing memory instead
 - no change is needed
+- delete/ignore the candidate without creating a new durable memory
 
 That is how the system reduces duplicate durable writes.
+
+Two actions are easy to confuse:
+
+- `NOOP` means the memory is already covered.
+- `IGNORE` means the candidate is not worth storing; downstream code treats it
+  as `skip_write=true`.
 
 ---
 
@@ -184,6 +191,7 @@ Useful knobs:
 - `max_results`
 - `candidate_multiplier`
 - `include_session`
+- `include_expired`
 - `filters`
 - `scope_hint`
 
@@ -195,6 +203,12 @@ Important boundary:
 - when `include_session` is enabled, session and global results are filtered before they are merged
 - merged hits are revalidated with a small concurrency cap before the final response, so deleted stale hits are dropped
 - if that revalidation fails, `search_revalidation_failed` can appear in `degrade_reasons` while the request still returns the best available search result
+- inactive memories are excluded by default; use `include_expired=true` only for
+  historical, future-validity, or superseded records
+- `RETRIEVAL_FUSION_METHOD=rrf` enables Reciprocal Rank Fusion, but the default
+  remains `weighted_sum`; the May 15, 2026 rerun showed real gains for C/D in
+  memory-native and some retrieval metrics, but not a uniform win for every
+  profile and metric
 
 <a id="compact_context"></a>
 

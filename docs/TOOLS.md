@@ -320,7 +320,8 @@ search_memory(
     include_session: Optional[bool] = None,      # 可选，是否包含本会话记忆
     filters: Optional[Dict] = None,              # 可选，过滤条件
     scope_hint: Optional[str] = None,            # 可选，查询侧作用域提示（domain/path_prefix/URI 前缀）
-    verbose: Optional[bool] = None               # 可选，是否保留高噪声调试字段
+    verbose: Optional[bool] = None,              # 可选，是否保留高噪声调试字段
+    include_expired: Optional[bool] = None       # 可选，是否包含过期、未来生效或已被替代的记忆
 )
 ```
 
@@ -340,6 +341,7 @@ search_memory(
 | `path_prefix` | `str` | 限定路径前缀，如 `"agent/my_user"` |
 | `max_priority` | `int` | 只返回 priority ≤ 此值的记忆 |
 | `updated_after` | `str` | ISO 时间过滤，如 `"2026-01-31T12:00:00Z"` |
+| `include_expired` | `bool` | 等价于顶层参数；默认 `false`，历史查询才建议打开 |
 
 **响应字段说明：**
 
@@ -350,6 +352,7 @@ search_memory(
 | `intent` | 意图分类：`factual` / `exploratory` / `temporal` / `causal` / `unknown` |
 | `mode_applied` | 实际使用的检索模式 |
 | `search_api_kind` | 当前 backend 走的是 `advanced` 还是 `legacy_fallback` |
+| `include_expired` | 本次搜索是否包含非活动记忆 |
 | `results` | 搜索结果列表 |
 | `session_first_metrics` | session/global 合并、重验证、排序相关统计（`verbose=false` 时默认省略） |
 | `degrade_reasons` | 降级原因（如有） |
@@ -364,6 +367,8 @@ search_memory(
 - backend 当前默认优先走 `search_advanced()`；只有底层 client 不支持这条入口时，才会回退到 legacy `search()`
 - 如果真的走到了 legacy fallback，响应里会直接带 `search_api_kind="legacy_fallback"`，并在 `degrade_reasons` 里出现 `search_api_compat_fallback:search`
 - 如果你不想要高噪声调试字段，可以显式传 `verbose=False`
+- 默认只返回当前已经生效、尚未失效的记忆；也就是 `valid_from <= now` 且 `valid_until` 为空或晚于当前时间
+- 只有需要查历史版本、已过期事实或 superseded 记录时，才传 `include_expired=True`
 
 **使用示例：**
 
@@ -378,6 +383,13 @@ search_memory(
     max_results=8,
     include_session=True,
     filters={"domain": "writer", "path_prefix": "chapter_1"}
+)
+
+# 查历史 / 已过期版本
+search_memory(
+    "old deployment decision",
+    mode="hybrid",
+    include_expired=True,
 )
 ```
 
@@ -617,9 +629,14 @@ ensure_visual_namespace_chain("core://visual/2026/03/13/sha256-demo")
 
 | 字段 | 可能值 | 说明 |
 |---|---|---|
-| `guard_action` | `ADD` / `UPDATE` / `NOOP` / `DELETE` / `BYPASS` | Guard 的决策动作 |
+| `guard_action` | `ADD` / `UPDATE` / `NOOP` / `DELETE` / `IGNORE` | Guard 的决策动作 |
 | `guard_reason` | 字符串 | 决策原因 |
 | `guard_method` | `llm` / `embedding` / `keyword` / `fallback` / `none` / `exception` | 检测方法 |
+
+这里有两个容易混淆的点：
+
+- `NOOP` 表示“已经有了，不需要再写”
+- `IGNORE` 表示“这段输入不值得进入长期记忆”，下游会按 `skip_write=True` 处理，不创建 memory
 
 ### 索引入队统计字段
 
@@ -721,6 +738,7 @@ RETRIEVAL_RERANKER_MODEL=replace-with-your-reranker-model
 RETRIEVAL_RERANKER_WEIGHT=0.25        # Reranker 权重（首要调参项）
 RETRIEVAL_HYBRID_KEYWORD_WEIGHT=0.7   # 关键词权重
 RETRIEVAL_HYBRID_SEMANTIC_WEIGHT=0.3  # 语义权重
+RETRIEVAL_FUSION_METHOD=weighted_sum  # 可选: weighted_sum / rrf
 ```
 
 > 💡 **首要调参项**是 `RETRIEVAL_RERANKER_WEIGHT`。即使 Embedding / Reranker 是本地部署的，也必须配置 OpenAI-compatible API 参数。
@@ -728,6 +746,8 @@ RETRIEVAL_HYBRID_SEMANTIC_WEIGHT=0.3  # 语义权重
 > 配置语义说明：`RETRIEVAL_EMBEDDING_BACKEND` 仅控制 Embedding 路径；Reranker 没有 `RETRIEVAL_RERANKER_BACKEND` 开关。Reranker 参数优先使用 `RETRIEVAL_RERANKER_*`，缺失时才回退 `ROUTER_*`（最后回退 `OPENAI_*` 的 base/key）。
 >
 > 公开文档不预设单一 vendor/model 组合。Embedding、Reranker 和可选 LLM 都应按你自己的 OpenAI-compatible 服务填写，并以 provider-probe / verify / doctor / smoke 的结果为准。
+>
+> `RETRIEVAL_FUSION_METHOD=rrf` 会启用 Reciprocal Rank Fusion。当前默认仍是 `weighted_sum`，因为 2026-05-15 对 `v1.2.0` 的复跑显示：RRF 在 C/D 的 memory-native 与部分检索指标上有真实增益，但 B 档和个别指标不是全线提升，所以不应静默替换默认值。
 >
 > 进阶配置（例如 `INTENT_LLM_*`、`RETRIEVAL_MMR_*`、`CORS_ALLOW_*`、运行时观测/睡眠整合开关）参见 `.env.example` 中的常用配置项；完整默认值以 `backend/` 源码为准。本节只保留最常用主配置。
 >

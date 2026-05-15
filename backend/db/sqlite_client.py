@@ -555,6 +555,9 @@ class SQLiteClient(SQLiteClientRetrievalMixin):
         self._semantic_overfetch_factor = max(
             1, self._env_int("RETRIEVAL_SEMANTIC_OVERFETCH_FACTOR", 3)
         )
+        self._retrieval_fusion_method = self._normalize_retrieval_fusion_method(
+            os.getenv("RETRIEVAL_FUSION_METHOD", "weighted_sum")
+        )
         self._chunk_size = max(128, self._env_int("RETRIEVAL_CHUNK_SIZE", 500))
         requested_chunk_overlap = self._env_int("RETRIEVAL_CHUNK_OVERLAP", 80)
         self._chunk_overlap = max(0, min(self._chunk_size - 1, requested_chunk_overlap))
@@ -1179,6 +1182,26 @@ class SQLiteClient(SQLiteClientRetrievalMixin):
             connection.execute(
                 text("ALTER TABLE memories ADD COLUMN migrated_to INTEGER")
             )
+
+    @staticmethod
+    def _coerce_include_expired(value: Any) -> bool:
+        if isinstance(value, str):
+            return value.strip().lower() in {"1", "true", "yes", "on", "enabled"}
+        return bool(value)
+
+    @staticmethod
+    def _memory_validity_filter(active_at: datetime):
+        active_at_iso = active_at.isoformat()
+        return and_(
+            or_(
+                Memory.valid_from.is_(None),
+                func.datetime(Memory.valid_from) <= func.datetime(active_at_iso),
+            ),
+            or_(
+                Memory.valid_until.is_(None),
+                func.datetime(Memory.valid_until) > func.datetime(active_at_iso),
+            ),
+        )
 
     def _setup_index_infra(self, connection) -> Dict[str, bool]:
         """Create index tables and probe optional SQLite capabilities."""
@@ -1938,6 +1961,15 @@ class SQLiteClient(SQLiteClientRetrievalMixin):
         if engine in {"legacy", "vec", "dual"}:
             return engine
         return "legacy"
+
+    @staticmethod
+    def _normalize_retrieval_fusion_method(value: Optional[str]) -> str:
+        method = str(value or "weighted_sum").strip().lower() or "weighted_sum"
+        if method in {"rrf", "reciprocal_rank_fusion"}:
+            return "rrf"
+        if method in {"weighted_sum", "weighted", "sum"}:
+            return "weighted_sum"
+        return "weighted_sum"
 
     @staticmethod
     def _resolve_sqlite_extension_file(path_input: str) -> Optional[FilePath]:
@@ -4459,7 +4491,11 @@ class SQLiteClient(SQLiteClientRetrievalMixin):
     # =========================================================================
 
     async def get_memory_by_path(
-        self, path: str, domain: str = "core", reinforce_access: bool = True
+        self,
+        path: str,
+        domain: str = "core",
+        reinforce_access: bool = True,
+        include_expired: bool = False,
     ) -> Optional[Dict[str, Any]]:
         """
         Get a memory by its path.
@@ -4475,13 +4511,16 @@ class SQLiteClient(SQLiteClientRetrievalMixin):
         """
         session_factory = self.session if reinforce_access else self.readonly_session
         async with session_factory() as session:
-            result = await session.execute(
+            query = (
                 select(Memory, Path)
                 .join(Path, Memory.id == Path.memory_id)
                 .where(Path.domain == domain)
                 .where(Path.path == path)
                 .where(Memory.deprecated == False)
             )
+            if not include_expired:
+                query = query.where(self._memory_validity_filter(_utc_now_naive()))
+            result = await session.execute(query)
             row = result.first()
 
             if not row:
@@ -4499,6 +4538,16 @@ class SQLiteClient(SQLiteClientRetrievalMixin):
                 "created_at": memory.created_at.isoformat()
                 if memory.created_at
                 else None,
+                "valid_from": memory.valid_from.isoformat()
+                if memory.valid_from
+                else None,
+                "valid_until": memory.valid_until.isoformat()
+                if memory.valid_until
+                else None,
+                "superseded_by": memory.superseded_by,
+                "created_by_agent": memory.created_by_agent,
+                "created_by_session": memory.created_by_session,
+                "source_operation": memory.source_operation,
                 "domain": path_obj.domain,
                 "path": path_obj.path,
                 "gist_text": gist.get("gist_text"),
@@ -4543,6 +4592,16 @@ class SQLiteClient(SQLiteClientRetrievalMixin):
                 "created_at": memory.created_at.isoformat()
                 if memory.created_at
                 else None,
+                "valid_from": memory.valid_from.isoformat()
+                if memory.valid_from
+                else None,
+                "valid_until": memory.valid_until.isoformat()
+                if memory.valid_until
+                else None,
+                "superseded_by": memory.superseded_by,
+                "created_by_agent": memory.created_by_agent,
+                "created_by_session": memory.created_by_session,
+                "source_operation": memory.source_operation,
                 "paths": paths,
             }
             if not bool(memory.deprecated):
@@ -4550,7 +4609,10 @@ class SQLiteClient(SQLiteClientRetrievalMixin):
             return payload
 
     async def get_children(
-        self, memory_id: Optional[int] = None, domain: str = "core"
+        self,
+        memory_id: Optional[int] = None,
+        domain: str = "core",
+        include_expired: bool = False,
     ) -> List[Dict[str, Any]]:
         """
         Get direct children of a memory node.
@@ -4583,6 +4645,8 @@ class SQLiteClient(SQLiteClientRetrievalMixin):
                     .where(Path.path.not_like("%/%"))
                     .order_by(Path.priority.asc(), Path.path)
                 )
+                if not include_expired:
+                    query = query.where(self._memory_validity_filter(_utc_now_naive()))
 
                 result = await session.execute(query)
                 rows = result.all()
@@ -4607,6 +4671,13 @@ class SQLiteClient(SQLiteClientRetrievalMixin):
                             "gist_method": gist.get("gist_method"),
                             "gist_quality": gist.get("quality_score"),
                             "gist_source_hash": gist.get("source_hash"),
+                            "valid_from": memory.valid_from.isoformat()
+                            if memory.valid_from
+                            else None,
+                            "valid_until": memory.valid_until.isoformat()
+                            if memory.valid_until
+                            else None,
+                            "superseded_by": memory.superseded_by,
                         }
                     )
 
@@ -4649,6 +4720,8 @@ class SQLiteClient(SQLiteClientRetrievalMixin):
                 .where(or_(*child_conditions))
                 .order_by(Path.priority.asc(), Path.path)
             )
+            if not include_expired:
+                query = query.where(self._memory_validity_filter(_utc_now_naive()))
 
             result = await session.execute(query)
             rows = result.all()
@@ -4680,6 +4753,13 @@ class SQLiteClient(SQLiteClientRetrievalMixin):
                         "gist_method": gist.get("gist_method"),
                         "gist_quality": gist.get("quality_score"),
                         "gist_source_hash": gist.get("source_hash"),
+                        "valid_from": memory.valid_from.isoformat()
+                        if memory.valid_from
+                        else None,
+                        "valid_until": memory.valid_until.isoformat()
+                        if memory.valid_until
+                        else None,
+                        "superseded_by": memory.superseded_by,
                     }
                 )
 
@@ -4800,6 +4880,7 @@ class SQLiteClient(SQLiteClientRetrievalMixin):
         disclosure: Optional[str] = None,
         domain: str = "core",
         index_now: bool = True,
+        **kwargs: Any,
     ) -> Dict[str, Any]:
         """
         Create a new memory under a parent path.
@@ -4812,10 +4893,19 @@ class SQLiteClient(SQLiteClientRetrievalMixin):
                    This becomes the last segment of the path, NOT stored in memories table.
             disclosure: When to expand this memory
             domain: The domain/namespace (e.g., "core", "writer", "game")
+            **kwargs: Optional provenance metadata propagated to the new row:
+                - created_by_agent (str | None): agent identity (e.g. "primary").
+                - created_by_session (str | None): session identifier.
+                - source_operation (str | None): e.g. "create_memory",
+                  "auto_capture", "consolidation".
+                Unknown kwargs are ignored to keep the signature forward-compatible.
 
         Returns:
             Created memory info with full path
         """
+        created_by_agent = kwargs.get("created_by_agent")
+        created_by_session = kwargs.get("created_by_session")
+        source_operation = kwargs.get("source_operation")
         domain = self._normalize_writable_domain(domain)
         self._validate_memory_content(content)
         self._validate_priority_value(priority)
@@ -4878,7 +4968,12 @@ class SQLiteClient(SQLiteClientRetrievalMixin):
                             f"Path '{domain}://{final_path}' already exists"
                         )
 
-                    memory = Memory(content=content)
+                    memory = Memory(
+                        content=content,
+                        created_by_agent=created_by_agent,
+                        created_by_session=created_by_session,
+                        source_operation=source_operation,
+                    )
                     session.add(memory)
                     await session.flush()
 
@@ -5159,6 +5254,8 @@ class SQLiteClient(SQLiteClientRetrievalMixin):
                 session.add(new_memory)
                 await session.flush()
                 new_memory_id = new_memory.id
+                superseded_by = f"{domain}://{path}"
+                valid_until = _utc_now_naive()
 
                 # Mark old as deprecated and set migration pointer to new version.
                 # The WHERE deprecated=False acts as a CAS guard: if another
@@ -5169,7 +5266,12 @@ class SQLiteClient(SQLiteClientRetrievalMixin):
                     update(Memory)
                     .where(Memory.id == old_id)
                     .where(Memory.deprecated == False)
-                    .values(deprecated=True, migrated_to=new_memory.id)
+                    .values(
+                        deprecated=True,
+                        migrated_to=new_memory.id,
+                        valid_until=valid_until,
+                        superseded_by=superseded_by,
+                    )
                 )
                 if cas_result.rowcount == 0:
                     raise ValueError(
@@ -5251,14 +5353,24 @@ class SQLiteClient(SQLiteClientRetrievalMixin):
             await session.execute(
                 update(Memory)
                 .where(Memory.id == current_id)
-                .values(deprecated=True, migrated_to=target_memory_id)
+                .values(
+                    deprecated=True,
+                    migrated_to=target_memory_id,
+                    valid_until=_utc_now_naive(),
+                    superseded_by=f"{domain}://{path}",
+                )
             )
 
             # 4. Un-deprecate target and clear its migration pointer (it's the active version now)
             await session.execute(
                 update(Memory)
                 .where(Memory.id == target_memory_id)
-                .values(deprecated=False, migrated_to=None)
+                .values(
+                    deprecated=False,
+                    migrated_to=None,
+                    valid_until=None,
+                    superseded_by=None,
+                )
             )
 
             affected_paths = [
@@ -5619,7 +5731,12 @@ class SQLiteClient(SQLiteClientRetrievalMixin):
             await session.execute(
                 update(Memory)
                 .where(Memory.id == memory_id)
-                .values(deprecated=False, migrated_to=None)
+                .values(
+                    deprecated=False,
+                    migrated_to=None,
+                    valid_until=None,
+                    superseded_by=None,
+                )
             )
 
             # Check if path already exists (collision)
@@ -5941,7 +6058,7 @@ class SQLiteClient(SQLiteClientRetrievalMixin):
         if not isinstance(value, str):
             return None
         action = value.strip().upper()
-        if action in {"ADD", "UPDATE", "NOOP", "DELETE"}:
+        if action in {"ADD", "UPDATE", "NOOP", "IGNORE", "DELETE"}:
             return action
         return None
 
@@ -6478,7 +6595,7 @@ class SQLiteClient(SQLiteClientRetrievalMixin):
         system_prompt = (
             "You are a write guard for a memory system. "
             "Return strict JSON only with keys: action,target_id,reason,method,contradiction. "
-            "Allowed action: ADD,UPDATE,NOOP,DELETE. "
+            "Allowed action: ADD,UPDATE,NOOP,IGNORE,DELETE. "
             "contradiction is a boolean: true if the new content REVERSES, DISABLES, "
             "SWITCHES, or CONTRADICTS a fact in a candidate memory (e.g. preference "
             "changes, mode rollbacks, provider switches, value overrides). "
@@ -6493,6 +6610,7 @@ class SQLiteClient(SQLiteClientRetrievalMixin):
             "Decide: does the new content contradict any candidate memory? "
             "If yes, set contradiction=true and action=UPDATE with that memory's target_id. "
             "If it is a duplicate, set action=NOOP. "
+            "If it is transient or not worth storing, set action=IGNORE. "
             "If it is genuinely new information, set action=ADD and contradiction=false."
         )
         payload = {
@@ -6574,6 +6692,7 @@ class SQLiteClient(SQLiteClientRetrievalMixin):
             .join(Memory, Memory.id == Path.memory_id)
             .where(Path.domain == domain)
             .where(Memory.deprecated.is_(False))
+            .where(self._memory_validity_filter(_utc_now_naive()))
             .where(Memory.content.like(f"%{escaped_hash}%", escape="\\"))
             .order_by(Path.priority.asc(), Path.memory_id.desc())
             .limit(8)
@@ -6983,6 +7102,7 @@ class SQLiteClient(SQLiteClientRetrievalMixin):
         candidate_multiplier: int = 4,
         filters: Optional[Dict[str, Any]] = None,
         intent_profile: Optional[Dict[str, Any]] = None,
+        include_expired: bool = False,
     ) -> Dict[str, Any]:
         """
         Advanced retrieval with keyword/semantic/hybrid modes.
@@ -7135,10 +7255,24 @@ class SQLiteClient(SQLiteClientRetrievalMixin):
         candidate_limit = max_results * candidate_multiplier
         semantic_candidate_limit = candidate_limit
         filters = filters or {}
+        include_expired = self._coerce_include_expired(
+            include_expired or filters.get("include_expired")
+        )
 
         async with self.session() as session:
             where_parts = ["m.deprecated = 0"]
             where_params: Dict[str, Any] = {}
+            active_at = _utc_now_naive()
+            if not include_expired:
+                where_parts.append(
+                    "(m.valid_from IS NULL OR "
+                    "datetime(m.valid_from) <= datetime(:valid_active_at))"
+                )
+                where_parts.append(
+                    "(m.valid_until IS NULL OR "
+                    "datetime(m.valid_until) > datetime(:valid_active_at))"
+                )
+                where_params["valid_active_at"] = active_at.isoformat()
 
             domain_filter = filters.get("domain")
             path_prefix_filter = filters.get("path_prefix")
@@ -7190,7 +7324,7 @@ class SQLiteClient(SQLiteClientRetrievalMixin):
                 mode_value == "semantic" and bool(semantic_block_reason)
             )
 
-            if mode_value in {"keyword", "hybrid"} or semantic_fallback_to_keyword:
+            if mode_value in {"keyword", "hybrid"} or semantic_fallback_to_keyword or include_expired:
                 keyword_started_at = time.perf_counter()
                 if self._fts_available:
                     fts_query = self._build_safe_fts_query(query)
@@ -7288,6 +7422,10 @@ class SQLiteClient(SQLiteClientRetrievalMixin):
                             )
                         )
                     )
+                    if not include_expired:
+                        legacy_query = legacy_query.where(
+                            self._memory_validity_filter(active_at)
+                        )
                     if domain_filter:
                         legacy_query = legacy_query.where(Path.domain == str(domain_filter))
                     if path_prefix_filter:
@@ -7332,6 +7470,74 @@ class SQLiteClient(SQLiteClientRetrievalMixin):
                                 "chunk_length": len(memory.content or ""),
                             }
                         )
+                if include_expired:
+                    historical_terms = self._build_like_fallback_terms(query)
+                    historical_clauses = []
+                    for term in historical_terms:
+                        pattern = self._contains_like_pattern(term)
+                        historical_clauses.append(Memory.content.like(pattern, escape="\\"))
+                        historical_clauses.append(
+                            Memory.superseded_by.like(pattern, escape="\\")
+                        )
+                    if historical_clauses:
+                        historical_query = (
+                            select(Memory)
+                            .where(Memory.deprecated == True)
+                            .where(Memory.superseded_by.is_not(None))
+                            .where(or_(*historical_clauses))
+                        )
+                        if updated_after_filter is not None:
+                            historical_query = historical_query.where(
+                                Memory.created_at >= updated_after_filter
+                            )
+                        historical_result = await session.execute(
+                            historical_query.order_by(Memory.created_at.desc()).limit(
+                                candidate_limit
+                            )
+                        )
+                        for memory in historical_result.scalars().all():
+                            superseded_by = str(memory.superseded_by or "").strip()
+                            history_domain, separator, history_path = (
+                                superseded_by.partition("://")
+                            )
+                            if separator != "://" or not history_domain or not history_path:
+                                continue
+                            history_domain = history_domain.strip().lower()
+                            history_path = history_path.strip("/")
+                            if domain_filter and history_domain != str(domain_filter):
+                                continue
+                            if path_prefix_filter and not self._path_matches_prefix(
+                                history_path, path_prefix_filter
+                            ):
+                                continue
+                            if priority_filter is not None:
+                                try:
+                                    if 0 > int(priority_filter):
+                                        continue
+                                except (TypeError, ValueError):
+                                    pass
+                            content = memory.content or ""
+                            keyword_rows.append(
+                                {
+                                    "chunk_id": None,
+                                    "memory_id": memory.id,
+                                    "chunk_text": content,
+                                    "char_start": 0,
+                                    "char_end": len(content),
+                                    "domain": history_domain,
+                                    "path": history_path,
+                                    "priority": 0,
+                                    "disclosure": None,
+                                    "created_at": memory.created_at,
+                                    "vitality_score": memory.vitality_score,
+                                    "access_count": memory.access_count,
+                                    "last_accessed_at": memory.last_accessed_at,
+                                    "chunk_length": len(content),
+                                    "recall_kind": "historical",
+                                    "origin_uri": superseded_by,
+                                    "origin_memory_id": memory.migrated_to,
+                                }
+                            )
                 stage_timings_ms["keyword"] = round(
                     (time.perf_counter() - keyword_started_at) * 1000.0, 3
                 )
@@ -7594,6 +7800,8 @@ class SQLiteClient(SQLiteClientRetrievalMixin):
                         path_prefix_filter=path_prefix_filter,
                         priority_filter=priority_filter,
                         updated_after_filter=updated_after_filter,
+                        include_expired=include_expired,
+                        active_at=active_at,
                     )
                 except Exception:
                     alias_rows = []
@@ -7632,6 +7840,8 @@ class SQLiteClient(SQLiteClientRetrievalMixin):
                         path_prefix_filter=path_prefix_filter,
                         priority_filter=priority_filter,
                         updated_after_filter=updated_after_filter,
+                        include_expired=include_expired,
+                        active_at=active_at,
                     )
                 except Exception:
                     ancestor_rows = []
@@ -7752,8 +7962,40 @@ class SQLiteClient(SQLiteClientRetrievalMixin):
             scored_results: List[Dict[str, Any]] = []
             prefix_value = str(path_prefix_filter) if path_prefix_filter else ""
             candidate_items = list(candidates.values())
+            candidate_memory_ids = {
+                int(item["memory_id"])
+                for item in candidate_items
+                if isinstance(item.get("memory_id"), int)
+            }
+            memory_metadata_by_id: Dict[int, Dict[str, Any]] = {}
+            if candidate_memory_ids:
+                memory_metadata_result = await session.execute(
+                    select(
+                        Memory.id,
+                        Memory.valid_from,
+                        Memory.valid_until,
+                        Memory.superseded_by,
+                        Memory.created_by_agent,
+                        Memory.created_by_session,
+                        Memory.source_operation,
+                    ).where(Memory.id.in_(candidate_memory_ids))
+                )
+                for row in memory_metadata_result.mappings().all():
+                    memory_metadata_by_id[int(row["id"])] = {
+                        "valid_from": row["valid_from"].isoformat()
+                        if row["valid_from"]
+                        else None,
+                        "valid_until": row["valid_until"].isoformat()
+                        if row["valid_until"]
+                        else None,
+                        "superseded_by": row["superseded_by"],
+                        "created_by_agent": row["created_by_agent"],
+                        "created_by_session": row["created_by_session"],
+                        "source_operation": row["source_operation"],
+                    }
             component_scores_by_index: Dict[int, Dict[str, float]] = {}
             base_scores_by_index: Dict[int, float] = {}
+            fusion_weights = weights
             for idx, item in enumerate(candidate_items):
                 components = self._compute_candidate_score_components(
                     item=item,
@@ -7792,11 +8034,63 @@ class SQLiteClient(SQLiteClientRetrievalMixin):
                         "path_prefix": self._weight_path_prefix,
                         "context": 0.05,
                     }
+                    fusion_weights = default_weights
                     for idx_fb in base_scores_by_index:
                         base_scores_by_index[idx_fb] = self._compute_base_candidate_score(
                             components=component_scores_by_index[idx_fb],
                             weights=default_weights,
                         )
+
+            if self._retrieval_fusion_method == "rrf" and mode_value == "hybrid":
+                fts_fusion_rows: List[Dict[str, Any]] = []
+                vec_fusion_rows: List[Dict[str, Any]] = []
+                for item in candidate_items:
+                    memory_id = item.get("memory_id")
+                    if memory_id is None:
+                        continue
+                    stage_scores = item.get("stage_scores")
+                    if not isinstance(stage_scores, dict):
+                        continue
+                    keyword_score = float(stage_scores.get("keyword") or 0.0)
+                    semantic_score = float(stage_scores.get("semantic") or 0.0)
+                    if keyword_score > 0.0:
+                        fts_fusion_rows.append(
+                            {"memory_id": memory_id, "score": keyword_score}
+                        )
+                    if semantic_score > 0.0:
+                        vec_fusion_rows.append(
+                            {"memory_id": memory_id, "score": semantic_score}
+                        )
+
+                rrf_results = self._reciprocal_rank_fusion(
+                    fts_fusion_rows,
+                    vec_fusion_rows,
+                    k=60,
+                    fts_weight=float(fusion_weights.get("text", 1.0)),
+                    vec_weight=float(fusion_weights.get("vector", 1.0)),
+                )
+                rrf_scores_by_memory_id = {
+                    row["memory_id"]: float(row.get("score") or 0.0)
+                    for row in rrf_results
+                }
+                max_rrf_score = max(rrf_scores_by_memory_id.values(), default=0.0)
+                for idx, item in enumerate(candidate_items):
+                    non_fusion_components = dict(component_scores_by_index.get(idx) or {})
+                    non_fusion_components["vector"] = 0.0
+                    non_fusion_components["text"] = 0.0
+                    normalized_rrf_score = 0.0
+                    if max_rrf_score > 0.0:
+                        normalized_rrf_score = (
+                            rrf_scores_by_memory_id.get(item.get("memory_id"), 0.0)
+                            / max_rrf_score
+                        )
+                    base_scores_by_index[idx] = (
+                        normalized_rrf_score
+                        + self._compute_base_candidate_score(
+                            components=non_fusion_components,
+                            weights=fusion_weights,
+                        )
+                    )
 
             rerank_scores_by_index: Dict[int, float] = {}
             rerank_documents_count = 0
@@ -7874,6 +8168,12 @@ class SQLiteClient(SQLiteClientRetrievalMixin):
                 snippet = self._make_snippet(item["chunk_text"], query)
                 domain = item.get("domain") or "core"
                 path = item.get("path") or ""
+                memory_id_value = item.get("memory_id")
+                memory_metadata = (
+                    memory_metadata_by_id.get(memory_id_value)
+                    if isinstance(memory_id_value, int)
+                    else {}
+                ) or {}
                 stage_scores = item.get("stage_scores")
                 if not isinstance(stage_scores, dict):
                     stage_scores = {}
@@ -7911,12 +8211,22 @@ class SQLiteClient(SQLiteClientRetrievalMixin):
                             "rerank": round(rerank_score, 6),
                             "final": round(final_score, 6),
                         },
-                        "metadata": {
-                            "domain": domain,
-                            "path": path,
-                            "priority": item.get("priority", 0),
-                            "disclosure": item.get("disclosure"),
-                            "search_provenance": {
+                            "metadata": {
+                                "domain": domain,
+                                "path": path,
+                                "priority": item.get("priority", 0),
+                                "disclosure": item.get("disclosure"),
+                                "valid_from": memory_metadata.get("valid_from"),
+                                "valid_until": memory_metadata.get("valid_until"),
+                                "superseded_by": memory_metadata.get("superseded_by"),
+                                "created_by_agent": memory_metadata.get("created_by_agent"),
+                                "created_by_session": memory_metadata.get(
+                                    "created_by_session"
+                                ),
+                                "source_operation": memory_metadata.get(
+                                    "source_operation"
+                                ),
+                                "search_provenance": {
                                 "stages": sorted(str(stage) for stage in stage_hits),
                                 "stage_scores": {
                                     str(stage): round(float(score or 0.0), 6)
@@ -8071,7 +8381,11 @@ class SQLiteClient(SQLiteClientRetrievalMixin):
             }
 
     async def search(
-        self, query: str, limit: int = 10, domain: Optional[str] = None
+        self,
+        query: str,
+        limit: int = 10,
+        domain: Optional[str] = None,
+        include_expired: bool = False,
     ) -> List[Dict[str, Any]]:
         """
         Legacy-compatible search by path/content.
@@ -8092,6 +8406,7 @@ class SQLiteClient(SQLiteClientRetrievalMixin):
             max_results=max(1, limit),
             candidate_multiplier=4,
             filters=filters,
+            include_expired=include_expired,
         )
         advanced_results = (
             advanced_payload.get("results", [])
@@ -8435,6 +8750,16 @@ class SQLiteClient(SQLiteClientRetrievalMixin):
                 "created_at": memory.created_at.isoformat()
                 if memory.created_at
                 else None,
+                "valid_from": memory.valid_from.isoformat()
+                if memory.valid_from
+                else None,
+                "valid_until": memory.valid_until.isoformat()
+                if memory.valid_until
+                else None,
+                "superseded_by": memory.superseded_by,
+                "created_by_agent": memory.created_by_agent,
+                "created_by_session": memory.created_by_session,
+                "source_operation": memory.source_operation,
                 "deprecated": memory.deprecated,
                 "migrated_to": memory.migrated_to,
                 "paths": paths,

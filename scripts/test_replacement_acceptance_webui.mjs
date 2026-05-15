@@ -582,6 +582,21 @@ function normalizeCliCaptureUri(rawUri) {
   return rendered.startsWith(expectedPrefix) ? rendered : null;
 }
 
+function normalizeCliSearchPathToUri(rawPath) {
+  const rendered = String(rawPath || "").trim().replace(/\.md$/u, "");
+  if (!rendered) return null;
+  const directUri = normalizeCliCaptureUri(rendered);
+  if (directUri) return directUri;
+  const prefix = "memory-palace/";
+  if (!rendered.startsWith(prefix)) return null;
+  const relative = rendered.slice(prefix.length);
+  const slashIndex = relative.indexOf("/");
+  if (slashIndex <= 0 || slashIndex >= relative.length - 1) return null;
+  const domain = relative.slice(0, slashIndex);
+  const pathPart = relative.slice(slashIndex + 1);
+  return normalizeCliCaptureUri(`${domain}://${pathPart}`);
+}
+
 function parseAcceptanceTimestampMs(rawTimestamp) {
   const parsed = Date.parse(String(rawTimestamp || ""));
   return Number.isFinite(parsed) ? parsed : null;
@@ -653,7 +668,7 @@ async function collectCliMarkerEvidence(scenario, marker) {
   ]);
   const searchPayload = searchResult.payload ?? {};
   const searchResults = Array.isArray(searchPayload.results) ? searchPayload.results : [];
-  const searchFound = searchResults.some((entry) => {
+  let searchFound = searchResults.some((entry) => {
     const haystacks = [
       entry?.path,
       entry?.citation,
@@ -661,6 +676,33 @@ async function collectCliMarkerEvidence(scenario, marker) {
     ];
     return haystacks.some((value) => String(value || "").includes(marker));
   }) || stringifyAcceptancePayload(searchPayload).includes(marker);
+  let searchGetResult = null;
+  if (!searchFound) {
+    for (const entry of searchResults.slice(0, 5)) {
+      const candidateUri = (
+        normalizeCliSearchPathToUri(entry?.uri) ||
+        normalizeCliSearchPathToUri(entry?.path) ||
+        normalizeCliSearchPathToUri(entry?.citation)
+      );
+      if (!candidateUri) {
+        continue;
+      }
+      searchGetResult = await runAcceptanceCliJson(scenario, [
+        "memory-palace",
+        "get",
+        candidateUri,
+        "--json",
+      ]).catch(() => null);
+      const getText = String(
+        searchGetResult?.payload?.text ||
+        stringifyAcceptancePayload(searchGetResult?.payload),
+      );
+      if (getText.includes(marker)) {
+        searchFound = true;
+        break;
+      }
+    }
+  }
   const runtimeState = statusResult.payload?.runtimeState ?? {};
   const structuredStatusEntries = [
     runtimeState.lastCapturePath,
@@ -701,6 +743,7 @@ async function collectCliMarkerEvidence(scenario, marker) {
     recentMatchFound: recentMatchingEntries.length > 0,
     searchResult,
     statusResult,
+    searchGetResult,
     getResult,
   };
 }

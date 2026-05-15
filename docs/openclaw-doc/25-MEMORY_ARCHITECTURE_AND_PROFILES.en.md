@@ -221,6 +221,9 @@ One of the most important design choices is that the backend is not built around
   - Summary layer for recall and compaction.
 - `FlushQuarantine`
   - Quarantine zone used during compaction or reflection flow.
+- `MemoryLink`
+  - Relationship table between memories, currently for typed links such as
+    `related`, `supersedes`, `derived_from`, and `contradicts`.
 
 ### 3.2 Why this model is practical
 
@@ -230,6 +233,15 @@ One of the most important design choices is that the backend is not built around
 - **Updates are versioned rather than in-place**
   - `update_memory()` creates a new version, deprecates the old one, and repoints the path.
   - That improves auditability and stale-write safety.
+- **Facts can have validity windows**
+  - `valid_from` / `valid_until` describe when a memory is active.
+  - Search and browse exclude inactive memories by default; use
+    `include_expired` only when looking for historical versions.
+- **Provenance fields are in place**
+  - The schema has `created_by_agent`, `created_by_session`, and
+    `source_operation`.
+  - Current `create_memory` writes `source_operation`; agent/session values
+    still require upstream host integration.
 - **Retrieval is not “scan one table and hope”**
   - It combines chunks, FTS, vectors, gist, priority, recency, and reranking.
 
@@ -240,6 +252,8 @@ One of the most important design choices is that the backend is not built around
 - `Alias` = one room with multiple doorplates
 - `Chunk` = index cards cut from a long archive
 - `Gist` = summary label attached to the archive
+- `MemoryLink` = an explicit line between two archives, showing relation,
+  inheritance, or conflict
 
 <p align="center">
   <img src="../images/memory_data_model_versions_en_4k.png" width="1100" alt="Memory object model and version-update diagram" />
@@ -262,6 +276,8 @@ flowchart TD
     G -->|ADD| H[create_memory]
     G -->|UPDATE| I[update_memory -> new version]
     G -->|NOOP| J[stop write]
+    G -->|IGNORE| M[skip write]
+    G -->|DELETE| N[stop / scoped delete handling]
     H --> K[index now or enqueue worker]
     I --> K
     K --> L[record session / flush / metrics]
@@ -285,6 +301,8 @@ flowchart TD
 `write_guard` is not just duplicate filtering.
 
 - Empty content: `NOOP`
+- Not worth storing: `IGNORE`, handled downstream as `skip_write=true`
+- Delete / do-not-store decision: `DELETE`, also without creating a new memory
 - Visual memory: fast path through visual hash
 - Regular text: run both
   - `semantic`
@@ -301,7 +319,8 @@ flowchart TD
 
 - Find the current memory behind a path
 - Create a new `Memory`
-- Mark the old one deprecated
+- Mark the old one deprecated and set `valid_until`
+- Point the old version's `superseded_by` at the new same-path URI
 - Repoint the path to the new one
 
 This is closer to “file a new archive version and keep the same doorplate”.
@@ -347,6 +366,13 @@ One conservative boundary is worth keeping explicit:
 - when smart extraction builds its transcript, assistant thinking blocks are skipped and the budget is kept for actual user / assistant workflow turns
 - smart extraction now starts as background work after the foreground capture hook returns
 - repeated smart extraction for the same agent/session is queued instead of running concurrently, while different sessions can still proceed independently
+- lifecycle hook failures do not break the host workflow; after 5 consecutive
+  failures for the same hook, that hook cools down for 60 seconds before a
+  half-open retry
+- `Runtime Session Flush` compact-context records use only the `## Gist` block
+  before visible prompt recall
+- if the gist still looks like internal metadata, the recall path drops it so
+  `session_id`, `source_hash`, or `gist_method` do not reappear in visible chat
 
 ### 5.2 What host bridge is for
 
@@ -373,6 +399,9 @@ If default recall is not enough, or if the model needs explicit verification:
 
 - first `memory_search`
 - then `memory_get`
+- inactive memories are excluded by default
+- pass `include_expired=true` only when the user explicitly asks for historical
+  versions or superseded facts
 
 That is also the usage order recommended by the bundled skills.
 
@@ -408,6 +437,12 @@ Instead it:
 - generates summaries / gist
 - runs the result through `write_guard` again
 - only persists durable or reflection memory when the result passes
+
+Keep the storage and recall boundary separate:
+
+- persisted records may keep audit fields such as `source_hash` and
+  `gist_method`
+- visible prompt recall should use only the gist text, not those internal fields
 
 ### 6.3 Why reflection is a separate lane
 
@@ -450,6 +485,13 @@ It combines:
 - reranker
 - same-URI collapse
 - MMR deduplication
+
+The default fusion method is still `weighted_sum`.
+When `RETRIEVAL_FUSION_METHOD=rrf` is set, hybrid retrieval uses Reciprocal
+Rank Fusion instead. The May 15, 2026 rerun against `v1.2.0` showed real gains
+for C/D in memory-native and some retrieval metrics, but B and individual
+metrics were not uniformly better. That is why RRF is an opt-in tuning knob,
+not a silent default replacement.
 
 ### 7.3 Clear split between automatic and explicit paths
 

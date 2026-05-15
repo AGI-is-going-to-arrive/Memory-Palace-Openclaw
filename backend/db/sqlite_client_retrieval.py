@@ -2,7 +2,7 @@ import math
 import re
 import time
 import unicodedata
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 from sqlalchemy import and_, func, or_, select, text
@@ -292,6 +292,70 @@ class SQLiteClientRetrievalMixin:
             + (self._weight_pending_event * float(components.get("pending_event", 0.0)))
             + (self._weight_length_norm * float(components.get("length_norm", 0.0)))
         )
+
+    def _reciprocal_rank_fusion(
+        self,
+        fts_results: Sequence[Mapping[str, Any]],
+        vec_results: Sequence[Mapping[str, Any]],
+        k: int = 60,
+        fts_weight: float = 1.0,
+        vec_weight: float = 1.0,
+    ) -> List[Dict[str, Any]]:
+        rank_constant = max(0, int(k))
+        fused_scores: Dict[Any, float] = {}
+        source_ranks: Dict[Any, Dict[str, int]] = {}
+        source_scores: Dict[Any, Dict[str, float]] = {}
+
+        def normalize_score(value: Any) -> float:
+            try:
+                v = float(value or 0.0)
+                if not math.isfinite(v) or v < 0.0:
+                    return 0.0
+                return min(v, 100.0)
+            except (TypeError, ValueError):
+                return 0.0
+
+        def ranked_source(
+            rows: Sequence[Mapping[str, Any]],
+        ) -> List[Tuple[Any, float]]:
+            best_by_memory: Dict[Any, float] = {}
+            for row in rows:
+                memory_id = row.get("memory_id")
+                if memory_id is None:
+                    continue
+                score = normalize_score(row.get("score"))
+                current = best_by_memory.get(memory_id)
+                if current is None or score > current:
+                    best_by_memory[memory_id] = score
+            return sorted(
+                best_by_memory.items(),
+                key=lambda item: (-item[1], str(item[0])),
+            )
+
+        for source_name, rows, source_weight in (
+            ("fts", fts_results, fts_weight),
+            ("vec", vec_results, vec_weight),
+        ):
+            weight = normalize_score(source_weight)
+            for rank, (memory_id, raw_score) in enumerate(ranked_source(rows), start=1):
+                fused_scores[memory_id] = fused_scores.get(memory_id, 0.0) + (
+                    weight / float(rank_constant + rank)
+                )
+                source_ranks.setdefault(memory_id, {})[source_name] = rank
+                source_scores.setdefault(memory_id, {})[source_name] = round(raw_score, 6)
+
+        return [
+            {
+                "memory_id": memory_id,
+                "score": round(score, 12),
+                "source_ranks": source_ranks.get(memory_id, {}),
+                "source_scores": source_scores.get(memory_id, {}),
+            }
+            for memory_id, score in sorted(
+                fused_scores.items(),
+                key=lambda item: (-item[1], str(item[0])),
+            )
+        ]
 
     def _build_rerank_plan(
         self,
@@ -611,6 +675,8 @@ class SQLiteClientRetrievalMixin:
         path_prefix_filter: Optional[Any],
         priority_filter: Optional[Any],
         updated_after_filter: Optional[datetime],
+        include_expired: bool = False,
+        active_at: Optional[datetime] = None,
         per_memory_limit: int = 3,
     ) -> List[Dict[str, Any]]:
         if not memory_seeds:
@@ -624,6 +690,9 @@ class SQLiteClientRetrievalMixin:
         if not seed_by_memory:
             return []
 
+        validity_active_at = active_at or datetime.now(timezone.utc).replace(
+            tzinfo=None
+        )
         query = (
             select(Path, Memory)
             .join(Memory, Path.memory_id == Memory.id)
@@ -631,6 +700,14 @@ class SQLiteClientRetrievalMixin:
             .where(Memory.deprecated == False)
             .order_by(Path.priority.asc(), Path.path.asc(), Memory.created_at.desc())
         )
+        if not include_expired:
+            query = query.where(
+                or_(
+                    Memory.valid_until.is_(None),
+                    func.datetime(Memory.valid_until)
+                    > func.datetime(validity_active_at.isoformat()),
+                )
+            )
         result = await session.execute(query)
 
         alias_rows: List[Dict[str, Any]] = []
@@ -711,6 +788,8 @@ class SQLiteClientRetrievalMixin:
         path_prefix_filter: Optional[Any],
         priority_filter: Optional[Any],
         updated_after_filter: Optional[datetime],
+        include_expired: bool = False,
+        active_at: Optional[datetime] = None,
         max_hops: int = 3,
     ) -> List[Dict[str, Any]]:
         if not path_seeds:
@@ -760,7 +839,10 @@ class SQLiteClientRetrievalMixin:
         if not ancestor_requests:
             return []
 
-        result = await session.execute(
+        validity_active_at = active_at or datetime.now(timezone.utc).replace(
+            tzinfo=None
+        )
+        query = (
             select(Path, Memory)
             .join(Memory, Path.memory_id == Memory.id)
             .where(
@@ -773,6 +855,15 @@ class SQLiteClientRetrievalMixin:
             )
             .where(Memory.deprecated == False)
         )
+        if not include_expired:
+            query = query.where(
+                or_(
+                    Memory.valid_until.is_(None),
+                    func.datetime(Memory.valid_until)
+                    > func.datetime(validity_active_at.isoformat()),
+                )
+            )
+        result = await session.execute(query)
         matched_rows = result.all()
         gist_map = await self._get_latest_gists_map(
             session, [memory.id for _path_obj, memory in matched_rows]

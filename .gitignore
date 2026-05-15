@@ -4,7 +4,10 @@
 !.env.example
 
 # Local tooling metadata
-.claude/
+.claude/*
+!.claude/settings.json
+!.claude/hooks/
+!.claude/hooks/**
 .codex/
 .cursor/
 .opencode/
@@ -50,6 +53,7 @@ assets/
 !docs/openclaw-doc/assets/
 !docs/openclaw-doc/assets/real-openclaw-run/
 !docs/openclaw-doc/assets/real-openclaw-run/**
+docs/openclaw-doc/assets/real-openclaw-run/**/.DS_Store
 
 # Python
 .venv/
@@ -216,6 +220,8 @@ $(pwd)/
 *pytest-of-<redacted>*
 *\\private\\var\\folders\\*
 **/\\private\\var\\folders\\*
+\\private/
+**/\\private/
 output/
 
 # Local-only developer e2e specs

@@ -1,0 +1,3 @@
+-- No-op rollback.
+-- These columns are nullable and backward-compatible; dropping them would require
+-- a SQLite table rebuild on older runtimes.

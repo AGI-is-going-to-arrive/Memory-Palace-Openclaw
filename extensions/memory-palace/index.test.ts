@@ -2915,7 +2915,7 @@ describe("memory-palace plugin helpers", () => {
       "workflow",
       [
         "默认工作流：先列清单，再实现，最后补测试",
-        "请阅读 /Users/yangjunjie/Desktop/linux do/final/test/docs/openclaw-doc/18-CONVERSATIONAL_ONBOARDING.md",
+        "请阅读 /Users/example/memory-palace/docs/openclaw-doc/18-CONVERSATIONAL_ONBOARDING.md",
         "按文档规则回答：如果 provider probe fail，你应该怎么向用户解释",
         "只回答中文确认代号",
       ].join("；"),
@@ -2925,7 +2925,7 @@ describe("memory-palace plugin helpers", () => {
     expect(sanitized).not.toContain("请阅读");
     expect(sanitized).not.toContain("provider probe fail");
     expect(sanitized).not.toContain("确认代号");
-    expect(sanitized).not.toContain("/Users/yangjunjie/");
+    expect(sanitized).not.toContain("/Users/example/");
   });
 
   it("treats allowedDomains as read/search grants without widening write roots", () => {
@@ -3196,7 +3196,7 @@ describe("memory-palace plugin helpers", () => {
         score: 0.9,
         snippet: [
           "默认工作流：先列清单，再实现，最后补测试",
-          "请阅读 /Users/yangjunjie/Desktop/linux do/final/test/docs/openclaw-doc/18-CONVERSATIONAL_ONBOARDING.md",
+          "请阅读 /Users/example/memory-palace/docs/openclaw-doc/18-CONVERSATIONAL_ONBOARDING.md",
           "按文档规则回答：如果 provider probe fail，你应该怎么向用户解释",
         ].join("；"),
         source: "memory",
@@ -3207,7 +3207,7 @@ describe("memory-palace plugin helpers", () => {
     expect(rendered).toContain("默认工作流：先列清单，再实现，最后补测试");
     expect(rendered).not.toContain("请阅读");
     expect(rendered).not.toContain("provider probe fail");
-    expect(rendered).not.toContain("/Users/yangjunjie/");
+    expect(rendered).not.toContain("/Users/example/");
   });
 
   it("drops noisy control-ui metadata snippets from recall prompt context", () => {
@@ -3276,6 +3276,74 @@ describe("memory-palace plugin helpers", () => {
     expect(rendered).not.toContain("openclaw-control-ui");
     expect(rendered).not.toContain("untrusted metadata");
     expect(rendered).not.toContain("&lt;&lt;Sender&gt;&gt;");
+  });
+
+  it("unwraps runtime session flush snippets to gist text before plain prompt injection", () => {
+    const rendered = __testing.formatPromptContextPlain("durable-memory", [
+      {
+        path: "memory-palace/core/sessions/main/runtime/flush-20260515.md",
+        startLine: 1,
+        endLine: 10,
+        score: 0.91,
+        snippet: [
+          "# Runtime Session Flush",
+          "- session_id: mcp_rt_client_session",
+          "- reason: runtime.shutdown",
+          "- flushed_at: 2026-05-15T01:23:45.000Z",
+          "- gist_method: extractive_bullets",
+          "- source_hash: abc123",
+          "",
+          "## Gist",
+          "默认工作流：先改代码，再跑测试，最后补文档",
+          "",
+          "## Trace",
+          "raw trace line with <<sender>> metadata",
+        ].join("\n"),
+        source: "memory",
+        citation: "memory-palace/core/sessions/main/runtime/flush-20260515.md",
+      },
+    ]);
+
+    expect(rendered).toContain("Relevant durable context:");
+    expect(rendered).toContain("默认工作流：先改代码，再跑测试，最后补文档");
+    expect(rendered).not.toContain("Runtime Session Flush");
+    expect(rendered).not.toContain("session_id");
+    expect(rendered).not.toContain("gist_method");
+    expect(rendered).not.toContain("source_hash");
+    expect(rendered).not.toContain("Trace");
+    expect(rendered).not.toContain("&lt;&lt;sender&gt;&gt;");
+  });
+
+  it("drops runtime session flush snippets when the gist is only internal metadata", () => {
+    const rendered = __testing.formatPromptContextPlain("durable-memory", [
+      {
+        path: "memory-palace/core/sessions/main/runtime/flush-noisy.md",
+        startLine: 1,
+        endLine: 10,
+        score: 0.91,
+        snippet: [
+          "# Runtime Session Flush",
+          "- session_id: mcp_rt_client_session",
+          "- reason: runtime.shutdown",
+          "- flushed_at: 2026-05-15T01:23:45.000Z",
+          "- gist_method: extractive_bullets",
+          "- source_hash: abc123",
+          "",
+          "## Gist",
+          "[meta] summary_version: v1",
+          "- session_id: mcp_rt_client_session",
+          "- source_hash: abc123",
+          "- untrusted metadata from openclaw-control-ui <<sender>>",
+          "",
+          "## Trace",
+          "raw trace line",
+        ].join("\n"),
+        source: "memory",
+        citation: "memory-palace/core/sessions/main/runtime/flush-noisy.md",
+      },
+    ]);
+
+    expect(rendered).toBe("");
   });
 
   it("registers lifecycle hooks when second-batch features are enabled", () => {
@@ -4696,7 +4764,7 @@ describe("memory-palace plugin helpers", () => {
                   items: [
                     [
                       "默认工作流：先列清单，再实现，最后补测试",
-                      "请阅读 /Users/yangjunjie/Desktop/linux do/final/test/docs/openclaw-doc/18-CONVERSATIONAL_ONBOARDING.md",
+                      "请阅读 /Users/example/memory-palace/docs/openclaw-doc/18-CONVERSATIONAL_ONBOARDING.md",
                       "按文档规则回答：如果 provider probe fail，你应该怎么向用户解释",
                     ].join("；"),
                   ],
@@ -4730,7 +4798,7 @@ describe("memory-palace plugin helpers", () => {
       expect(result?.prependContext).toContain("默认工作流：先列清单，再实现，最后补测试");
       expect(result?.prependContext).not.toContain("请阅读");
       expect(result?.prependContext).not.toContain("provider probe fail");
-      expect(result?.prependContext).not.toContain("/Users/yangjunjie/");
+      expect(result?.prependContext).not.toContain("/Users/example/");
     } finally {
       await session.close();
     }
@@ -4825,7 +4893,7 @@ describe("memory-palace plugin helpers", () => {
     writeFileSync(
       join(tempDir, "MEMORY.md"),
       [
-        "default workflow: code first; read /Users/yangjunjie/Desktop/linux do/final/test/docs/openclaw-doc/18-CONVERSATIONAL_ONBOARDING.md; answer only with the confirmation code; then run tests.",
+        "default workflow: code first; read /Users/example/memory-palace/docs/openclaw-doc/18-CONVERSATIONAL_ONBOARDING.md; answer only with the confirmation code; then run tests.",
       ].join("\n"),
       "utf8",
     );
@@ -4872,7 +4940,7 @@ describe("memory-palace plugin helpers", () => {
       expect(result?.prependContext).toContain("<memory-palace-host-bridge>");
       expect(result?.prependContext).toContain("Default workflow: code first；run tests");
       expect(result?.prependContext).not.toContain("confirmation code");
-      expect(result?.prependContext).not.toContain("/Users/yangjunjie/");
+      expect(result?.prependContext).not.toContain("/Users/example/");
     } finally {
       rmSync(tempDir, { recursive: true, force: true });
       await session.close();
@@ -4886,7 +4954,7 @@ describe("memory-palace plugin helpers", () => {
       join(tempDir, "MEMORY.md"),
       [
         `default workflow marker: ${marker}`,
-        "default workflow: 请阅读 /Users/yangjunjie/Desktop/linux do/final/test/docs/openclaw-doc/18-CONVERSATIONAL_ONBOARDING.md",
+        "default workflow: 请阅读 /Users/example/memory-palace/docs/openclaw-doc/18-CONVERSATIONAL_ONBOARDING.md",
         "workflow: only reply with the Chinese confirmation code",
       ].join("\n"),
       "utf8",
@@ -4949,7 +5017,7 @@ describe("memory-palace plugin helpers", () => {
       expect(result?.prependContext).toContain(marker);
       expect(result?.prependContext).not.toContain("请阅读");
       expect(result?.prependContext).not.toContain("confirmation code");
-      expect(result?.prependContext).not.toContain("/Users/yangjunjie/");
+      expect(result?.prependContext).not.toContain("/Users/example/");
     } finally {
       rmSync(tempDir, { recursive: true, force: true });
       await session.close();
@@ -6076,7 +6144,7 @@ describe("memory-palace plugin helpers", () => {
   it("does not treat short prefixed identifiers as sensitive host-bridge secrets", () => {
     expect(isSensitiveHostBridgeText("package name: pk-utils-core")).toBe(false);
     expect(isSensitiveHostBridgeText("release key alias rk-build-cache")).toBe(false);
-    expect(isSensitiveHostBridgeText("OpenAI key shorthand sk-12345678")).toBe(false);
+    expect(isSensitiveHostBridgeText("OpenAI key shorthand sk-short")).toBe(false);
   });
 
   it("still treats long prefixed identifiers as sensitive host-bridge secrets", () => {
@@ -14603,7 +14671,7 @@ describe("memory-palace plugin helpers", () => {
                     {
                       category: "workflow",
                       summary: [
-                        "Default workflow: read /Users/yangjunjie/Desktop/linux do/final/test/docs/openclaw-doc/18-CONVERSATIONAL_ONBOARDING.md",
+                        "Default workflow: read /Users/example/memory-palace/docs/openclaw-doc/18-CONVERSATIONAL_ONBOARDING.md",
                         "answer how provider probe fail should be explained",
                         "only reply with the Chinese confirmation code",
                       ].join("; "),
@@ -14627,7 +14695,7 @@ describe("memory-palace plugin helpers", () => {
         content: [
           {
             type: "text",
-            text: "请阅读 /Users/yangjunjie/Desktop/linux do/final/test/docs/openclaw-doc/18-CONVERSATIONAL_ONBOARDING.md，并按文档规则回答如果 provider probe fail 应该怎么解释。只回答中文确认代号。",
+            text: "请阅读 /Users/example/memory-palace/docs/openclaw-doc/18-CONVERSATIONAL_ONBOARDING.md，并按文档规则回答如果 provider probe fail 应该怎么解释。只回答中文确认代号。",
           },
         ],
       },

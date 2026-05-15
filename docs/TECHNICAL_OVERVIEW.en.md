@@ -96,12 +96,14 @@ The backend is split into a few stable areas:
   - MCP server assembly and stable tool surface
 - `backend/mcp_tool_search.py`
   - search orchestration, session/global merge, local filters, and bounded stale-hit revalidation
+- `backend/mcp_errors.py`
+  - typed MCP-layer errors and the shared `GuardAction` enum
 - `backend/runtime_state.py`
   - write lane, index worker, vitality cleanup, flush tracker
 - `backend/api/`
   - HTTP routes for browse / review / maintenance
 - `backend/db/`
-  - SQLite facade, ORM models, migrations, retrieval helpers
+  - SQLite facade, ORM models, typed SQLite errors, migrations, retrieval helpers
 
 Two runtime helpers matter in the current codebase:
 
@@ -131,13 +133,19 @@ In plain language:
 
 | Method | Path | Purpose |
 |---|---|---|
-| `GET` | `/browse/node` | browse the memory tree |
+| `GET` | `/browse/node` | browse the active memory tree |
 | `POST` | `/browse/node` | create a memory |
 | `PUT` | `/browse/node` | update a memory |
 | `DELETE` | `/browse/node` | delete a memory path |
 
 Create/update requests go through the same write-lane boundary as MCP writes.
 Deferred indexing is recorded only after the write path accepts the change, and the response can expose enqueue counters for that accepted write.
+
+`GET /browse/node` excludes inactive memories by default. Pass
+`include_expired=true` only when the user is intentionally looking for expired,
+future-validity, or superseded records. Browse responses now include
+`valid_from`, `valid_until`, and `superseded_by`; the current node also exposes
+provenance fields when they exist.
 
 ### `/review`
 
@@ -169,6 +177,8 @@ Main pages:
 
 - `Setup`
 - `Memory`
+  - tree browsing, inline editing, gist view, validity-window display, and an
+    inactive-memory toggle
 - `Review`
 - `Maintenance`
 - `Observability`

@@ -528,6 +528,8 @@ const en = {
     childFilters: 'Child Filters',
     searchPlaceholder: 'Search path / snippet',
     maxPriorityPlaceholder: 'Max priority (optional)',
+    includeExpiredLabel: 'Show inactive memories',
+    includeExpiredHint: 'Include expired, future-validity, and superseded records in this browse view.',
     loadingNode: 'Loading memory node...',
     loadNodeFailed: 'Failed to load node',
     currentNodeContent: 'Current Node Content',
@@ -547,6 +549,12 @@ const en = {
     loadMoreChildren: 'Load {{count}} more',
     gistView: 'Gist',
     originalView: 'Original',
+    temporal: {
+      validFrom: 'valid from',
+      validUntil: 'valid until',
+      openEnded: 'open ended',
+      supersededBy: 'superseded by #{{id}}',
+    },
     feedback: {
       memoryUpdated: 'Long-term memory updated.',
       memoryUpdatedAfterConfirm: 'Long-term memory updated after your confirmation.',

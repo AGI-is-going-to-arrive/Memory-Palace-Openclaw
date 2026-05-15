@@ -12,6 +12,7 @@ import quarantine as quarantine_mod
 from api import browse as browse_api
 from api import maintenance as maintenance_api
 from db.sqlite_client import Memory, MemoryGist, SQLiteClient
+from mcp_runtime_services import _soft_delete_guard_target
 from runtime_state import SessionFlushTracker
 
 
@@ -446,7 +447,7 @@ async def test_compact_context_write_guard_exception_is_fail_closed(
 ) -> None:
     class _GuardFailClient(_FakeCompactClient):
         async def write_guard(self, **_: Any) -> Dict[str, Any]:
-            raise RuntimeError("guard unavailable")
+            raise RuntimeError("guard unavailable api_key=sk-test-secret")
 
     fake_client = _GuardFailClient()
     fake_tracker = _FakeFlushTracker(
@@ -467,11 +468,74 @@ async def test_compact_context_write_guard_exception_is_fail_closed(
     assert payload["data_persisted"] is False
     assert payload["reason"] == "write_guard_blocked"
     assert payload["guard_action"] == "NOOP"
+    assert payload["guard_reason"] == "write_guard_unavailable:RuntimeError"
+    assert "sk-test-secret" not in json.dumps(payload)
     assert payload["guard_method"] == "exception"
     assert "gist_text" not in payload
     assert "trace_text" not in payload
     assert fake_client.created_payload == {}
     assert fake_tracker.marked is False
+
+
+@pytest.mark.asyncio
+async def test_guard_delete_rejects_target_outside_current_scope(tmp_path: Path) -> None:
+    client = SQLiteClient(_sqlite_url(tmp_path / "guard-delete-scope.db"))
+    await client.init_db()
+    await client.create_memory(
+        parent_path="",
+        content="inside scope parent",
+        priority=1,
+        title="agent",
+        domain="notes",
+    )
+    await client.create_memory(
+        parent_path="",
+        content="outside scope parent",
+        priority=1,
+        title="other",
+        domain="notes",
+    )
+    inside = await client.create_memory(
+        parent_path="agent",
+        content="inside scoped guard target",
+        priority=1,
+        title="target",
+        domain="notes",
+    )
+    outside = await client.create_memory(
+        parent_path="other",
+        content="outside scoped guard target",
+        priority=1,
+        title="target",
+        domain="notes",
+    )
+
+    rejected = await _soft_delete_guard_target(
+        client=client,
+        guard_decision={"action": "DELETE", "target_id": outside["id"]},
+        allowed_domain="notes",
+        allowed_path_prefix="agent",
+    )
+    accepted = await _soft_delete_guard_target(
+        client=client,
+        guard_decision={"action": "DELETE", "target_id": inside["id"]},
+        allowed_domain="notes",
+        allowed_path_prefix="agent",
+    )
+    outside_after = await client.get_memory_by_id(outside["id"])
+    inside_after = await client.get_memory_by_id(inside["id"])
+    await client.close()
+
+    assert rejected == {
+        "deleted": False,
+        "reason": "guard_action_delete_target_out_of_scope",
+        "memory_id": outside["id"],
+    }
+    assert accepted["deleted"] is True
+    assert outside_after is not None
+    assert outside_after["deprecated"] is False
+    assert inside_after is not None
+    assert inside_after["deprecated"] is True
 
 
 @pytest.mark.asyncio
@@ -755,7 +819,7 @@ async def test_generate_compact_gist_supports_legacy_llm_env_aliases(
     monkeypatch.delenv("WRITE_GUARD_LLM_API_KEY", raising=False)
     monkeypatch.delenv("WRITE_GUARD_LLM_MODEL", raising=False)
     monkeypatch.setenv("LLM_RESPONSES_URL", "http://127.0.0.1:8317/v1/responses")
-    monkeypatch.setenv("LLM_API_KEY", "sk-12345678")
+    monkeypatch.setenv("LLM_API_KEY", "test-api-key")
     monkeypatch.setenv("LLM_MODEL_NAME", "gpt-5.2")
     monkeypatch.setenv("LLM_REASONING_EFFORT", "none")
 
@@ -773,7 +837,7 @@ async def test_generate_compact_gist_supports_legacy_llm_env_aliases(
         assert endpoint == "/chat/completions"
         assert payload["model"] == "gpt-5.2"
         assert "reasoning" not in payload
-        assert api_key == "sk-12345678"
+        assert api_key == "test-api-key"
         return {
             "choices": [
                 {

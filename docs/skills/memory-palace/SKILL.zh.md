@@ -16,6 +16,7 @@
 
 - 在一个 session 里第一次做真正的 Memory Palace 操作前，先从 `read_memory("system://boot")` 开始。
 - 如果任务偏向 recall，而 boot 之后 URI 还是不明确，再继续用 `search_memory(..., include_session=true)`。
+- 只有用户明确要查历史、未来生效或已被替代的记忆时，才加 `include_expired=true`。
 
 ## 新上下文规则
 
@@ -29,9 +30,12 @@
 - URI 不确定时，先 `search_memory(..., include_session=true)`，再 `read_memory`。
 - 每次变更前都先读：`create_memory`、`update_memory`、`delete_memory`、`add_alias` 都一样。
 - guard 已经指向现有记忆时，优先 `update_memory`，不要重复 `create_memory`。
-- `guard_action=NOOP|UPDATE|DELETE` 不是提示语，而是必须停下来检查的信号。
+- `guard_action=NOOP|UPDATE|DELETE|IGNORE` 不是提示语，而是必须停下来检查的信号。
 - 如果 `guard_action` 是 `NOOP`，就停写，检查 `guard_target_uri` / `guard_target_id`，先读建议目标，再决定要不要继续。
+- 如果 `guard_action` 是 `IGNORE`，不要直接 force-write；只有用户重新明确确认要长期保存时，才继续。
 - 把 `guard_target_uri` 和 `guard_target_id` 当作真正的目标提示，不要靠模糊感觉去猜。
+- 不要编造 provenance、时效字段或 memory link；没有就说没有。
+- 不要把 `session_id`、`source_hash`、`gist_method`、`flushed_at` 这类 compact-context 内部 metadata 暴露给用户。
 - `compact_context(force=false)` 只用于长会话或高噪声会话的压缩，不要当成常规动作。
 - 除非用户明确要求立刻重建，否则先 `index_status()`，再决定要不要 `rebuild_index(wait=true)`。
 - 涉及删除、迁移、别名这类结构性变更时，结束前顺手说清回看路径或回滚路径。
@@ -89,5 +93,6 @@
 ## 排障
 
 - 如果写入被 `guard_action=NOOP` 挡住，先停，检查 `guard_target_uri` / `guard_target_id`，读建议目标，再决定下一步。
+- 如果用户要查旧事实或已替代事实，再用 `include_expired=true` 重新 recall；普通 recall 不带非活动记录。
 - 如果干净会话、子代理或重试丢了上下文，就重新 `read_memory("system://boot")`；URI 仍不明确时，再 `search_memory(..., include_session=true)`。
 - 如果某个 CLI 能加载 skill，但读不到隐藏 skill 目录，就用 `docs/skills/...` 下面这些仓库可见 canonical 路径来回答。

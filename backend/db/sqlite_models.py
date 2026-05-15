@@ -8,6 +8,7 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    UniqueConstraint,
     text,
 )
 from sqlalchemy.orm import declarative_base, relationship
@@ -27,6 +28,9 @@ class Memory(Base):
     deprecated = Column(Boolean, default=False)
     migrated_to = Column(Integer, nullable=True)
     created_at = Column(DateTime, default=_utc_now_naive)
+    valid_from = Column(DateTime, nullable=True)
+    valid_until = Column(DateTime, nullable=True)
+    superseded_by = Column(String, nullable=True)
     vitality_score = Column(
         Float, default=1.0, server_default=text("1.0"), nullable=False
     )
@@ -34,6 +38,11 @@ class Memory(Base):
     access_count = Column(
         Integer, default=0, server_default=text("0"), nullable=False
     )
+    # Provenance: which agent / session / operation produced this memory.
+    # All nullable + backward-compatible (older rows simply have NULLs).
+    created_by_agent = Column(String, nullable=True)
+    created_by_session = Column(String, nullable=True)
+    source_operation = Column(String, nullable=True)
 
     paths = relationship("Path", back_populates="memory")
     gists = relationship("MemoryGist", back_populates="memory")
@@ -219,3 +228,36 @@ class GistAuditResult(Base):
     judge_raw_response = Column(Text, nullable=True)
     created_at = Column(Text, nullable=False, default=_utc_now_naive)
     source_content_hash = Column(Text, nullable=True)
+
+
+class MemoryLink(Base):
+    """A directed link between two memories (A-MEM Zettelkasten style).
+
+    Bidirectional linking is implemented by inserting two rows (source->target
+    and target->source); each row represents one directed edge. The
+    ``link_type`` column lets the same pair carry multiple semantic relations
+    (e.g. ``related``, ``supersedes``, ``derived_from``, ``contradicts``).
+    """
+
+    __tablename__ = "memory_links"
+    __table_args__ = (
+        UniqueConstraint(
+            "source_memory_id",
+            "target_memory_id",
+            "link_type",
+            name="uq_memory_link",
+        ),
+        Index("idx_memory_links_source", "source_memory_id"),
+        Index("idx_memory_links_target", "target_memory_id"),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    source_memory_id = Column(
+        Integer, ForeignKey("memories.id"), nullable=False
+    )
+    target_memory_id = Column(
+        Integer, ForeignKey("memories.id"), nullable=False
+    )
+    link_type = Column(String(64), nullable=False, default="related")
+    strength = Column(Float, default=1.0, server_default=text("1.0"))
+    created_at = Column(DateTime, default=_utc_now_naive)

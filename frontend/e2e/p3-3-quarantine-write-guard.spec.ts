@@ -11,6 +11,7 @@ import { expect, test } from '@playwright/test';
 
 const dashboardApiKey =
   process.env.PLAYWRIGHT_E2E_API_KEY || 'playwright-e2e-key';
+const localeStorageKey = 'memory-palace.locale';
 
 const expectNonNegativeInteger = (value) => {
   expect(Number.isInteger(value)).toBeTruthy();
@@ -32,41 +33,67 @@ async function ensureMaintenanceAuth(page) {
   await expect(page.getByRole('button', { name: 'Update API key' })).toBeVisible();
 }
 
+async function prepareDashboard(page) {
+  let requiresOnboarding = true;
+  await page.route('**/api/bootstrap/status', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        ok: true,
+        summary: requiresOnboarding ? 'Bootstrap not initialized yet' : 'Bootstrap configuration is ready.',
+        setup: {
+          requestedProfile: 'b',
+          effectiveProfile: 'b',
+          requiresOnboarding,
+          restartSupported: true,
+        },
+      }),
+    });
+  });
+  await page.route('**/api/bootstrap/apply', async (route) => {
+    requiresOnboarding = false;
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        ok: true,
+        summary: 'Bootstrap configuration saved for Profile B',
+        effectiveProfile: 'b',
+        fallbackApplied: false,
+        restartRequired: false,
+        restartSupported: true,
+        maintenanceApiKey: dashboardApiKey,
+        maintenanceApiKeyMode: 'header',
+        warnings: [],
+        actions: [],
+        nextSteps: [],
+        setup: { requestedProfile: 'b', effectiveProfile: 'b', requiresOnboarding: false, restartSupported: true },
+      }),
+    });
+  });
+
+  await page.goto('/');
+  await page.waitForURL(/\/(memory|setup)$/);
+  if (page.url().endsWith('/setup')) {
+    await page.getByRole('button', { name: 'Apply', exact: true }).click({ timeout: 5000 });
+    await expect.poll(() => requiresOnboarding, { timeout: 5000 }).toBe(false);
+    await page.goto('/memory');
+    await page.waitForURL('**/memory');
+  }
+
+  await ensureMaintenanceAuth(page);
+}
+
 test.describe('P3-3 Quarantine Write Guard — Observability E2E', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript((storageKey) => {
+      window.localStorage.setItem(storageKey, 'en');
+    }, localeStorageKey);
+  });
 
   test('backend observability summary exposes a stable quarantine contract', async ({ page }) => {
-    // Navigate to any page first so we can evaluate fetch in browser context
-    await page.goto('/');
-    await page.waitForURL(/\/(memory|setup)$/);
-
-    // If we land on /setup, complete minimal bootstrap
-    if (page.url().endsWith('/setup')) {
-      await page.route('**/api/bootstrap/apply', async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            ok: true,
-            summary: 'Bootstrap configuration saved for Profile B',
-            effectiveProfile: 'b',
-            fallbackApplied: false,
-            restartRequired: false,
-            restartSupported: true,
-            maintenanceApiKey: dashboardApiKey,
-            maintenanceApiKeyMode: 'header',
-            warnings: [],
-            actions: [],
-            nextSteps: [],
-            setup: { requestedProfile: 'b', effectiveProfile: 'b', requiresOnboarding: false, restartSupported: true },
-          }),
-        });
-      });
-      await page.getByRole('button', { name: 'Apply', exact: true }).click({ timeout: 5000 }).catch(() => {});
-      await page.goto('/memory');
-      await page.waitForURL('**/memory');
-    }
-
-    await ensureMaintenanceAuth(page);
+    await prepareDashboard(page);
 
     // Directly call the observability summary API and verify quarantine key exists
     const summaryResponse = await page.evaluate(async (apiKey) => {
@@ -108,37 +135,7 @@ test.describe('P3-3 Quarantine Write Guard — Observability E2E', () => {
   });
 
   test('observability page loads and displays expected panels', async ({ page }, testInfo) => {
-    await page.goto('/');
-    await page.waitForURL(/\/(memory|setup)$/);
-
-    // If we land on /setup, complete minimal bootstrap
-    if (page.url().endsWith('/setup')) {
-      await page.route('**/api/bootstrap/apply', async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            ok: true,
-            summary: 'Bootstrap configuration saved for Profile B',
-            effectiveProfile: 'b',
-            fallbackApplied: false,
-            restartRequired: false,
-            restartSupported: true,
-            maintenanceApiKey: dashboardApiKey,
-            maintenanceApiKeyMode: 'header',
-            warnings: [],
-            actions: [],
-            nextSteps: [],
-            setup: { requestedProfile: 'b', effectiveProfile: 'b', requiresOnboarding: false, restartSupported: true },
-          }),
-        });
-      });
-      await page.getByRole('button', { name: 'Apply', exact: true }).click({ timeout: 5000 }).catch(() => {});
-      await page.goto('/memory');
-      await page.waitForURL('**/memory');
-    }
-
-    await ensureMaintenanceAuth(page);
+    await prepareDashboard(page);
 
     // Navigate to observability
     await page.getByRole('link', { name: 'Observability' }).click();
@@ -211,36 +208,7 @@ test.describe('P3-3 Quarantine Write Guard — Observability E2E', () => {
       });
     });
 
-    await page.goto('/');
-    await page.waitForURL(/\/(memory|setup)$/);
-
-    if (page.url().endsWith('/setup')) {
-      await page.route('**/api/bootstrap/apply', async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            ok: true,
-            summary: 'Bootstrap configuration saved for Profile B',
-            effectiveProfile: 'b',
-            fallbackApplied: false,
-            restartRequired: false,
-            restartSupported: true,
-            maintenanceApiKey: dashboardApiKey,
-            maintenanceApiKeyMode: 'header',
-            warnings: [],
-            actions: [],
-            nextSteps: [],
-            setup: { requestedProfile: 'b', effectiveProfile: 'b', requiresOnboarding: false, restartSupported: true },
-          }),
-        });
-      });
-      await page.getByRole('button', { name: 'Apply', exact: true }).click({ timeout: 5000 }).catch(() => {});
-      await page.goto('/memory');
-      await page.waitForURL('**/memory');
-    }
-
-    await ensureMaintenanceAuth(page);
+    await prepareDashboard(page);
 
     // Navigate to observability page
     await page.getByRole('link', { name: 'Observability' }).click();
@@ -280,36 +248,7 @@ test.describe('P3-3 Quarantine Write Guard — Observability E2E', () => {
   });
 
   test('memory page loads correctly after quarantine feature', async ({ page }, testInfo) => {
-    await page.goto('/');
-    await page.waitForURL(/\/(memory|setup)$/);
-
-    if (page.url().endsWith('/setup')) {
-      await page.route('**/api/bootstrap/apply', async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            ok: true,
-            summary: 'Bootstrap configuration saved for Profile B',
-            effectiveProfile: 'b',
-            fallbackApplied: false,
-            restartRequired: false,
-            restartSupported: true,
-            maintenanceApiKey: dashboardApiKey,
-            maintenanceApiKeyMode: 'header',
-            warnings: [],
-            actions: [],
-            nextSteps: [],
-            setup: { requestedProfile: 'b', effectiveProfile: 'b', requiresOnboarding: false, restartSupported: true },
-          }),
-        });
-      });
-      await page.getByRole('button', { name: 'Apply', exact: true }).click({ timeout: 5000 }).catch(() => {});
-      await page.goto('/memory');
-      await page.waitForURL('**/memory');
-    }
-
-    await ensureMaintenanceAuth(page);
+    await prepareDashboard(page);
 
     // Verify memory page renders correctly
     await expect(page.getByRole('heading', { name: 'Memory Hall', exact: true })).toBeVisible();

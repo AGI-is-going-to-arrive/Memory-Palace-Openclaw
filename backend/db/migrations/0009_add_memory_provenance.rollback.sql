@@ -1,0 +1,4 @@
+-- No-op rollback.
+-- The provenance columns (created_by_agent, created_by_session, source_operation)
+-- are nullable and backward-compatible; dropping them would require a SQLite
+-- table rebuild on older runtimes. Existing readers tolerate NULL values.

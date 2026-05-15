@@ -25,9 +25,12 @@ Use this skill for Memory Palace memory operations and for questions about this 
 
 - Read `docs/skills/memory-palace/references/mcp-workflow.md` before choosing tools when the user is asking about workflow or tool behavior.
 - If the URI is unknown, use `search_memory(..., include_session=true)` before `read_memory`.
+- Use `include_expired=true` only when the user explicitly asks for historical, future-validity, or superseded memories.
 - Read before every mutation: `create_memory`, `update_memory`, `delete_memory`, `add_alias`.
 - Use `index_status()` before `rebuild_index(wait=true)` unless the user explicitly wants immediate rebuild.
 - Use `compact_context(force=false)` for long or noisy sessions that should be distilled.
+- Treat `guard_action=IGNORE` as “not worth storing”; do not force-write unless the user explicitly re-confirms.
+- Do not invent provenance, temporal fields, or memory links, and do not expose raw compact-context metadata such as `session_id`, `source_hash`, `gist_method`, or `flushed_at`.
 
 ## Important boundary
 

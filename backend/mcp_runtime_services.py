@@ -9,9 +9,12 @@ from pathlib import Path
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
 
 from filelock import AsyncFileLock, Timeout as FileLockTimeout
+from sqlalchemy import select
 
+from db.sqlite_models import Memory, Path as MemoryPath
 from db.sqlite_paths import extract_sqlite_file_path
 from env_utils import env_float
+from mcp_errors import GuardAction
 import quarantine as _quarantine_mod
 
 logger = logging.getLogger(__name__)
@@ -92,11 +95,141 @@ def normalize_path_prefix_impl(path_prefix: Optional[str]) -> str:
     return "/".join(parts) if parts else "corrections"
 
 
+def _guard_exception_reason(exc: Exception) -> str:
+    return f"write_guard_unavailable:{type(exc).__name__}"
+
+
+def _path_is_within_prefix(path: str, prefix: str) -> bool:
+    normalized_path = str(path or "").strip().strip("/")
+    normalized_prefix = str(prefix or "").strip().strip("/")
+    if not normalized_prefix:
+        return True
+    return normalized_path == normalized_prefix or normalized_path.startswith(
+        f"{normalized_prefix}/"
+    )
+
+
+async def _guard_target_in_scope(
+    *,
+    client: Any,
+    memory_id: int,
+    allowed_domain: str,
+    allowed_path_prefix: Optional[str],
+) -> bool:
+    session_factory = getattr(client, "session", None)
+    if not callable(session_factory):
+        return False
+
+    async with session_factory() as session:
+        result = await session.execute(
+            select(MemoryPath.path)
+            .where(MemoryPath.memory_id == memory_id)
+            .where(MemoryPath.domain == allowed_domain)
+        )
+        paths = [str(row[0] or "").strip("/") for row in result.all()]
+
+    if not paths:
+        return False
+    return any(_path_is_within_prefix(path, allowed_path_prefix or "") for path in paths)
+
+
 def safe_non_negative_int_impl(value: Any) -> int:
     try:
         return max(0, int(value))
     except (OverflowError, TypeError, ValueError):
         return 0
+
+
+async def _resolve_guard_target_memory_id(
+    *,
+    client: Any,
+    guard_decision: Dict[str, Any],
+    parse_uri: Optional[Callable[[str], Tuple[str, str]]] = None,
+) -> Optional[int]:
+    target_id = guard_decision.get("target_id")
+    target_id_value = target_id if isinstance(target_id, int) and target_id > 0 else None
+
+    target_uri = guard_decision.get("target_uri")
+    if not isinstance(target_uri, str) or not target_uri.strip():
+        return target_id_value
+
+    try:
+        if parse_uri is not None:
+            domain, path = parse_uri(target_uri)
+        else:
+            domain, separator, path = target_uri.strip().partition("://")
+            if separator != "://" or not domain or not path:
+                return None
+        memory = await client.get_memory_by_path(path, domain)
+    except Exception:
+        return None
+
+    resolved_id = memory.get("id") if isinstance(memory, dict) else None
+    if not isinstance(resolved_id, int) or resolved_id <= 0:
+        return None
+    if target_id_value is not None and target_id_value != resolved_id:
+        return None
+    return resolved_id
+
+
+async def _soft_delete_guard_target(
+    *,
+    client: Any,
+    guard_decision: Dict[str, Any],
+    allowed_domain: str,
+    allowed_path_prefix: Optional[str],
+    parse_uri: Optional[Callable[[str], Tuple[str, str]]] = None,
+) -> Dict[str, Any]:
+    memory_id = await _resolve_guard_target_memory_id(
+        client=client,
+        guard_decision=guard_decision,
+        parse_uri=parse_uri,
+    )
+    if memory_id is None:
+        return {"deleted": False, "reason": "guard_action_delete_missing_target"}
+
+    if not await _guard_target_in_scope(
+        client=client,
+        memory_id=memory_id,
+        allowed_domain=allowed_domain,
+        allowed_path_prefix=allowed_path_prefix,
+    ):
+        return {
+            "deleted": False,
+            "reason": "guard_action_delete_target_out_of_scope",
+            "memory_id": memory_id,
+        }
+
+    session_factory = getattr(client, "session", None)
+    if not callable(session_factory):
+        return {"deleted": False, "reason": "guard_action_delete_unsupported_client"}
+
+    async with session_factory() as session:
+        memory = await session.get(Memory, memory_id)
+        if memory is None:
+            return {
+                "deleted": False,
+                "reason": "guard_action_delete_target_not_found",
+                "memory_id": memory_id,
+            }
+        if bool(memory.deprecated):
+            return {
+                "deleted": False,
+                "already_deprecated": True,
+                "reason": "guard_action_delete_already_deprecated",
+                "memory_id": memory_id,
+            }
+
+        memory.deprecated = True
+        clear_index = getattr(client, "_clear_memory_index", None)
+        if callable(clear_index):
+            await clear_index(session, memory_id)
+        return {
+            "deleted": True,
+            "already_deprecated": False,
+            "reason": "guard_action_delete",
+            "memory_id": memory_id,
+        }
 
 
 def sanitize_import_learn_summary_impl(payload: Any) -> Optional[Dict[str, Any]]:
@@ -522,13 +655,13 @@ async def compact_context_to_reflection_impl(
             {
                 "action": "NOOP",
                 "method": "exception",
-                "reason": f"write_guard_unavailable: {guard_exc}",
+                "reason": _guard_exception_reason(guard_exc),
                 "degraded": True,
                 "degrade_reasons": ["write_guard_exception"],
             }
         )
-    guard_action = str(guard_decision.get("action") or "NOOP").upper()
-    guard_blocked = guard_action != "ADD"
+    guard_action = str(guard_decision.get("action") or GuardAction.NOOP.value).upper()
+    guard_blocked = guard_action != GuardAction.ADD.value
     try:
         await record_guard_event(
             operation="compact_context_reflection",
@@ -546,7 +679,73 @@ async def compact_context_to_reflection_impl(
         guard_reason = str(guard_decision.get("reason") or "")
         guard_is_invalid = guard_reason.startswith("invalid_guard_action:")
         if (
-            guard_action in {"NOOP", "UPDATE"}
+            guard_action == GuardAction.IGNORE.value
+            and not guard_is_degraded
+            and not guard_is_invalid
+        ):
+            logger.info(
+                "guard_action=IGNORE session_id=%s source=compact_context_reflection "
+                "reason=%s skip_write=True",
+                session_id,
+                guard_decision.get("reason")
+                or "LLM determined content not worth storing",
+            )
+            await runtime_state.flush_tracker.mark_flushed(session_id=session_id)
+            await _record_flush_result(
+                result_reason="guard_action_ignore",
+                flushed=True,
+                data_persisted=False,
+                source_hash=source_hash,
+            )
+            return {
+                "flushed": True,
+                "reason": "guard_action_ignore",
+                "data_persisted": False,
+                "reflection_written": False,
+                "ignored": True,
+                "skip_write": True,
+                **guard_fields(guard_decision),
+            }
+        if (
+            guard_action == GuardAction.DELETE.value
+            and not guard_is_degraded
+            and not guard_is_invalid
+        ):
+            delete_result = await _soft_delete_guard_target(
+                client=client,
+                guard_decision=guard_decision,
+                allowed_domain=compact_guard_domain,
+                allowed_path_prefix=compact_guard_parent_path,
+                parse_uri=parse_uri,
+            )
+            delete_satisfied = bool(
+                delete_result.get("deleted") or delete_result.get("already_deprecated")
+            )
+            if delete_satisfied:
+                await runtime_state.flush_tracker.mark_flushed(session_id=session_id)
+            delete_reason = str(delete_result.get("reason") or "guard_action_delete")
+            await _record_flush_result(
+                result_reason=delete_reason,
+                flushed=delete_satisfied,
+                data_persisted=bool(delete_result.get("deleted")),
+                source_hash=source_hash,
+            )
+            payload: Dict[str, Any] = {
+                "flushed": delete_satisfied,
+                "reason": delete_reason,
+                "data_persisted": bool(delete_result.get("deleted")),
+                "reflection_written": False,
+                "soft_deleted": delete_satisfied,
+                "skip_write": True,
+                **guard_fields(guard_decision),
+            }
+            if delete_result.get("memory_id") is not None:
+                payload["deleted_memory_id"] = delete_result.get("memory_id")
+            if delete_result.get("already_deprecated"):
+                payload["already_deprecated"] = True
+            return payload
+        if (
+            guard_action in {GuardAction.NOOP.value, GuardAction.UPDATE.value}
             and not guard_is_degraded
             and not guard_is_invalid
         ):
@@ -1033,13 +1232,13 @@ async def flush_session_summary_to_memory_impl(
             {
                 "action": "NOOP",
                 "method": "exception",
-                "reason": f"write_guard_unavailable: {guard_exc}",
+                "reason": _guard_exception_reason(guard_exc),
                 "degraded": True,
                 "degrade_reasons": ["write_guard_exception"],
             }
         )
-    guard_action = str(guard_decision.get("action") or "NOOP").upper()
-    guard_blocked = guard_action != "ADD"
+    guard_action = str(guard_decision.get("action") or GuardAction.NOOP.value).upper()
+    guard_blocked = guard_action != GuardAction.ADD.value
     try:
         await record_guard_event(
             operation="compact_context",
@@ -1057,7 +1256,70 @@ async def flush_session_summary_to_memory_impl(
         guard_reason = str(guard_decision.get("reason") or "")
         guard_is_invalid = guard_reason.startswith("invalid_guard_action:")
         if (
-            guard_action in {"NOOP", "UPDATE"}
+            guard_action == GuardAction.IGNORE.value
+            and not guard_is_degraded
+            and not guard_is_invalid
+        ):
+            logger.info(
+                "guard_action=IGNORE session_id=%s source=compact_context "
+                "reason=%s skip_write=True",
+                session_id,
+                guard_decision.get("reason")
+                or "LLM determined content not worth storing",
+            )
+            await runtime_state.flush_tracker.mark_flushed(session_id=session_id)
+            await _record_flush_result(
+                result_reason="guard_action_ignore",
+                flushed=True,
+                data_persisted=False,
+                source_hash=source_hash,
+            )
+            return {
+                "flushed": True,
+                "reason": "guard_action_ignore",
+                "data_persisted": False,
+                "ignored": True,
+                "skip_write": True,
+                **guard_fields(guard_decision),
+            }
+        if (
+            guard_action == GuardAction.DELETE.value
+            and not guard_is_degraded
+            and not guard_is_invalid
+        ):
+            delete_result = await _soft_delete_guard_target(
+                client=client,
+                guard_decision=guard_decision,
+                allowed_domain=domain,
+                allowed_path_prefix=parent_path,
+            )
+            delete_satisfied = bool(
+                delete_result.get("deleted") or delete_result.get("already_deprecated")
+            )
+            if delete_satisfied:
+                await runtime_state.flush_tracker.mark_flushed(session_id=session_id)
+            delete_reason = str(delete_result.get("reason") or "guard_action_delete")
+            await _record_flush_result(
+                result_reason=delete_reason,
+                flushed=delete_satisfied,
+                data_persisted=bool(delete_result.get("deleted")),
+                source_hash=source_hash,
+            )
+            payload: Dict[str, Any] = {
+                "flushed": delete_satisfied,
+                "reason": delete_reason,
+                "data_persisted": bool(delete_result.get("deleted")),
+                "soft_deleted": delete_satisfied,
+                "skip_write": True,
+                **guard_fields(guard_decision),
+            }
+            if delete_result.get("memory_id") is not None:
+                payload["deleted_memory_id"] = delete_result.get("memory_id")
+            if delete_result.get("already_deprecated"):
+                payload["already_deprecated"] = True
+            return payload
+        if (
+            guard_action in {GuardAction.NOOP.value, GuardAction.UPDATE.value}
             and not guard_is_degraded
             and not guard_is_invalid
         ):

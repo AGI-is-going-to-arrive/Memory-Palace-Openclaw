@@ -66,6 +66,37 @@ type HookHandler = (
   ctx?: Record<string, unknown>,
 ) => Promise<unknown> | unknown;
 
+// Circuit breaker: prevent a chronically-failing hook from being retried forever.
+// Hooks must never break the host workflow, so we skip repeated failures for a
+// short cooldown and then allow one half-open retry that can reset the counter.
+const HOOK_FAILURE_THRESHOLD = 5;
+const HOOK_FAILURE_COOLDOWN_MS = 60_000;
+type HookFailureState = {
+  count: number;
+  lastFailureAt: number;
+};
+const hookFailureCounts = new Map<string, HookFailureState>();
+
+function shouldSkipHook(hookName: string): boolean {
+  const state = hookFailureCounts.get(hookName);
+  if (!state || state.count < HOOK_FAILURE_THRESHOLD) {
+    return false;
+  }
+  return Date.now() - state.lastFailureAt < HOOK_FAILURE_COOLDOWN_MS;
+}
+
+function recordHookFailure(hookName: string): void {
+  const current = hookFailureCounts.get(hookName);
+  hookFailureCounts.set(hookName, {
+    count: (current?.count ?? 0) + 1,
+    lastFailureAt: Date.now(),
+  });
+}
+
+function resetHookFailure(hookName: string): void {
+  hookFailureCounts.delete(hookName);
+}
+
 export function registerLifecycleHooks(
   api: OpenClawPluginApi,
   options: {
@@ -340,54 +371,91 @@ export function registerLifecycleHooks(
     };
 
     registerNamedHook("before_prompt_build", async (event, ctx) => {
-      const normalizedCtx = deps.normalizeHookContext(ctx);
-      const sessionRef = resolveLifecycleSessionRef(event, normalizedCtx);
-      if (
-        config.reflection.enabled &&
-        config.reflection.source === "command_new" &&
-        deps.isCommandNewStartupEvent(event, normalizedCtx)
-      ) {
-        await triggerCommandNewReflection(event, normalizedCtx, "new");
-      }
-      markPromptBuildRecallSession(sessionRef, Date.now());
+      const hookName = "before_prompt_build";
+      if (shouldSkipHook(hookName)) return;
       try {
-        return await deps.runAutoRecallHook(api, config, session, event, normalizedCtx);
-      } finally {
-        schedulePromptBuildRecallCleanup(sessionRef);
+        const normalizedCtx = deps.normalizeHookContext(ctx);
+        const sessionRef = resolveLifecycleSessionRef(event, normalizedCtx);
+        if (
+          config.reflection.enabled &&
+          config.reflection.source === "command_new" &&
+          deps.isCommandNewStartupEvent(event, normalizedCtx)
+        ) {
+          await triggerCommandNewReflection(event, normalizedCtx, "new");
+        }
+        markPromptBuildRecallSession(sessionRef, Date.now());
+        try {
+          const result = await deps.runAutoRecallHook(api, config, session, event, normalizedCtx);
+          resetHookFailure(hookName);
+          return result;
+        } finally {
+          schedulePromptBuildRecallCleanup(sessionRef);
+        }
+      } catch (err) {
+        // Log but don't propagate - hooks must never break the host
+        recordHookFailure(hookName);
+        api?.logger?.warn?.(
+          `[memory-palace] ${hookName} hook failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
+        return;
       }
     }, { priority: 100 });
 
     // Legacy fallback: only runs recall if before_prompt_build was not fired
     // (e.g. on older OpenClaw hosts that lack the newer hook).
     registerNamedHook("before_agent_start", async (event, ctx) => {
-      const normalizedCtx = deps.normalizeHookContext(ctx);
-      const sessionRef = resolveLifecycleSessionRef(event, normalizedCtx);
-      if (consumePromptBuildRecallSession(sessionRef)) {
+      const hookName = "before_agent_start";
+      if (shouldSkipHook(hookName)) return;
+      try {
+        const normalizedCtx = deps.normalizeHookContext(ctx);
+        const sessionRef = resolveLifecycleSessionRef(event, normalizedCtx);
+        if (consumePromptBuildRecallSession(sessionRef)) {
+          return;
+        }
+        if (
+          config.reflection.enabled &&
+          config.reflection.source === "command_new" &&
+          deps.isCommandNewStartupEvent(event, normalizedCtx)
+        ) {
+          await triggerCommandNewReflection(event, normalizedCtx, "new");
+        }
+        const result = await deps.runAutoRecallHook(api, config, session, event, normalizedCtx);
+        resetHookFailure(hookName);
+        return result;
+      } catch (err) {
+        // Log but don't propagate - hooks must never break the host
+        recordHookFailure(hookName);
+        api?.logger?.warn?.(
+          `[memory-palace] ${hookName} hook failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
         return;
       }
-      if (
-        config.reflection.enabled &&
-        config.reflection.source === "command_new" &&
-        deps.isCommandNewStartupEvent(event, normalizedCtx)
-      ) {
-        await triggerCommandNewReflection(event, normalizedCtx, "new");
-      }
-      return deps.runAutoRecallHook(api, config, session, event, normalizedCtx);
     });
 
     const handleBeforeReset = async (
       event: Record<string, unknown>,
       ctx?: Record<string, unknown>,
     ) => {
-      const reason = deps.readString(event.reason)?.trim().toLowerCase();
-      if (reason && reason !== "new" && reason !== "reset") {
-        return;
+      const hookName = "before_reset";
+      if (shouldSkipHook(hookName)) return;
+      try {
+        const reason = deps.readString(event.reason)?.trim().toLowerCase();
+        if (reason && reason !== "new" && reason !== "reset") {
+          return;
+        }
+        await triggerCommandNewReflection(
+          event,
+          ctx,
+          reason === "reset" ? "reset" : "new",
+        );
+        resetHookFailure(hookName);
+      } catch (err) {
+        // Log but don't propagate - hooks must never break the host
+        recordHookFailure(hookName);
+        api?.logger?.warn?.(
+          `[memory-palace] ${hookName} hook failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
       }
-      await triggerCommandNewReflection(
-        event,
-        ctx,
-        reason === "reset" ? "reset" : "new",
-      );
     };
 
     if (config.reflection.enabled && config.reflection.source === "command_new") {
@@ -396,7 +464,18 @@ export function registerLifecycleHooks(
         api.registerHook(
           "command:new",
           async (event, ctx) => {
-            await triggerCommandNewReflection(event, ctx, "new");
+            const hookName = "command:new";
+            if (shouldSkipHook(hookName)) return;
+            try {
+              await triggerCommandNewReflection(event, ctx, "new");
+              resetHookFailure(hookName);
+            } catch (err) {
+              // Log but don't propagate - hooks must never break the host
+              recordHookFailure(hookName);
+              api?.logger?.warn?.(
+                `[memory-palace] ${hookName} hook failed: ${err instanceof Error ? err.message : String(err)}`,
+              );
+            }
           },
           {
             name: "memory-palace-command-new-reflection",
@@ -407,7 +486,18 @@ export function registerLifecycleHooks(
         api.registerHook(
           "command:reset",
           async (event, ctx) => {
-            await triggerCommandNewReflection(event, ctx, "reset");
+            const hookName = "command:reset";
+            if (shouldSkipHook(hookName)) return;
+            try {
+              await triggerCommandNewReflection(event, ctx, "reset");
+              resetHookFailure(hookName);
+            } catch (err) {
+              // Log but don't propagate - hooks must never break the host
+              recordHookFailure(hookName);
+              api?.logger?.warn?.(
+                `[memory-palace] ${hookName} hook failed: ${err instanceof Error ? err.message : String(err)}`,
+              );
+            }
           },
           {
             name: "memory-palace-command-reset-reflection",
@@ -430,67 +520,82 @@ export function registerLifecycleHooks(
       event: Record<string, unknown>,
       ctx?: Record<string, unknown>,
     ) => {
-      const normalizedCtx = deps.normalizeHookContext(ctx);
-      if (config.visualMemory.enabled) {
-        deps.harvestVisualContextFromEvent(
-          api,
-          config,
-          "message:preprocessed",
-          event,
-          normalizedCtx,
-        );
-      }
-      if (
-        !config.autoCapture.enabled &&
-        !config.capturePipeline.captureAssistantDerived &&
-        !config.smartExtraction.enabled
-      ) {
-        return;
-      }
-      if (Array.isArray(event.messages) && event.messages.length > 0) {
-        return;
-      }
-      const bodyText = extractPreprocessedUserText(event);
-      if (!bodyText || !isWebchatContext(event, normalizedCtx, bodyText)) {
-        return;
-      }
-      const dedupeText = deps.normalizeText(bodyText) ?? bodyText.trim();
-      const sessionRef =
-        deps.readString(normalizedCtx.sessionKey) ??
-        deps.readString(normalizedCtx.sessionId) ??
-        deps.readString(event.sessionKey) ??
-        deps.readString(event.sessionId) ??
-        "unknown-session";
-      const dedupeKey = `${sessionRef}:${dedupeText}`;
-      const now = Date.now();
-      const lastSeenAt = recentWebchatFallbackCaptures.get(dedupeKey) ?? 0;
-      if (now - lastSeenAt < 15_000) {
-        return;
-      }
-      recentWebchatFallbackCaptures.set(dedupeKey, now);
-      if (recentWebchatFallbackCaptures.size > 128) {
-        for (const [key, seenAt] of recentWebchatFallbackCaptures) {
-          if (now - seenAt > 60_000) {
-            recentWebchatFallbackCaptures.delete(key);
+      const hookName = "message:preprocessed";
+      if (shouldSkipHook(hookName)) return;
+      try {
+        const normalizedCtx = deps.normalizeHookContext(ctx);
+        if (config.visualMemory.enabled) {
+          deps.harvestVisualContextFromEvent(
+            api,
+            config,
+            "message:preprocessed",
+            event,
+            normalizedCtx,
+          );
+        }
+        if (
+          !config.autoCapture.enabled &&
+          !config.capturePipeline.captureAssistantDerived &&
+          !config.smartExtraction.enabled
+        ) {
+          resetHookFailure(hookName);
+          return;
+        }
+        if (Array.isArray(event.messages) && event.messages.length > 0) {
+          resetHookFailure(hookName);
+          return;
+        }
+        const bodyText = extractPreprocessedUserText(event);
+        if (!bodyText || !isWebchatContext(event, normalizedCtx, bodyText)) {
+          resetHookFailure(hookName);
+          return;
+        }
+        const dedupeText = deps.normalizeText(bodyText) ?? bodyText.trim();
+        const sessionRef =
+          deps.readString(normalizedCtx.sessionKey) ??
+          deps.readString(normalizedCtx.sessionId) ??
+          deps.readString(event.sessionKey) ??
+          deps.readString(event.sessionId) ??
+          "unknown-session";
+        const dedupeKey = `${sessionRef}:${dedupeText}`;
+        const now = Date.now();
+        const lastSeenAt = recentWebchatFallbackCaptures.get(dedupeKey) ?? 0;
+        if (now - lastSeenAt < 15_000) {
+          resetHookFailure(hookName);
+          return;
+        }
+        recentWebchatFallbackCaptures.set(dedupeKey, now);
+        if (recentWebchatFallbackCaptures.size > 128) {
+          for (const [key, seenAt] of recentWebchatFallbackCaptures) {
+            if (now - seenAt > 60_000) {
+              recentWebchatFallbackCaptures.delete(key);
+            }
           }
         }
+        await deps.runAutoCaptureHook(
+          api,
+          config,
+          session,
+          {
+            ...event,
+            success: true,
+            messages: [
+              {
+                role: "user",
+                content: [{ type: "text", text: bodyText }],
+              },
+            ],
+          },
+          normalizedCtx,
+        );
+        resetHookFailure(hookName);
+      } catch (err) {
+        // Log but don't propagate - hooks must never break the host
+        recordHookFailure(hookName);
+        api?.logger?.warn?.(
+          `[memory-palace] ${hookName} hook failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
       }
-      await deps.runAutoCaptureHook(
-        api,
-        config,
-        session,
-        {
-          ...event,
-          success: true,
-          messages: [
-            {
-              role: "user",
-              content: [{ type: "text", text: bodyText }],
-            },
-          ],
-        },
-        normalizedCtx,
-      );
     };
     if (typeof api.registerHook === "function") {
       api.registerHook("message:preprocessed", handleMessagePreprocessed, {
@@ -503,13 +608,24 @@ export function registerLifecycleHooks(
     }
     if (config.visualMemory.enabled) {
       registerNamedHook("before_prompt_build", (event, ctx) => {
-        deps.harvestVisualContextFromEvent(
-          api,
-          config,
-          "before_prompt_build",
-          event,
-          deps.normalizeHookContext(ctx),
-        );
+        const hookName = "before_prompt_build:visual-harvest";
+        if (shouldSkipHook(hookName)) return;
+        try {
+          deps.harvestVisualContextFromEvent(
+            api,
+            config,
+            "before_prompt_build",
+            event,
+            deps.normalizeHookContext(ctx),
+          );
+          resetHookFailure(hookName);
+        } catch (err) {
+          // Log but don't propagate - hooks must never break the host
+          recordHookFailure(hookName);
+          api?.logger?.warn?.(
+            `[memory-palace] ${hookName} hook failed: ${err instanceof Error ? err.message : String(err)}`,
+          );
+        }
       });
     }
   }
@@ -522,48 +638,63 @@ export function registerLifecycleHooks(
     config.reflection.enabled
   ) {
     registerNamedHook("agent_end", async (event, ctx) => {
-      const normalizedCtx = deps.normalizeHookContext(ctx);
-      if (config.visualMemory.enabled) {
-        deps.harvestVisualContextFromEvent(
-          api,
-          config,
-          "agent_end",
-          event,
-          normalizedCtx,
-        );
-      }
-      if (
-        !config.autoCapture.enabled &&
-        !config.capturePipeline.captureAssistantDerived &&
-        !config.smartExtraction.enabled &&
-        !config.reflection.enabled
-      ) {
-        return;
-      }
-      await deps.runAutoCaptureHook(api, config, session, event, normalizedCtx);
-      if (!config.reflection.enabled) {
-        return;
-      }
-      if (config.reflection.source === "compact_context") {
-        await deps.runReflectionFromCompactContext(
+      const hookName = "agent_end";
+      if (shouldSkipHook(hookName)) return;
+      try {
+        const normalizedCtx = deps.normalizeHookContext(ctx);
+        if (config.visualMemory.enabled) {
+          deps.harvestVisualContextFromEvent(
+            api,
+            config,
+            "agent_end",
+            event,
+            normalizedCtx,
+          );
+        }
+        if (
+          !config.autoCapture.enabled &&
+          !config.capturePipeline.captureAssistantDerived &&
+          !config.smartExtraction.enabled &&
+          !config.reflection.enabled
+        ) {
+          resetHookFailure(hookName);
+          return;
+        }
+        await deps.runAutoCaptureHook(api, config, session, event, normalizedCtx);
+        if (!config.reflection.enabled) {
+          resetHookFailure(hookName);
+          return;
+        }
+        if (config.reflection.source === "compact_context") {
+          await deps.runReflectionFromCompactContext(
+            api,
+            config,
+            session,
+            event,
+            normalizedCtx,
+          );
+          resetHookFailure(hookName);
+          return;
+        }
+        if (config.reflection.source === "command_new") {
+          resetHookFailure(hookName);
+          return;
+        }
+        await deps.runReflectionFromAgentEnd(
           api,
           config,
           session,
           event,
           normalizedCtx,
         );
-        return;
+        resetHookFailure(hookName);
+      } catch (err) {
+        // Log but don't propagate - hooks must never break the host
+        recordHookFailure(hookName);
+        api?.logger?.warn?.(
+          `[memory-palace] ${hookName} hook failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
       }
-      if (config.reflection.source === "command_new") {
-        return;
-      }
-      await deps.runReflectionFromAgentEnd(
-        api,
-        config,
-        session,
-        event,
-        normalizedCtx,
-      );
     });
   }
 }

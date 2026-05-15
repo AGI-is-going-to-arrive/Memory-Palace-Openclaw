@@ -194,6 +194,28 @@ async def test_search_memory_without_scope_hint_keeps_legacy_behavior(
 
 
 @pytest.mark.asyncio
+async def test_search_memory_preserves_include_expired_for_legacy_filter_clients(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake_client = _ScopeSearchClient()
+    monkeypatch.setattr(mcp_server, "get_sqlite_client", lambda: fake_client)
+    monkeypatch.setattr(mcp_server, "_record_session_hit", _noop_async)
+    monkeypatch.setattr(mcp_server, "_record_flush_event", _noop_async)
+
+    raw = await mcp_server.search_memory(
+        query="index diagnostics",
+        mode="hybrid",
+        include_session=False,
+        filters={"domain": "core", "include_expired": True},
+    )
+    payload = json.loads(raw)
+
+    assert payload["ok"] is True
+    assert payload["include_expired"] is True
+    assert fake_client.received_filters == {"domain": "core", "include_expired": True}
+
+
+@pytest.mark.asyncio
 async def test_search_memory_normalizes_windows_backslashes_in_filter_path_prefix(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

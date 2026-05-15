@@ -219,6 +219,8 @@ sequenceDiagram
   - 摘要层，给 recall 和压缩链路用。
 - `FlushQuarantine`
   - 压缩或归档过程里的隔离区，避免可疑内容直接进长期记忆。
+- `MemoryLink`
+  - 记忆之间的关系表，当前支持 `related` / `supersedes` / `derived_from` / `contradicts` 这类 typed link。
 
 ### 3.2 这套模型为什么实用
 
@@ -228,6 +230,12 @@ sequenceDiagram
 - **更新是版本化，不是原地覆盖**
   - `update_memory()` 会创建新版本，旧版本标记为 deprecated，再把路径指过去。
   - 好处是并发更安全，历史也更好追。
+- **事实有生效窗口**
+  - `valid_from` / `valid_until` 表示这条记忆何时生效、何时失效。
+  - 默认搜索和浏览只看当前 active 的记忆；查历史版本时才显式打开 `include_expired`。
+- **来源字段先打底**
+  - schema 已有 `created_by_agent`、`created_by_session`、`source_operation`。
+  - 当前 `create_memory` 会写入 `source_operation`，agent/session 仍等宿主侧继续传入。
 - **检索不是直接扫全文**
   - 它会同时用 chunk、FTS、向量、gist、priority、recency、reranker 等信号。
 
@@ -238,6 +246,7 @@ sequenceDiagram
 - `Alias` 像同一个房间挂多个门牌
 - `Chunk` 像给大段正文切索引卡片
 - `Gist` 像给档案写摘要标签
+- `MemoryLink` 像在两份档案之间拉线，说明它们是相关、继承还是冲突
 
 <p align="center">
   <img src="../images/memory_data_model_versions_zh_4k.png" width="1100" alt="记忆对象模型与版本更新中文图" />
@@ -260,6 +269,8 @@ flowchart TD
     G -->|ADD| H[create_memory]
     G -->|UPDATE| I[update_memory -> new version]
     G -->|NOOP| J[stop write]
+    G -->|IGNORE| M[skip write]
+    G -->|DELETE| N[stop / scoped delete handling]
     H --> K[index now or enqueue worker]
     I --> K
     K --> L[record session / flush / metrics]
@@ -283,6 +294,8 @@ flowchart TD
 `write_guard` 不是简单“重复就不写”。
 
 - 空内容：直接 `NOOP`
+- 不值得长期存：`IGNORE`，下游按 `skip_write=True` 处理
+- 判定应删除 / 不应再写：`DELETE`，同样不会继续创建新 memory
 - visual memory：优先走 visual hash 快路
 - 普通文本：同时跑
   - `semantic`
@@ -299,7 +312,8 @@ flowchart TD
 
 - 先找到当前 path 指向的老版本
 - 创建新 `Memory`
-- 把老版本标记为 deprecated
+- 把老版本标记为 deprecated，并写上 `valid_until`
+- 老版本的 `superseded_by` 指向新的同一路径 URI
 - 把路径重新指向新版本
 
 这相当于“存新档，废旧档，门牌不变”。
@@ -345,6 +359,9 @@ flowchart TD
 - smart extraction 组 transcript 时会跳过 assistant thinking block，并把预算优先留给真正的 user / assistant workflow turn
 - smart extraction 现在会在前台 capture hook 返回后作为后台任务启动
 - 同一个 agent/session 的 smart extraction 会排队串行，不会并发互撞；不同 session 仍可各自推进
+- lifecycle hook 失败不会打断宿主工作流；同一个 hook 连续失败 5 次后，会冷却 60 秒再给一次半开重试机会
+- `Runtime Session Flush` 这类 compact-context 结果在可见 prompt recall 前只取 `## Gist`
+- 如果 gist 仍然像内部 metadata，当前会整条丢弃，避免 `session_id` / `source_hash` / `gist_method` 回到可见聊天
 
 ### 5.2 host bridge 的角色
 
@@ -372,6 +389,8 @@ flowchart TD
 
 - 先 `memory_search`
 - 再 `memory_get`
+- 默认不查过期、未来生效或已被替代的记忆
+- 只有用户明确要历史版本 / 旧事实时，才把 `include_expired=true` 传给 search
 
 这也是 skills 里推荐的使用顺序。
 
@@ -405,6 +424,11 @@ backend 不只是数据库，还带一层 runtime orchestration。
 - 生成 summary / gist
 - 再次过 write_guard
 - 合格才进入 durable memory 或 reflection lane
+
+这里也要分清两件事：
+
+- 落库记录里可以保留 `source_hash`、`gist_method` 这类审计字段
+- 召回到可见 prompt 时，只应该用 gist 正文，不应该把这些内部字段原样带回聊天
 
 ### 6.3 reflection 为什么单独一条 lane
 
@@ -445,6 +469,10 @@ reflection 主要存的不是用户事实，而是：
 - reranker
 - same-URI collapse
 - MMR 去重
+
+当前默认融合方式仍是 `weighted_sum`。
+如果设置 `RETRIEVAL_FUSION_METHOD=rrf`，hybrid 检索会改用 Reciprocal Rank Fusion。
+2026-05-15 对 `v1.2.0` 的复跑显示：RRF 在 C/D 的 memory-native 和部分检索指标上有真实增益，但 B 档和个别指标不是全线提升，所以它现在是 opt-in 调参项，不是静默替换默认值。
 
 ### 7.3 明确区分自动链路和显式链路
 

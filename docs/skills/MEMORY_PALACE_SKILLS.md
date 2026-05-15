@@ -216,6 +216,12 @@ URI 不确定时：
 search_memory(query="...", include_session=True)
 ```
 
+只在用户明确要查历史、未来生效或已被替代的事实时，才加：
+
+```python
+search_memory(query="...", include_session=True, include_expired=True)
+```
+
 ### Read before write
 
 在以下操作前先读目标或候选目标：
@@ -239,6 +245,10 @@ search_memory(query="...", include_session=True)
 - `NOOP` → 不继续写，先检查重复
 - `UPDATE` → 优先改为 `update_memory`
 - `DELETE` → 先确认旧记忆确实该被替换
+- `IGNORE` → 不写入长期记忆，除非用户重新明确确认
+
+同时不要编造 provenance、时效字段或 memory link；没有就说没有。
+不要把 `session_id`、`source_hash`、`gist_method`、`flushed_at` 这类 compact-context 内部 metadata 暴露给用户。
 
 ### Compact / Recover
 

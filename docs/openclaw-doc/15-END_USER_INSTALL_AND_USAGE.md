@@ -80,7 +80,7 @@ flowchart TD
 | `Skills` | [openclaw-control-ui-skills-memory-palace-detail.zh.png](assets/real-openclaw-run/openclaw-control-ui-skills-memory-palace-detail.zh.png) | 点开条目后，用户能直接看到长期记忆回想、显式记忆核验、visual memory 存储、plugin health / index maintenance 这些能力 |
 | `Chat` | [openclaw-control-ui-chat-recall-confirmed.png](assets/real-openclaw-run/openclaw-control-ui-chat-recall-confirmed.png) | recall block、tool output 和 answer block 都留在原生聊天线程里 |
 | `Chat` | [openclaw-control-ui-chat-force-confirm.png](assets/real-openclaw-run/openclaw-control-ui-chat-force-confirm.png) | 这张图只适合当受控场景里的 guarded write 证据：先拦截、再确认、再写入都留在原生聊天页；不要把它直接泛化成“所有 current-host strict 高级档位都已经稳定显示同样成功证据” |
-| `Dashboard / Memory` | [dashboard-visual-memory-root.png](assets/real-openclaw-run/dashboard-visual-memory-root.zh.png) | 先证明 `Memory Hall` 根节点下面确实有 `visual` 分支 |
+| `Dashboard / Memory` | [dashboard-visual-memory-root.png](assets/real-openclaw-run/dashboard-visual-memory-root.zh.png) | 先证明 `Memory Hall` 根节点下面确实有 `visual` 分支；当前 Memory Browser 也会展示生效 / 失效时间，并把过期、未来生效、已替代记录放进显式的“非活动记忆”视图 |
 | `Dashboard / Memory` | [dashboard-visual-memory.png](assets/real-openclaw-run/dashboard-visual-memory.zh.png) | 再证明 `core://visual/...` 节点页里 `Visual Memory / Summary / OCR / Entities` 都真实可见 |
 
 一句话总结：

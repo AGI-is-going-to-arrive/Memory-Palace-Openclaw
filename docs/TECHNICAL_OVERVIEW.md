@@ -104,6 +104,7 @@ backend/
 ├── mcp_reading.py         # read_memory / partial-read helper
 ├── mcp_views.py           # system://boot / index / audit / recent 视图生成
 ├── mcp_runtime_services.py # import-learn / gist / auto-flush 服务 helper
+├── mcp_errors.py           # MCP 工具层 typed error / GuardAction 定义
 ├── mcp_tool_common.py     # 共享 MCP guard/response helper 实现
 ├── mcp_tool_read.py       # read_memory MCP 工具实现
 ├── mcp_tool_search.py     # search_memory MCP 工具实现
@@ -126,7 +127,8 @@ backend/
 ├── db/
 │   ├── __init__.py        # 客户端工厂（get_sqlite_client / close_sqlite_client）
 │   ├── sqlite_client.py   # 对外稳定 facade（仍导出 SQLiteClient / 模型 / helper）
-│   ├── sqlite_models.py   # ORM 模型定义
+│   ├── sqlite_models.py   # ORM 模型定义（含双时序、provenance、memory_links）
+│   ├── sqlite_errors.py   # SQLite client 层 typed exception
 │   ├── sqlite_paths.py    # sqlite URL / 路径 / 时间 helper
 │   ├── sqlite_client_retrieval.py # 检索打分 / context recall helper mixin
 │   ├── snapshot.py        # 快照管理器（按 session 记录写操作的前置状态）
@@ -166,7 +168,7 @@ backend/
 
 | 方法 | 路径 | 鉴权 | 说明 |
 |---|---|---|---|
-| `GET` | `/browse/node` | API Key | 浏览记忆树（含子节点、面包屑、gist、别名） |
+| `GET` | `/browse/node` | API Key | 浏览记忆树（含子节点、面包屑、gist、别名、双时序字段） |
 | `POST` | `/browse/node` | API Key | 创建记忆节点（含 write_guard） |
 | `PUT` | `/browse/node` | API Key | 更新记忆节点（含 write_guard） |
 | `DELETE` | `/browse/node` | API Key | 删除记忆路径 |
@@ -176,6 +178,8 @@ backend/
 - 记忆树浏览
 - 新建 / 更新 / 删除记忆
 - 返回结果里会带上当前节点、子节点、面包屑、gist 等前端直接要用的数据
+- `GET /browse/node` 默认只看 active 记忆；需要历史、未来生效或 superseded 记录时，显式传 `include_expired=true`
+- 当前节点和子节点会返回 `valid_from` / `valid_until` / `superseded_by`；当前节点还会带 `created_by_agent` / `created_by_session` / `source_operation`
 
 ### 审查与回滚（`/review`）
 
@@ -295,7 +299,7 @@ frontend/src/
 ├── features/
 │   ├── setup/SetupPage.jsx                    # 首启 bootstrap 配置、本地受控重启
 │   ├── setup/setupI18n.js                     # bootstrap 动态文案归一化
-│   ├── memory/MemoryBrowser.jsx               # 树形浏览、编辑、gist 视图
+│   ├── memory/MemoryBrowser.jsx               # 树形浏览、编辑、gist 视图、双时序展示
 │   ├── review/ReviewPage.jsx                  # diff、rollback、integrate
 │   ├── maintenance/MaintenancePage.jsx        # vitality 清理与维护任务
 │   ├── observability/ObservabilityPage.jsx    # 检索统计与任务可观测主页面
@@ -328,7 +332,7 @@ frontend/src/
 | 模块 | 路由 | 功能 |
 |---|---|---|
 | Setup | `/setup` | 首启 bootstrap 配置、档位选择、传输方式选择、本地受控重启 |
-| Memory Browser | `/memory` | 按域（domain）树形浏览、内联编辑、查看 gist 摘要、别名管理 |
+| Memory Browser | `/memory` | 按域（domain）树形浏览、内联编辑、查看 gist 摘要、别名管理、查看生效/失效时间，并可切换显示非活动记忆 |
 | Review | `/review` | 查看写入快照 diff、支持 rollback 回滚和 integrate 确认、清理 deprecated 记忆 |
 | Maintenance | `/maintenance` | 查看 vitality 评分、清理孤儿记忆、触发索引重建、管理清理审批流程，支持 `domain` / `path_prefix` 过滤 |
 | Observability | `/observability` | 检索日志与统计、任务执行记录、索引 worker 状态、系统状态概览，以及 `gist_audit` 质量统计，支持 `scope_hint` 与更细的运行时快照 |
@@ -380,7 +384,7 @@ frontend/src/
 1. `create_memory` / `update_memory` 进入 **write lane**（串行化写操作）。
    - 未命名 `create_memory` 会先按父路径保留下一段数字 ID；显式数字标题也会推动后续自动编号起点。
    - `update_memory` 更新内容时必须传入 `expected_old_id`（调用方读到的 memory id），DB 层会校验当前 id 是否一致；如果另一个进程已经更新了该路径（id 已变），抛出冲突错误而不是静默覆盖。这保证了多进程共享同一 SQLite 时不会出现 stale-read 覆盖。
-2. 写前执行 **write_guard** 判定（核心决策：`ADD` / `UPDATE` / `NOOP` / `DELETE`；`BYPASS` 为上层 metadata-only 更新时的流程标记）。
+2. 写前执行 **write_guard** 判定（核心决策：`ADD` / `UPDATE` / `NOOP` / `DELETE` / `IGNORE`）。
    - write_guard 支持三级判定链：语义匹配 → 关键词匹配 → LLM 决策（可选）。
    - LLM 决策开启后，prompt 会显式要求模型判断新内容是否与已有记忆矛盾（偏好反转、模式回滚、功能禁用等），并在返回的 JSON 中包含 `contradiction` 布尔字段。
 3. 生成 **snapshot** 与版本变更（按 `path` 和 `memory` 两维度分别记录）。

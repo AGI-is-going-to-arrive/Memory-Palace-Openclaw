@@ -1,6 +1,8 @@
 import re
 from typing import Any, Callable, Dict
 
+from mcp_errors import GuardAction
+
 
 def event_preview_impl(text: str, max_chars: int = 220) -> str:
     cleaned = re.sub(r"\s+", " ", (text or "").strip())
@@ -18,7 +20,7 @@ def normalize_guard_decision_impl(
     has_action = "action" in decision
     raw_action = str(decision.get("action") or "").strip().upper() if has_action else ""
     action = raw_action
-    valid_actions = {"ADD", "UPDATE", "NOOP", "DELETE"}
+    valid_actions = {item.value for item in GuardAction}
     if allow_bypass:
         valid_actions.add("BYPASS")
     if action not in valid_actions:

@@ -80,7 +80,7 @@ The test boundary matters here:
 | `Skills` | [openclaw-control-ui-skills-memory-palace-detail.png](assets/real-openclaw-run/openclaw-control-ui-skills-memory-palace-detail.png) | After expanding the entry, users can directly see recall, explicit memory verification, visual memory storage, and plugin health / index maintenance |
 | `Chat` | [openclaw-control-ui-chat-recall-confirmed.png](assets/real-openclaw-run/openclaw-control-ui-chat-recall-confirmed.png) | recall block, tool output, and answer block stay inside the native chat thread |
 | `Chat` | [openclaw-control-ui-chat-force-confirm.png](assets/real-openclaw-run/openclaw-control-ui-chat-force-confirm.png) | treat this as guarded-write evidence from a controlled rerun path: the block, confirm, and store steps stay inside the native chat page, but do not generalize it as a blanket current-host strict success claim for every advanced profile |
-| `Dashboard / Memory` | [dashboard-visual-memory-root.en.png](assets/real-openclaw-run/dashboard-visual-memory-root.en.png) | first proves that the `Memory Hall` root really contains a `visual` branch |
+| `Dashboard / Memory` | [dashboard-visual-memory-root.en.png](assets/real-openclaw-run/dashboard-visual-memory-root.en.png) | first proves that the `Memory Hall` root really contains a `visual` branch; the current Memory Browser also shows validity-window fields and keeps expired, future-validity, and superseded records behind an explicit inactive-memory view |
 | `Dashboard / Memory` | [dashboard-visual-memory.en.png](assets/real-openclaw-run/dashboard-visual-memory.en.png) | then proves that the `core://visual/...` node page visibly contains `Visual Memory / Summary / OCR / Entities` |
 
 In one sentence:

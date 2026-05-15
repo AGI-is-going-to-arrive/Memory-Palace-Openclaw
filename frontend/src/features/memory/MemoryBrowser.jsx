@@ -40,6 +40,13 @@ const isAbortError = (error) =>
 const CHILD_PAGE_SIZE = 50;
 const SUCCESS_FEEDBACK_TTL_MS = 3500;
 
+const formatTemporalValue = (value, t) => {
+  if (!value) return t('memory.temporal.openEnded');
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleString();
+};
+
 /**
  * Build user-facing feedback from a write-guard response.
  * @param {Object} result - Backend response containing guard fields:
@@ -151,6 +158,17 @@ function ChildCard({ child, onOpen }) {
       <div className="line-clamp-3 text-xs leading-relaxed text-[color:var(--palace-muted)]">
         {preview}
       </div>
+      <div className="mt-3 space-y-1 border-t border-[color:var(--palace-line)]/60 pt-3 text-[10px] leading-4 text-[color:var(--palace-muted)]">
+        <div>
+          {t('memory.temporal.validFrom')}: {formatTemporalValue(child.valid_from, t)}
+        </div>
+        <div>
+          {t('memory.temporal.validUntil')}: {formatTemporalValue(child.valid_until, t)}
+        </div>
+        {child.superseded_by ? (
+          <div>{t('memory.temporal.supersededBy', { id: child.superseded_by })}</div>
+        ) : null}
+      </div>
     </GlassCard>
   );
 }
@@ -168,6 +186,7 @@ export default function MemoryBrowser() {
 
   const [searchValue, setSearchValue] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('');
+  const [includeExpired, setIncludeExpired] = useState(false);
 
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -204,7 +223,10 @@ export default function MemoryBrowser() {
     setErrorState(null);
     setEditing(false);
     try {
-      const response = await getMemoryNode({ domain, path }, { signal: controller.signal });
+      const response = await getMemoryNode(
+        { domain, path, include_expired: includeExpired },
+        { signal: controller.signal }
+      );
       if (requestId !== nodeRequestRef.current) return;
       setData(response);
       setEditContent(response.node?.content || '');
@@ -219,7 +241,7 @@ export default function MemoryBrowser() {
       if (requestId !== nodeRequestRef.current) return;
       setLoading(false);
     }
-  }, [domain, path]);
+  }, [domain, includeExpired, path]);
 
   useEffect(() => {
     refreshNode();
@@ -590,6 +612,21 @@ export default function MemoryBrowser() {
                   placeholder={t('memory.maxPriorityPlaceholder')}
                   className="palace-input bg-white/40 focus:bg-white/80"
                 />
+                <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-[color:var(--palace-line)] bg-white/35 px-3 py-3 text-xs text-[color:var(--palace-muted)] transition hover:bg-white/55">
+                  <input
+                    type="checkbox"
+                    checked={includeExpired}
+                    onChange={(event) => setIncludeExpired(event.target.checked)}
+                    data-testid="memory-include-expired"
+                    className="mt-0.5 h-4 w-4 accent-[color:var(--palace-accent-2)]"
+                  />
+                  <span className="space-y-1">
+                    <span className="block font-semibold text-[color:var(--palace-ink)]">
+                      {t('memory.includeExpiredLabel')}
+                    </span>
+                    <span className="block leading-5">{t('memory.includeExpiredHint')}</span>
+                  </span>
+                </label>
               </div>
             </GlassCard>
           </motion.aside>
@@ -708,6 +745,21 @@ export default function MemoryBrowser() {
                           <span className="rounded-full border border-[color:var(--palace-line)] bg-white/50 px-2 py-1 text-[color:var(--palace-muted)]">
                             {t('memory.source')}: {sourceHashShort}
                           </span>
+                        </div>
+                      )}
+                      {!isRoot && (
+                        <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px]">
+                          <span className="rounded-full border border-[color:var(--palace-line)] bg-white/50 px-2 py-1 text-[color:var(--palace-muted)]">
+                            {t('memory.temporal.validFrom')}: {formatTemporalValue(data.node?.valid_from, t)}
+                          </span>
+                          <span className="rounded-full border border-[color:var(--palace-line)] bg-white/50 px-2 py-1 text-[color:var(--palace-muted)]">
+                            {t('memory.temporal.validUntil')}: {formatTemporalValue(data.node?.valid_until, t)}
+                          </span>
+                          {data.node?.superseded_by ? (
+                            <span className="rounded-full border border-[color:var(--palace-line)] bg-white/50 px-2 py-1 text-[color:var(--palace-muted)]">
+                              {t('memory.temporal.supersededBy', { id: data.node.superseded_by })}
+                            </span>
+                          ) : null}
                         </div>
                       )}
                     </div>

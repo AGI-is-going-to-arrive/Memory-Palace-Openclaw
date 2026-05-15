@@ -141,6 +141,18 @@ async def test_sqlite_client_init_db_applies_project_migrations(tmp_path: Path) 
             "SELECT version FROM schema_migrations WHERE version = '0003'"
         ).fetchone()
         assert row_v3 is not None
+        row_v7 = conn.execute(
+            "SELECT version FROM schema_migrations WHERE version = '0007'"
+        ).fetchone()
+        assert row_v7 is not None
+        row_v8 = conn.execute(
+            "SELECT version FROM schema_migrations WHERE version = '0008'"
+        ).fetchone()
+        assert row_v8 is not None
+        row_v9 = conn.execute(
+            "SELECT version FROM schema_migrations WHERE version = '0009'"
+        ).fetchone()
+        assert row_v9 is not None
 
         columns = {
             col["name"]: col
@@ -149,6 +161,12 @@ async def test_sqlite_client_init_db_applies_project_migrations(tmp_path: Path) 
         assert "vitality_score" in columns
         assert "last_accessed_at" in columns
         assert "access_count" in columns
+        assert "valid_from" in columns
+        assert "valid_until" in columns
+        assert "superseded_by" in columns
+        assert "created_by_agent" in columns
+        assert "created_by_session" in columns
+        assert "source_operation" in columns
 
         legacy = conn.execute(
             "SELECT vitality_score, access_count FROM memories ORDER BY id LIMIT 1"
@@ -165,6 +183,7 @@ async def test_sqlite_client_init_db_applies_project_migrations(tmp_path: Path) 
         }
         assert "memory_gists" in table_names
         assert "memory_tags" in table_names
+        assert "memory_links" in table_names
 
         index_names = {
             row["name"]
@@ -179,6 +198,9 @@ async def test_sqlite_client_init_db_applies_project_migrations(tmp_path: Path) 
         assert "idx_memories_cleanup_last_accessed" in index_names
         assert "idx_memories_cleanup_created" in index_names
         assert "idx_paths_memory_domain_path" in index_names
+        assert "uq_memory_link" in index_names
+        assert "idx_memory_links_source" in index_names
+        assert "idx_memory_links_target" in index_names
         assert "ix_memory_gists_memory_id" not in index_names
         assert "ix_memory_tags_memory_id" not in index_names
 
@@ -227,6 +249,18 @@ async def test_sqlite_client_init_db_on_fresh_database_is_idempotent(tmp_path: P
             "SELECT COUNT(*) FROM schema_migrations WHERE version='0003'"
         ).fetchone()[0]
         assert version_count_v3 == 1
+        version_count_v7 = conn.execute(
+            "SELECT COUNT(*) FROM schema_migrations WHERE version='0007'"
+        ).fetchone()[0]
+        assert version_count_v7 == 1
+        version_count_v8 = conn.execute(
+            "SELECT COUNT(*) FROM schema_migrations WHERE version='0008'"
+        ).fetchone()[0]
+        assert version_count_v8 == 1
+        version_count_v9 = conn.execute(
+            "SELECT COUNT(*) FROM schema_migrations WHERE version='0009'"
+        ).fetchone()[0]
+        assert version_count_v9 == 1
 
         columns = {
             col["name"]: col
@@ -234,6 +268,46 @@ async def test_sqlite_client_init_db_on_fresh_database_is_idempotent(tmp_path: P
         }
         assert columns["vitality_score"]["dflt_value"] in {"1.0", "1"}
         assert columns["access_count"]["dflt_value"] == "0"
+        assert columns["valid_from"]["dflt_value"] is None
+        assert columns["valid_until"]["dflt_value"] is None
+        assert columns["superseded_by"]["dflt_value"] is None
+        assert columns["created_by_agent"]["dflt_value"] is None
+        assert columns["created_by_session"]["dflt_value"] is None
+        assert columns["source_operation"]["dflt_value"] is None
+
+        table_names = {
+            row["name"]
+            for row in conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            ).fetchall()
+        }
+        assert "memory_links" in table_names
+
+        conn.execute(
+            "INSERT INTO memories (content, deprecated, created_at) VALUES (?, ?, datetime('now'))",
+            ("source", 0),
+        )
+        source_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+        conn.execute(
+            "INSERT INTO memories (content, deprecated, created_at) VALUES (?, ?, datetime('now'))",
+            ("target", 0),
+        )
+        target_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+        conn.execute(
+            """
+            INSERT INTO memory_links (source_memory_id, target_memory_id, link_type)
+            VALUES (?, ?, ?)
+            """,
+            (source_id, target_id, "related"),
+        )
+        with pytest.raises(sqlite3.IntegrityError):
+            conn.execute(
+                """
+                INSERT INTO memory_links (source_memory_id, target_memory_id, link_type)
+                VALUES (?, ?, ?)
+                """,
+                (source_id, target_id, "related"),
+            )
 
 
 @pytest.mark.asyncio

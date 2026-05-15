@@ -161,11 +161,15 @@ The right side shows:
 
 - current node content
 - child memory list
+- validity-window fields
+- a `Show inactive memories` toggle
 
 In plain terms:
 
 - the left side is for writing
 - the right side is for reading
+- the default view shows active memories; turn on inactive memories only when
+  you intentionally want expired, future-validity, or superseded records
 
 Screenshot:
 

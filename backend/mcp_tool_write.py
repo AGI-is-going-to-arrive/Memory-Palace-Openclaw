@@ -28,6 +28,10 @@ def _internal_error_message(operation: str) -> str:
     return f"Error: {operation} failed. Check server logs for details."
 
 
+def _guard_exception_reason(exc: Exception) -> str:
+    return f"write_guard_unavailable:{type(exc).__name__}"
+
+
 def _guard_target_differs(
     guard_decision: Dict[str, Any], requested_uri: Optional[str]
 ) -> bool:
@@ -148,7 +152,7 @@ async def create_memory_impl(
                     {
                         "action": "NOOP",
                         "method": "exception",
-                        "reason": f"write_guard_unavailable: {guard_exc}",
+                        "reason": _guard_exception_reason(guard_exc),
                         "degraded": True,
                         "degrade_reasons": ["write_guard_exception"],
                     }
@@ -352,6 +356,13 @@ async def create_memory_impl(
                 disclosure=disclosure if disclosure else None,
                 domain=domain,
                 index_now=not defer_index,
+                # Provenance: stamp the operation that produced this memory.
+                # agent / session identity can be supplied by upstream context
+                # in a follow-up wiring change; we keep them None here so the
+                # existing public signature of create_memory_impl is unchanged.
+                created_by_agent=None,
+                created_by_session=None,
+                source_operation="create_memory",
             )
             created_uri = result.get("uri", make_uri(domain, result["path"]))
             await snapshot_path_create(created_uri, result["id"], operation_type="create")
@@ -708,7 +719,7 @@ async def update_memory_impl(
                         {
                             "action": "NOOP",
                             "method": "exception",
-                            "reason": f"write_guard_unavailable: {guard_exc}",
+                            "reason": _guard_exception_reason(guard_exc),
                             "degraded": True,
                             "degrade_reasons": ["write_guard_exception"],
                         }

@@ -295,6 +295,42 @@ async def test_restore_path_clears_migration_pointer_and_reindexes_content(
 
 
 @pytest.mark.asyncio
+async def test_update_memory_sets_bitemporal_supersession_fields(
+    tmp_path: Path,
+) -> None:
+    db_path = tmp_path / "bitemporal-update.db"
+    client = SQLiteClient(_sqlite_url(db_path))
+    await client.init_db()
+
+    original = await client.create_memory(
+        parent_path="",
+        content="policy version one",
+        priority=1,
+        title="policy",
+        domain="core",
+    )
+    update_payload = await client.update_memory(
+        path="policy",
+        content="policy version two",
+        domain="core",
+        expected_old_id=original["id"],
+    )
+
+    old_version = await client.get_memory_by_id(original["id"])
+    new_version = await client.get_memory_by_id(update_payload["new_memory_id"])
+    await client.close()
+
+    assert old_version is not None
+    assert old_version["deprecated"] is True
+    assert old_version["migrated_to"] == update_payload["new_memory_id"]
+    assert old_version["valid_until"] is not None
+    assert old_version["superseded_by"] == "core://policy"
+    assert new_version is not None
+    assert new_version["valid_until"] is None
+    assert new_version["superseded_by"] is None
+
+
+@pytest.mark.asyncio
 async def test_rollback_path_delete_returns_410_when_target_version_is_missing(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

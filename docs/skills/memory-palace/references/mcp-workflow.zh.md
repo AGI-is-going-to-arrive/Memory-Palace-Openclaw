@@ -46,6 +46,8 @@ search_memory(query="...", include_session=True)
 read_memory("best-match-uri")
 ```
 
+默认不要带出非活动记录。只有用户明确要查历史、未来生效或已被替代的事实时，才加 `include_expired=True`。
+
 ### 3. 先读再写
 
 不要一上来就 mutate。
@@ -72,8 +74,12 @@ update_memory(...)
 - `NOOP` → 停下来，先检查建议目标
 - `UPDATE` → 先读建议目标，通常改走 `update_memory`
 - `DELETE` → 停下来，先确认旧记忆是否真的该被替换
+- `IGNORE` → 跳过长期写入，除非用户重新明确确认要保存
 
 如果返回了 `guard_target_id`，判断“是不是同一条记忆”时优先用它，不要依赖模糊相似度。
+
+不要编造 provenance、时效字段或 memory link；没有就说没有。
+不要把 `session_id`、`source_hash`、`gist_method`、`flushed_at` 这类 compact-context 内部 metadata 暴露给用户。
 
 ### 5. Compact 还是 rebuild
 

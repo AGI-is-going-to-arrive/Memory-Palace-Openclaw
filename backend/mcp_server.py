@@ -1573,6 +1573,7 @@ async def search_memory(
     max_results: Optional[int] = None,
     candidate_multiplier: Optional[int] = None,
     include_session: Optional[bool] = None,
+    include_expired: Optional[bool] = None,
     filters: Optional[Dict[str, Any]] = None,
     scope_hint: Optional[str] = None,
     verbose: Optional[bool] = None,
@@ -1586,11 +1587,13 @@ async def search_memory(
         max_results: Final number of returned items.
         candidate_multiplier: Controls candidate pool before final top-k.
         include_session: Whether to run session-first queue merge before global results.
+        include_expired: Whether to include memories whose valid_until is in the past.
         filters: Optional object with:
             - domain: domain scope
             - path_prefix: path prefix scope
             - max_priority: keep priority <= max_priority
             - updated_after: ISO datetime filter (e.g. 2026-01-31T12:00:00Z)
+            - include_expired: same as include_expired when the top-level argument is omitted
         scope_hint: Optional query-side scope hint (domain/path prefix/URI prefix).
         verbose: Whether to keep high-noise debug metadata in the response.
 
@@ -1613,6 +1616,7 @@ async def search_memory(
         max_results=max_results,
         candidate_multiplier=candidate_multiplier,
         include_session=include_session,
+        include_expired=include_expired,
         filters=filters,
         scope_hint=scope_hint,
         verbose=verbose,

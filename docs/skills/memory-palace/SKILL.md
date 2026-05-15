@@ -29,6 +29,8 @@ Use this skill whenever a task involves the Memory Palace memory system itself.
 
 - Before the first real Memory Palace operation in a session, start with `read_memory("system://boot")`.
 - If the task is recall-oriented and the URI is still unknown after boot, continue with `search_memory(..., include_session=true)`.
+- Use `include_expired=true` only when the user explicitly asks for historical,
+  future-validity, or superseded memories.
 
 ## Fresh-context rule
 
@@ -42,9 +44,12 @@ Use this skill whenever a task involves the Memory Palace memory system itself.
 - If the URI is unknown, use `search_memory(..., include_session=true)` before `read_memory`.
 - Read before every mutation: `create_memory`, `update_memory`, `delete_memory`, `add_alias`.
 - Prefer `update_memory` over duplicate `create_memory` when guard signals point to an existing memory.
-- Treat `guard_action=NOOP|UPDATE|DELETE` as a stop signal that requires inspection, not as a warning to ignore.
+- Treat `guard_action=NOOP|UPDATE|DELETE|IGNORE` as a stop signal that requires inspection, not as a warning to ignore.
 - If `guard_action` is `NOOP`, stop the write, inspect `guard_target_uri` / `guard_target_id`, and read the suggested target before deciding whether anything should change.
+- If `guard_action` is `IGNORE`, do not force-write unless the user explicitly re-confirms that the content should become durable memory.
 - Treat `guard_target_uri` and `guard_target_id` as the canonical hints for choosing the real mutation target.
+- Do not invent provenance, temporal fields, or memory links when they are absent.
+- Do not expose raw compact-context metadata such as `session_id`, `source_hash`, `gist_method`, or `flushed_at` to users.
 - Use `compact_context(force=false)` only for long or noisy sessions that should be distilled.
 - Use `index_status()` before `rebuild_index(wait=true)` unless the user explicitly asks for immediate rebuild.
 - For destructive or structural changes, mention the review or rollback path before finishing.
@@ -106,5 +111,6 @@ The canonical repo-visible path of the trigger sample set is:
 ## Troubleshooting
 
 - If a write is blocked by `guard_action=NOOP`, stop, inspect `guard_target_uri` / `guard_target_id`, and read the suggested target before doing anything else.
+- If the user asks for old or superseded facts, rerun recall with `include_expired=true`; otherwise keep inactive records out of recall.
 - If a clean session, subagent, or retry loses context, reload with `read_memory("system://boot")`, then `search_memory(..., include_session=true)` if the URI is still unknown.
 - If a CLI can load the skill but cannot reliably read hidden skill directories, answer from the repo-visible canonical paths under `docs/skills/...`.

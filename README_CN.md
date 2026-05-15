@@ -227,12 +227,16 @@ INTENT_LLM_MODEL=your-llm-model
 - **对话式接入**：plugin 装好后，用户可以留在 CLI / WebUI 聊天里走 `memory_onboarding_status -> memory_onboarding_probe -> memory_onboarding_apply`；apply 之后，再用 `openclaw memory-palace verify / doctor / smoke` 做最终签收。
 - **实验性多 Agent 记忆隔离**：当前 ACL 仍能复现 `alpha -> 已写入 -> beta -> UNKNOWN` 这条证据链，但它现在应按实验特性理解，不要当成已经完全硬化的安全边界。
 - **档位清楚**：`Profile B` 负责先跑通，`Profile C` 负责先把检索升级到 provider-backed，`Profile D` 是 embedding / reranker / LLM 都到位后的全功能高级面。
+- **记忆有时效和来源**：记忆现在会透出 valid from / valid until、superseded 关系、typed link 和部分 provenance；历史 / 非活动记录只有显式打开时才看。
+- **RRF 是可选调参**：`RETRIEVAL_FUSION_METHOD=rrf` 已可用于 hybrid retrieval；默认仍是 `weighted_sum`，因为最新复跑显示它有真实增益，但不是每个 profile / 指标都全线更好。
+- **可见 recall 更干净**：compact-context 召回给聊天面只用 gist 正文，不把 session hash、gist method 这类内部 flush metadata 暴露给用户。
 
 ## 技术架构一眼看懂
 
 - **用户面**：OpenClaw 的 `memory` slot、插件工具、生命周期钩子。
 - **插件层**：recall、auto-capture、visual memory、onboarding、ACL、host-bridge 这些逻辑都在 `extensions/memory-palace/`。
 - **运行时**：`backend/` 里是 FastAPI + MCP + SQLite，负责长期记忆和 hybrid retrieval。
+- **召回边界**：普通搜索和浏览默认只看 active 记忆；`include_expired=true` 只用于历史、未来生效或已被替代的记录。
 - **配套运行面**：Dashboard、`verify / doctor / smoke`、打包安装检查，都是同一套 runtime 往上长出来的。
 
 ---
@@ -290,6 +294,8 @@ INTENT_LLM_MODEL=your-llm-model
 - `Profile B` 仍然是最稳的第一次安装路径。
 - `Profile C / D` 仍然依赖你自己的 provider，必须在你的目标环境真实转绿才算 ready。
 - `Profile D` 还额外要求最终解析后的 `WRITE_GUARD_*`、`COMPACT_GIST_*`、`INTENT_*` 都不是占位值；手工静态 env 用户最好显式填这些字段，不要依赖模板占位值。
+- `RETRIEVAL_FUSION_METHOD=rrf` 是可选检索调参，不是新的默认值。
+- Memory Browser 现在有显式的“非活动记忆”视图，用来查过期、未来生效或已被替代的记录；普通查看时不需要打开。
 - 稳定用户命令面仍然是 `openclaw memory-palace ...`
 - 仓库 wrapper 适合生成 readiness 报告和辅助 setup，但它不是长期用户命令面
 - 当前公开“对话式 onboarding”口径，验证的是把当前仓库里的文档页面或文档路径交给 OpenClaw；这页不把“任意公开 GitHub URL 都能直接抓取并走通”写成默认承诺

@@ -16,9 +16,12 @@
 
 - 用户在问工作流或工具行为时，先读 [../../references/mcp-workflow.zh.md](../../references/mcp-workflow.zh.md)。
 - URI 不确定时，先 `search_memory(..., include_session=true)`，再 `read_memory`。
+- 只有用户明确要查历史、未来生效或已被替代的记忆时，才加 `include_expired=true`。
 - 每次 mutation 前都先读：`create_memory`、`update_memory`、`delete_memory`、`add_alias` 都一样。
 - 除非用户明确要求立刻重建，否则先 `index_status()`，再决定要不要 `rebuild_index(wait=true)`。
 - 长会话或高噪声会话要蒸馏时，优先 `compact_context(force=false)`。
+- 把 `guard_action=IGNORE` 当成“不值得长期存储”，除非用户重新明确确认，否则不要 force-write。
+- 不要编造 provenance、时效字段或 memory link，也不要把 `session_id`、`source_hash`、`gist_method`、`flushed_at` 这类 compact-context 内部 metadata 暴露给用户。
 
 ## 重要边界
 

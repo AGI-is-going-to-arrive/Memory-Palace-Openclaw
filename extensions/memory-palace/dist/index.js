@@ -20079,6 +20079,26 @@ function registerMemoryCli(api2, options) {
 }
 
 // src/lifecycle-hooks.ts
+var HOOK_FAILURE_THRESHOLD = 5;
+var HOOK_FAILURE_COOLDOWN_MS = 60000;
+var hookFailureCounts = new Map;
+function shouldSkipHook(hookName) {
+  const state = hookFailureCounts.get(hookName);
+  if (!state || state.count < HOOK_FAILURE_THRESHOLD) {
+    return false;
+  }
+  return Date.now() - state.lastFailureAt < HOOK_FAILURE_COOLDOWN_MS;
+}
+function recordHookFailure(hookName) {
+  const current = hookFailureCounts.get(hookName);
+  hookFailureCounts.set(hookName, {
+    count: (current?.count ?? 0) + 1,
+    lastFailureAt: Date.now()
+  });
+}
+function resetHookFailure(hookName) {
+  hookFailureCounts.delete(hookName);
+}
 function registerLifecycleHooks(api2, options) {
   const { config: config2, deps, session } = options;
   const COMMAND_NEW_REFLECTION_DEDUPE_WINDOW_MS = 5000;
@@ -20238,47 +20258,96 @@ function registerLifecycleHooks(api2, options) {
       await deps.runReflectionFromCommandNew(api2, config2, session, reflectionEvent, normalizedCtx);
     };
     registerNamedHook("before_prompt_build", async (event, ctx) => {
-      const normalizedCtx = deps.normalizeHookContext(ctx);
-      const sessionRef = resolveLifecycleSessionRef(event, normalizedCtx);
-      if (config2.reflection.enabled && config2.reflection.source === "command_new" && deps.isCommandNewStartupEvent(event, normalizedCtx)) {
-        await triggerCommandNewReflection(event, normalizedCtx, "new");
-      }
-      markPromptBuildRecallSession(sessionRef, Date.now());
+      const hookName = "before_prompt_build";
+      if (shouldSkipHook(hookName))
+        return;
       try {
-        return await deps.runAutoRecallHook(api2, config2, session, event, normalizedCtx);
-      } finally {
-        schedulePromptBuildRecallCleanup(sessionRef);
+        const normalizedCtx = deps.normalizeHookContext(ctx);
+        const sessionRef = resolveLifecycleSessionRef(event, normalizedCtx);
+        if (config2.reflection.enabled && config2.reflection.source === "command_new" && deps.isCommandNewStartupEvent(event, normalizedCtx)) {
+          await triggerCommandNewReflection(event, normalizedCtx, "new");
+        }
+        markPromptBuildRecallSession(sessionRef, Date.now());
+        try {
+          const result = await deps.runAutoRecallHook(api2, config2, session, event, normalizedCtx);
+          resetHookFailure(hookName);
+          return result;
+        } finally {
+          schedulePromptBuildRecallCleanup(sessionRef);
+        }
+      } catch (err) {
+        recordHookFailure(hookName);
+        api2?.logger?.warn?.(`[memory-palace] ${hookName} hook failed: ${err instanceof Error ? err.message : String(err)}`);
+        return;
       }
     }, { priority: 100 });
     registerNamedHook("before_agent_start", async (event, ctx) => {
-      const normalizedCtx = deps.normalizeHookContext(ctx);
-      const sessionRef = resolveLifecycleSessionRef(event, normalizedCtx);
-      if (consumePromptBuildRecallSession(sessionRef)) {
+      const hookName = "before_agent_start";
+      if (shouldSkipHook(hookName))
+        return;
+      try {
+        const normalizedCtx = deps.normalizeHookContext(ctx);
+        const sessionRef = resolveLifecycleSessionRef(event, normalizedCtx);
+        if (consumePromptBuildRecallSession(sessionRef)) {
+          return;
+        }
+        if (config2.reflection.enabled && config2.reflection.source === "command_new" && deps.isCommandNewStartupEvent(event, normalizedCtx)) {
+          await triggerCommandNewReflection(event, normalizedCtx, "new");
+        }
+        const result = await deps.runAutoRecallHook(api2, config2, session, event, normalizedCtx);
+        resetHookFailure(hookName);
+        return result;
+      } catch (err) {
+        recordHookFailure(hookName);
+        api2?.logger?.warn?.(`[memory-palace] ${hookName} hook failed: ${err instanceof Error ? err.message : String(err)}`);
         return;
       }
-      if (config2.reflection.enabled && config2.reflection.source === "command_new" && deps.isCommandNewStartupEvent(event, normalizedCtx)) {
-        await triggerCommandNewReflection(event, normalizedCtx, "new");
-      }
-      return deps.runAutoRecallHook(api2, config2, session, event, normalizedCtx);
     });
     const handleBeforeReset = async (event, ctx) => {
-      const reason = deps.readString(event.reason)?.trim().toLowerCase();
-      if (reason && reason !== "new" && reason !== "reset") {
+      const hookName = "before_reset";
+      if (shouldSkipHook(hookName))
         return;
+      try {
+        const reason = deps.readString(event.reason)?.trim().toLowerCase();
+        if (reason && reason !== "new" && reason !== "reset") {
+          return;
+        }
+        await triggerCommandNewReflection(event, ctx, reason === "reset" ? "reset" : "new");
+        resetHookFailure(hookName);
+      } catch (err) {
+        recordHookFailure(hookName);
+        api2?.logger?.warn?.(`[memory-palace] ${hookName} hook failed: ${err instanceof Error ? err.message : String(err)}`);
       }
-      await triggerCommandNewReflection(event, ctx, reason === "reset" ? "reset" : "new");
     };
     if (config2.reflection.enabled && config2.reflection.source === "command_new") {
       registerNamedHook("before_reset", handleBeforeReset);
       if (typeof api2.registerHook === "function") {
         api2.registerHook("command:new", async (event, ctx) => {
-          await triggerCommandNewReflection(event, ctx, "new");
+          const hookName = "command:new";
+          if (shouldSkipHook(hookName))
+            return;
+          try {
+            await triggerCommandNewReflection(event, ctx, "new");
+            resetHookFailure(hookName);
+          } catch (err) {
+            recordHookFailure(hookName);
+            api2?.logger?.warn?.(`[memory-palace] ${hookName} hook failed: ${err instanceof Error ? err.message : String(err)}`);
+          }
         }, {
           name: "memory-palace-command-new-reflection",
           description: "Persist command:new session-boundary reflections into Memory Palace."
         });
         api2.registerHook("command:reset", async (event, ctx) => {
-          await triggerCommandNewReflection(event, ctx, "reset");
+          const hookName = "command:reset";
+          if (shouldSkipHook(hookName))
+            return;
+          try {
+            await triggerCommandNewReflection(event, ctx, "reset");
+            resetHookFailure(hookName);
+          } catch (err) {
+            recordHookFailure(hookName);
+            api2?.logger?.warn?.(`[memory-palace] ${hookName} hook failed: ${err instanceof Error ? err.message : String(err)}`);
+          }
         }, {
           name: "memory-palace-command-reset-reflection",
           description: "Persist command:reset session-boundary reflections into Memory Palace."
@@ -20290,46 +20359,59 @@ function registerLifecycleHooks(api2, options) {
   if (shouldRegisterMessagePreprocessed) {
     const recentWebchatFallbackCaptures = new Map;
     const handleMessagePreprocessed = async (event, ctx) => {
-      const normalizedCtx = deps.normalizeHookContext(ctx);
-      if (config2.visualMemory.enabled) {
-        deps.harvestVisualContextFromEvent(api2, config2, "message:preprocessed", event, normalizedCtx);
-      }
-      if (!config2.autoCapture.enabled && !config2.capturePipeline.captureAssistantDerived && !config2.smartExtraction.enabled) {
+      const hookName = "message:preprocessed";
+      if (shouldSkipHook(hookName))
         return;
-      }
-      if (Array.isArray(event.messages) && event.messages.length > 0) {
-        return;
-      }
-      const bodyText = extractPreprocessedUserText(event);
-      if (!bodyText || !isWebchatContext(event, normalizedCtx, bodyText)) {
-        return;
-      }
-      const dedupeText = deps.normalizeText(bodyText) ?? bodyText.trim();
-      const sessionRef = deps.readString(normalizedCtx.sessionKey) ?? deps.readString(normalizedCtx.sessionId) ?? deps.readString(event.sessionKey) ?? deps.readString(event.sessionId) ?? "unknown-session";
-      const dedupeKey = `${sessionRef}:${dedupeText}`;
-      const now = Date.now();
-      const lastSeenAt = recentWebchatFallbackCaptures.get(dedupeKey) ?? 0;
-      if (now - lastSeenAt < 15000) {
-        return;
-      }
-      recentWebchatFallbackCaptures.set(dedupeKey, now);
-      if (recentWebchatFallbackCaptures.size > 128) {
-        for (const [key, seenAt] of recentWebchatFallbackCaptures) {
-          if (now - seenAt > 60000) {
-            recentWebchatFallbackCaptures.delete(key);
+      try {
+        const normalizedCtx = deps.normalizeHookContext(ctx);
+        if (config2.visualMemory.enabled) {
+          deps.harvestVisualContextFromEvent(api2, config2, "message:preprocessed", event, normalizedCtx);
+        }
+        if (!config2.autoCapture.enabled && !config2.capturePipeline.captureAssistantDerived && !config2.smartExtraction.enabled) {
+          resetHookFailure(hookName);
+          return;
+        }
+        if (Array.isArray(event.messages) && event.messages.length > 0) {
+          resetHookFailure(hookName);
+          return;
+        }
+        const bodyText = extractPreprocessedUserText(event);
+        if (!bodyText || !isWebchatContext(event, normalizedCtx, bodyText)) {
+          resetHookFailure(hookName);
+          return;
+        }
+        const dedupeText = deps.normalizeText(bodyText) ?? bodyText.trim();
+        const sessionRef = deps.readString(normalizedCtx.sessionKey) ?? deps.readString(normalizedCtx.sessionId) ?? deps.readString(event.sessionKey) ?? deps.readString(event.sessionId) ?? "unknown-session";
+        const dedupeKey = `${sessionRef}:${dedupeText}`;
+        const now = Date.now();
+        const lastSeenAt = recentWebchatFallbackCaptures.get(dedupeKey) ?? 0;
+        if (now - lastSeenAt < 15000) {
+          resetHookFailure(hookName);
+          return;
+        }
+        recentWebchatFallbackCaptures.set(dedupeKey, now);
+        if (recentWebchatFallbackCaptures.size > 128) {
+          for (const [key, seenAt] of recentWebchatFallbackCaptures) {
+            if (now - seenAt > 60000) {
+              recentWebchatFallbackCaptures.delete(key);
+            }
           }
         }
+        await deps.runAutoCaptureHook(api2, config2, session, {
+          ...event,
+          success: true,
+          messages: [
+            {
+              role: "user",
+              content: [{ type: "text", text: bodyText }]
+            }
+          ]
+        }, normalizedCtx);
+        resetHookFailure(hookName);
+      } catch (err) {
+        recordHookFailure(hookName);
+        api2?.logger?.warn?.(`[memory-palace] ${hookName} hook failed: ${err instanceof Error ? err.message : String(err)}`);
       }
-      await deps.runAutoCaptureHook(api2, config2, session, {
-        ...event,
-        success: true,
-        messages: [
-          {
-            role: "user",
-            content: [{ type: "text", text: bodyText }]
-          }
-        ]
-      }, normalizedCtx);
     };
     if (typeof api2.registerHook === "function") {
       api2.registerHook("message:preprocessed", handleMessagePreprocessed, {
@@ -20341,31 +20423,53 @@ function registerLifecycleHooks(api2, options) {
     }
     if (config2.visualMemory.enabled) {
       registerNamedHook("before_prompt_build", (event, ctx) => {
-        deps.harvestVisualContextFromEvent(api2, config2, "before_prompt_build", event, deps.normalizeHookContext(ctx));
+        const hookName = "before_prompt_build:visual-harvest";
+        if (shouldSkipHook(hookName))
+          return;
+        try {
+          deps.harvestVisualContextFromEvent(api2, config2, "before_prompt_build", event, deps.normalizeHookContext(ctx));
+          resetHookFailure(hookName);
+        } catch (err) {
+          recordHookFailure(hookName);
+          api2?.logger?.warn?.(`[memory-palace] ${hookName} hook failed: ${err instanceof Error ? err.message : String(err)}`);
+        }
       });
     }
   }
   if (config2.visualMemory.enabled || config2.autoCapture.enabled || config2.capturePipeline.captureAssistantDerived || config2.smartExtraction.enabled || config2.reflection.enabled) {
     registerNamedHook("agent_end", async (event, ctx) => {
-      const normalizedCtx = deps.normalizeHookContext(ctx);
-      if (config2.visualMemory.enabled) {
-        deps.harvestVisualContextFromEvent(api2, config2, "agent_end", event, normalizedCtx);
-      }
-      if (!config2.autoCapture.enabled && !config2.capturePipeline.captureAssistantDerived && !config2.smartExtraction.enabled && !config2.reflection.enabled) {
+      const hookName = "agent_end";
+      if (shouldSkipHook(hookName))
         return;
+      try {
+        const normalizedCtx = deps.normalizeHookContext(ctx);
+        if (config2.visualMemory.enabled) {
+          deps.harvestVisualContextFromEvent(api2, config2, "agent_end", event, normalizedCtx);
+        }
+        if (!config2.autoCapture.enabled && !config2.capturePipeline.captureAssistantDerived && !config2.smartExtraction.enabled && !config2.reflection.enabled) {
+          resetHookFailure(hookName);
+          return;
+        }
+        await deps.runAutoCaptureHook(api2, config2, session, event, normalizedCtx);
+        if (!config2.reflection.enabled) {
+          resetHookFailure(hookName);
+          return;
+        }
+        if (config2.reflection.source === "compact_context") {
+          await deps.runReflectionFromCompactContext(api2, config2, session, event, normalizedCtx);
+          resetHookFailure(hookName);
+          return;
+        }
+        if (config2.reflection.source === "command_new") {
+          resetHookFailure(hookName);
+          return;
+        }
+        await deps.runReflectionFromAgentEnd(api2, config2, session, event, normalizedCtx);
+        resetHookFailure(hookName);
+      } catch (err) {
+        recordHookFailure(hookName);
+        api2?.logger?.warn?.(`[memory-palace] ${hookName} hook failed: ${err instanceof Error ? err.message : String(err)}`);
       }
-      await deps.runAutoCaptureHook(api2, config2, session, event, normalizedCtx);
-      if (!config2.reflection.enabled) {
-        return;
-      }
-      if (config2.reflection.source === "compact_context") {
-        await deps.runReflectionFromCompactContext(api2, config2, session, event, normalizedCtx);
-        return;
-      }
-      if (config2.reflection.source === "command_new") {
-        return;
-      }
-      await deps.runReflectionFromAgentEnd(api2, config2, session, event, normalizedCtx);
     });
   }
 }
@@ -25935,9 +26039,11 @@ var RECALL_PROMPT_METADATA_NOISE_PATTERNS = [
   /```json/iu,
   /\bopenclaw-control-ui\b/iu,
   /\buntrusted metadata\b/iu,
+  /#\s*Runtime Session Flush\b/iu,
   /\[meta\]\s*summary_version\b/iu,
   /\bsummary_version\s*:\s*v\d+(?:-[a-z0-9-]+)?\b/iu,
   /\b(?:session_id|session_key|agent_id|captured_at|requestersenderid)\b/iu,
+  /\b(?:flushed_at|gist_method|source_hash|compact_source_hash|compact_gist_method)\b/iu,
   /#\s*Auto Captured Memory/iu,
   /##\s*Content/iu
 ];
@@ -26397,6 +26503,10 @@ function unwrapStructuredRecallSnippet(text) {
   if (/^#\s*Auto Captured Memory\b/iu.test(raw)) {
     const [, content = ""] = raw.split(/##\s*Content/iu, 2);
     return content.replace(/<!-- MEMORY_PALACE_FORCE_CONTROL_V1 -->[\s\S]*?<!-- \/MEMORY_PALACE_FORCE_CONTROL_V1 -->/giu, "").trim();
+  }
+  if (/^#\s*Runtime Session Flush\b/iu.test(raw)) {
+    const gistMatch = raw.match(/(?:^|\n)##\s*Gist\s*\n([\s\S]*?)(?=\n##\s+[A-Za-z\u3400-\u9fff]+|\s*$)/iu);
+    return (gistMatch?.[1] ?? "").trim();
   }
   return raw;
 }

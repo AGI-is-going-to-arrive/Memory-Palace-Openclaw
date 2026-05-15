@@ -117,6 +117,9 @@ Responsible for:
 - the minimal safe MCP workflow across all governed tools
 - recall / mutate / compact / rebuild ordering
 - the repo-visible canonical paths that should be cited instead of hidden mirrors
+- current workflow rules for explicit historical recall through
+  `include_expired=true`, `IGNORE` handling, provenance/link/temporal-field
+  honesty, and compact-context metadata hygiene
 - Chinese reading mirror: `docs/skills/memory-palace/references/mcp-workflow.zh.md`
 
 ### `docs/skills/memory-palace/references/trigger-samples.md`
@@ -161,6 +164,14 @@ When you change this route, keep the order simple:
 4. verify the affected client path
 
 That keeps the public source and the local mirrors aligned.
+
+Do not let mirrors drift on these current rules:
+
+- inactive memories require explicit `include_expired=true`
+- `guard_action=IGNORE` means skip the durable write unless the user re-confirms
+- provenance, temporal fields, and memory links must not be invented
+- raw compact-context metadata such as `session_id`, `source_hash`,
+  `gist_method`, or `flushed_at` must not be shown to users
 
 ---
 

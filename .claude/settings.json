@@ -1,0 +1,53 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "mcp_tool",
+            "server": "memory-palace",
+            "tool": "read_memory",
+            "input": {
+              "uri": "system://boot"
+            },
+            "timeout": 5
+          },
+          {
+            "type": "mcp_tool",
+            "server": "memory-palace",
+            "tool": "index_status",
+            "input": {},
+            "timeout": 3
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PROJECT_DIR}/.claude/hooks/post-tool-capture.mjs\"",
+            "async": true,
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "mcp_tool",
+            "server": "memory-palace",
+            "tool": "compact_context_reflection",
+            "input": {},
+            "timeout": 8
+          }
+        ]
+      }
+    ]
+  }
+}

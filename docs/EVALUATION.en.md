@@ -103,6 +103,57 @@ Windows top baseline above.
   back to the default port. This repository records that as an OpenClaw host
   limitation rather than a plugin-side promise or host patch target.
 
+## May 15, 2026 Current Change-Set Validation
+
+This rerun covers the current change set from this session. It is local
+maintainer evidence, not a replacement for the Windows top baseline.
+
+| Area | Result |
+|---|---|
+| host version | `OpenClaw 2026.4.14 (323493f)` |
+| OpenClaw config validation | `valid=true` |
+| Profile A/B CLI smoke | `PASS` |
+| Profile C/D CLI smoke | `PASS` |
+| Profile C/D phase45 pipeline | `ok=true`, `index_ok=true`, `smoke_status=pass`; `verify/doctor=warn` stayed as diagnostic warnings |
+| WebUI profile matrix | A/B/C/D all ended at `6/6 PASS` |
+| Browser checks | language switch, Memory validity fields, and the `include_expired` toggle were checked in a real browser |
+| frontend E2E | `pnpm run test:e2e`, `8 passed` |
+| extension checks | `npm run typecheck` passed; `npm test` ended at `518 pass / 2 skip / 0 fail` |
+
+The provider-backed C/D checks used local validation-provider settings. Those
+values are not part of the public docs and should not be copied into examples.
+
+## May 15 Benchmark Comparison Against v1.2.0
+
+The main result is narrow and useful:
+
+- default `weighted_sum` did not silently change ranking semantics
+- RRF is the visible opt-in improvement path
+- C/D gain is clear in memory-native and some retrieval metrics
+- B is mixed, so RRF should not become the silent default
+
+`profile_abcd_real` used SQuAD v2 Dev + BEIR NFCorpus, 20 queries per dataset,
+through `sqlite_client.search_advanced`:
+
+| Profile | v1.2.0 HR@10 / NDCG@10 | current default | current RRF |
+|---|---:|---:|---:|
+| A | `0.225 / 0.216` | `0.225 / 0.216` | `0.225 / 0.216` |
+| B | `0.450 / 0.334` | `0.450 / 0.334` | `0.500 / 0.352` |
+| C | `0.800 / 0.700` | `0.800 / 0.700` | `0.825 / 0.738` |
+| D | `0.800 / 0.730` | `0.800 / 0.729` | `0.825 / 0.720` |
+
+The memory-native Layer A run used 48 Memory Palace-shaped queries:
+
+| Profile | v1.2.0 HR@10 / MRR / NDCG@10 | current default | current RRF |
+|---|---:|---:|---:|
+| A | `0.083 / 0.083 / 0.072` | `0.083 / 0.083 / 0.072` | `0.083 / 0.083 / 0.072` |
+| B | `0.583 / 0.303 / 0.365` | `0.583 / 0.303 / 0.365` | `0.542 / 0.342 / 0.360` |
+| C | `0.583 / 0.357 / 0.368` | `0.583 / 0.357 / 0.368` | `0.875 / 0.695 / 0.696` |
+| D | `0.938 / 0.824 / 0.777` | `0.938 / 0.824 / 0.777` | `0.958 / 0.872 / 0.859` |
+
+The benchmark artifacts for this session were local temporary records, not
+repository baseline files.
+
 ## Stable Public Boundaries
 
 - `Profile C / D` are provider-backed paths, not zero-config promises.

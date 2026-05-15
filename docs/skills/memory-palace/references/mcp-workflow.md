@@ -40,6 +40,9 @@ search_memory(query="...", include_session=True)
 read_memory("best-match-uri")
 ```
 
+Keep inactive records out by default. Add `include_expired=True` only when the
+user explicitly asks for historical, future-validity, or superseded facts.
+
 ### 3. Read before write
 
 Never mutate first.
@@ -66,8 +69,13 @@ Operational rule:
 - `NOOP` → stop and inspect the suggested target
 - `UPDATE` → read the suggested target and usually switch to `update_memory`
 - `DELETE` → stop and confirm the old memory should be replaced
+- `IGNORE` → skip durable write unless the user explicitly re-confirms
 
 If `guard_target_id` is present, prefer it over fuzzy similarity when deciding whether the target is truly the same memory.
+
+Do not invent provenance, temporal fields, or memory links when they are absent.
+Do not expose raw compact-context metadata such as `session_id`, `source_hash`,
+`gist_method`, or `flushed_at` to users.
 
 ### 5. Compact vs rebuild
 

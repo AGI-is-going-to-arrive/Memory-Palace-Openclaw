@@ -90,6 +90,24 @@
   `gateway.controlUi.allowedOrigins` 仍可能落回默认端口。
   这条在本仓库里按 OpenClaw 宿主限制记录，不按插件保证或宿主热修补丁目标来写。
 
+### 1.2B 2026-05-15 当前变更复跑
+
+这组结果对应 2026-05-15 这次未提交变更集。它补充说明当前代码能否在本机 OpenClaw CLI / WebUI 里真实跑起来，不替代上面的 Windows 主基线。
+
+| 项目 | 结果 |
+|---|---|
+| 验证主机版本 | `OpenClaw 2026.4.14 (323493f)` |
+| OpenClaw config validate | `valid=true` |
+| Profile A/B CLI smoke | `PASS` |
+| Profile C/D CLI smoke | `PASS` |
+| Profile C/D phase45 pipeline | `ok=true`，`index_ok=true`，`smoke_status=pass`；`verify/doctor=warn` 只保留为诊断 warning |
+| WebUI profile matrix | A/B/C/D 都是 `6/6 PASS` |
+| WebUI browser 手测 | 中英文切换、Memory 双时序展示、`include_expired` 开关都已在浏览器里实测 |
+| frontend E2E | `pnpm run test:e2e`，`8 passed` |
+| extension typecheck / test | `npm run typecheck` 通过；`npm test` 为 `518 pass / 2 skip / 0 fail` |
+
+这轮 C/D 用的是本地验证环境里的 provider 配置，只作为本机验收条件，不写入公开配置示例，也不代表用户机器天然可用。
+
 ### 1.3 当前公开口径
 
 - `Profile C / D` 仍然是 provider-backed 路径，不是零配置承诺。
@@ -453,6 +471,41 @@ ACCEPTANCE_FORCE_ISOLATED=true OPENCLAW_SCENARIO_PORT=18981 node scripts/test_re
 ```
 
 完整报告：`backend/tests/benchmark/replacement_acceptance_summary.md`
+
+### 3.7 2026-05-15 v1.2.0 对比复跑：默认没变，RRF 是 opt-in 增益
+
+这轮复跑专门回答一个问题：当前变更相对 `v1.2.0` 是否有真实提升。
+
+先说结论：
+
+- 默认 `weighted_sum` 没有偷偷改排序语义；memory-native 指标和 `v1.2.0` 完全同分。
+- `RETRIEVAL_FUSION_METHOD=rrf` 才是这轮可见提升来源。
+- RRF 对 C/D 的提升比较明确，对 B 不是全线提升，所以它现在仍是 opt-in。
+
+`profile_abcd_real` 的小样本复跑使用 SQuAD v2 Dev + BEIR NFCorpus，各 20 条 query，入口是 `sqlite_client.search_advanced`：
+
+| Profile | v1.2.0 HR@10 / NDCG@10 | 当前默认 HR@10 / NDCG@10 | 当前 RRF HR@10 / NDCG@10 |
+|---|---:|---:|---:|
+| A | `0.225 / 0.216` | `0.225 / 0.216` | `0.225 / 0.216` |
+| B | `0.450 / 0.334` | `0.450 / 0.334` | `0.500 / 0.352` |
+| C | `0.800 / 0.700` | `0.800 / 0.700` | `0.825 / 0.738` |
+| D | `0.800 / 0.730` | `0.800 / 0.729` | `0.825 / 0.720` |
+
+memory-native full Layer A 的 48 条 query 更贴近 Memory Palace 自己的结构化召回场景：
+
+| Profile | v1.2.0 HR@10 / MRR / NDCG@10 | 当前默认 | 当前 RRF |
+|---|---:|---:|---:|
+| A | `0.083 / 0.083 / 0.072` | `0.083 / 0.083 / 0.072` | `0.083 / 0.083 / 0.072` |
+| B | `0.583 / 0.303 / 0.365` | `0.583 / 0.303 / 0.365` | `0.542 / 0.342 / 0.360` |
+| C | `0.583 / 0.357 / 0.368` | `0.583 / 0.357 / 0.368` | `0.875 / 0.695 / 0.696` |
+| D | `0.938 / 0.824 / 0.777` | `0.938 / 0.824 / 0.777` | `0.958 / 0.872 / 0.859` |
+
+这组数据的正确读法：
+
+- 如果用户不设置 `RETRIEVAL_FUSION_METHOD=rrf`，这轮检索质量不声称“默认升级”。
+- 如果用户已经在 C/D provider-backed 路径上，RRF 可以作为有证据的调参项。
+- B 档的 RRF 结果有取舍：MRR 上升，但 HR@10 和 NDCG@10 没有同步上升，所以不能写成无条件推荐。
+- 这轮 benchmark artifact 是本次 session 的本机临时留档，不是仓库内长期基线文件。
 
 ---
 

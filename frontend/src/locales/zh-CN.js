@@ -504,6 +504,8 @@ const zhCN = {
     childFilters: '子节点筛选',
     searchPlaceholder: '搜索路径 / 摘要',
     maxPriorityPlaceholder: '最高优先级（可选）',
+    includeExpiredLabel: '显示非活动记忆',
+    includeExpiredHint: '在当前浏览视图中包含已过期、未来生效和已被替代的记录。',
     loadingNode: '正在加载记忆节点……',
     loadNodeFailed: '加载节点失败',
     currentNodeContent: '当前节点内容',
@@ -523,6 +525,12 @@ const zhCN = {
     loadMoreChildren: '再加载 {{count}} 条',
     gistView: '摘要',
     originalView: '原文',
+    temporal: {
+      validFrom: '生效时间',
+      validUntil: '失效时间',
+      openEnded: '未限制',
+      supersededBy: '已由 #{{id}} 替代',
+    },
     feedback: {
       memoryUpdated: '长期记忆已更新。',
       memoryUpdatedAfterConfirm: '已按你的确认更新长期记忆。',

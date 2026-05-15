@@ -43,6 +43,9 @@ const makeNodePayload = (path, content) => ({
     gist_method: null,
     gist_quality: null,
     source_hash: null,
+    valid_from: null,
+    valid_until: null,
+    superseded_by: null,
   },
   children: [],
   breadcrumbs: [
@@ -173,6 +176,48 @@ describe('MemoryBrowser', () => {
 
     expect(api.createMemoryNode).not.toHaveBeenCalled();
     expect(await screen.findByText(/Conversation content cannot be empty/i)).toBeInTheDocument();
+  });
+
+  it('reloads browse data with inactive memories included and shows temporal metadata', async () => {
+    const user = userEvent.setup();
+    api.getMemoryNode
+      .mockResolvedValueOnce(ROOT_PAYLOAD)
+      .mockResolvedValueOnce({
+        node: null,
+        children: [
+          {
+            domain: 'core',
+            path: 'expired-note',
+            uri: 'core://expired-note',
+            name: 'expired-note',
+            priority: 1,
+            disclosure: '',
+            content_snippet: 'expired temporal note',
+            gist_text: null,
+            gist_method: null,
+            gist_quality: null,
+            source_hash: null,
+            valid_from: '2024-01-01T00:00:00',
+            valid_until: '2024-02-01T00:00:00',
+            superseded_by: 42,
+          },
+        ],
+        breadcrumbs: [{ path: '', label: 'root' }],
+      });
+
+    renderMemoryBrowser('/memory?domain=core');
+
+    await user.click(await screen.findByLabelText(/Show inactive memories/i));
+
+    expect(await screen.findByText('expired-note')).toBeInTheDocument();
+    expect(screen.getByText(/valid from/i)).toBeInTheDocument();
+    expect(screen.getByText(/superseded by #42/i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(api.getMemoryNode).toHaveBeenLastCalledWith(
+        expect.objectContaining({ include_expired: true }),
+        expect.anything()
+      );
+    });
   });
 
   it('shows write_guard skip feedback when update returns updated=false', async () => {

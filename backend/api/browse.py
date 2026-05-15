@@ -457,6 +457,11 @@ async def _snapshot_path_delete(uri: str, *, session_id: str | None) -> bool:
         get_sqlite_client=get_sqlite_client,
     )
 
+
+def _guard_exception_reason(exc: Exception) -> str:
+    return f"write_guard_unavailable:{type(exc).__name__}"
+
+
 def _guard_user_feedback(
     operation: str,
     decision: dict[str, Any],
@@ -532,6 +537,7 @@ async def _run_write_lane(operation: str, task, *, session_id: str | None = None
 async def get_node(
     path: str = Query("", description="URI path like 'memory-palace' or 'memory-palace/salem'"),
     domain: str = Query("core"),
+    include_expired: bool = Query(False, description="Include expired or future-validity memories"),
     _auth: None = Depends(require_maintenance_api_key),
 ):
     """
@@ -554,19 +560,26 @@ async def get_node(
             "created_at": None
         }
         # Get roots as children (no memory_id = virtual root)
-        children_raw = await client.get_children(None, domain=domain)
+        children_raw = await client.get_children(
+            None, domain=domain, include_expired=include_expired
+        )
         breadcrumbs = [{"path": "", "label": "root"}]
     else:
         # Get the node itself
         memory = await client.get_memory_by_path(
-            path, domain=domain, reinforce_access=False
+            path,
+            domain=domain,
+            reinforce_access=False,
+            include_expired=include_expired,
         )
         
         if not memory:
             raise HTTPException(status_code=404, detail=f"Path not found: {domain}://{path}")
         
         # Get children across all aliases of this memory
-        children_raw = await client.get_children(memory["id"])
+        children_raw = await client.get_children(
+            memory["id"], include_expired=include_expired
+        )
         
         # Build breadcrumbs
         segments = path.split("/")
@@ -589,6 +602,9 @@ async def get_node(
             "gist_method": c.get("gist_method"),
             "gist_quality": c.get("gist_quality"),
             "source_hash": c.get("gist_source_hash"),
+            "valid_from": c.get("valid_from"),
+            "valid_until": c.get("valid_until"),
+            "superseded_by": c.get("superseded_by"),
         }
         for c in children_raw
     ]
@@ -623,6 +639,12 @@ async def get_node(
             "gist_method": memory.get("gist_method"),
             "gist_quality": memory.get("gist_quality"),
             "source_hash": memory.get("gist_source_hash"),
+            "valid_from": memory.get("valid_from"),
+            "valid_until": memory.get("valid_until"),
+            "superseded_by": memory.get("superseded_by"),
+            "created_by_agent": memory.get("created_by_agent"),
+            "created_by_session": memory.get("created_by_session"),
+            "source_operation": memory.get("source_operation"),
         },
         "children": children,
         "breadcrumbs": breadcrumbs
@@ -663,7 +685,7 @@ async def create_node(
             guard_decision = _normalize_guard_decision(
                 {
                     "action": "NOOP",
-                    "reason": f"write_guard_unavailable: {exc}",
+                    "reason": _guard_exception_reason(exc),
                     "method": "exception",
                     "degraded": True,
                     "degrade_reasons": ["write_guard_exception"],
@@ -858,7 +880,7 @@ async def update_node(
                 guard_decision = _normalize_guard_decision(
                     {
                         "action": "NOOP",
-                        "reason": f"write_guard_unavailable: {exc}",
+                        "reason": _guard_exception_reason(exc),
                         "method": "exception",
                         "degraded": True,
                         "degrade_reasons": ["write_guard_exception"],

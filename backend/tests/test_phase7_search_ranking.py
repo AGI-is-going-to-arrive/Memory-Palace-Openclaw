@@ -4,7 +4,7 @@ import sqlite3
 from pathlib import Path
 
 import pytest
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 
 from db.sqlite_client import (
     EmbeddingCache,
@@ -80,6 +80,59 @@ def test_redundancy_ratio_detects_duplicate_cjk_results() -> None:
     assert ratio > 0.0
 
 
+def test_reciprocal_rank_fusion_combines_source_ranks() -> None:
+    client = SQLiteClient("sqlite+aiosqlite:///:memory:")
+
+    fused = client._reciprocal_rank_fusion(
+        [
+            {"memory_id": 1, "score": 0.90},
+            {"memory_id": 2, "score": 0.70},
+        ],
+        [
+            {"memory_id": 2, "score": 0.95},
+            {"memory_id": 3, "score": 0.80},
+        ],
+        k=60,
+    )
+
+    assert [row["memory_id"] for row in fused] == [2, 1, 3]
+    assert fused[0]["score"] == pytest.approx((1 / 62) + (1 / 61))
+    assert fused[0]["source_ranks"] == {"fts": 2, "vec": 1}
+
+
+def test_reciprocal_rank_fusion_handles_empty_and_single_source() -> None:
+    client = SQLiteClient("sqlite+aiosqlite:///:memory:")
+
+    assert client._reciprocal_rank_fusion([], []) == []
+
+    fused = client._reciprocal_rank_fusion(
+        [
+            {"memory_id": "a", "score": 0.10},
+            {"memory_id": "b", "score": 0.30},
+            {"memory_id": "a", "score": 0.90},
+        ],
+        [],
+        k=10,
+    )
+
+    assert [row["memory_id"] for row in fused] == ["a", "b"]
+    assert fused[0]["score"] == pytest.approx(1 / 11)
+
+
+def test_retrieval_fusion_method_normalizes_allowed_values() -> None:
+    assert SQLiteClient._normalize_retrieval_fusion_method(None) == "weighted_sum"
+    assert (
+        SQLiteClient._normalize_retrieval_fusion_method("weighted_sum")
+        == "weighted_sum"
+    )
+    assert SQLiteClient._normalize_retrieval_fusion_method("rrf") == "rrf"
+    assert (
+        SQLiteClient._normalize_retrieval_fusion_method("reciprocal_rank_fusion")
+        == "rrf"
+    )
+    assert SQLiteClient._normalize_retrieval_fusion_method("unknown") == "weighted_sum"
+
+
 def test_hash_embedding_keeps_cjk_tokens_in_mixed_text() -> None:
     client = SQLiteClient("sqlite+aiosqlite:///:memory:")
 
@@ -145,6 +198,245 @@ async def test_search_advanced_uses_gist_recall_and_stage_provenance(
     assert "vitality" in result["scores"]
     assert "access" in result["scores"]
     assert "length_norm" in result["scores"]
+
+
+@pytest.mark.asyncio
+async def test_search_advanced_excludes_expired_memories_by_default(
+    tmp_path: Path,
+) -> None:
+    client = SQLiteClient(_sqlite_url(tmp_path / "bitemporal-search.db"))
+    await client.init_db()
+    active = await client.create_memory(
+        parent_path="",
+        content="bi temporal warranty policy is currently active",
+        priority=1,
+        title="current-policy",
+        domain="core",
+    )
+    expired = await client.create_memory(
+        parent_path="",
+        content="bi temporal warranty policy expired in 2020",
+        priority=1,
+        title="expired-policy",
+        domain="core",
+    )
+    async with client.session() as session:
+        await session.execute(
+            text("UPDATE memories SET valid_until = :valid_until WHERE id = :memory_id"),
+            {
+                "valid_until": "2000-01-01 00:00:00.000000",
+                "memory_id": expired["id"],
+            },
+        )
+
+    default_payload = await client.search_advanced(
+        query="bi temporal warranty policy",
+        mode="keyword",
+        max_results=5,
+        candidate_multiplier=2,
+        filters={"domain": "core"},
+    )
+    include_expired_payload = await client.search_advanced(
+        query="bi temporal warranty policy",
+        mode="keyword",
+        max_results=5,
+        candidate_multiplier=2,
+        filters={"domain": "core"},
+        include_expired=True,
+    )
+    await client.close()
+
+    default_uris = {item["uri"] for item in default_payload["results"]}
+    include_expired_uris = {item["uri"] for item in include_expired_payload["results"]}
+    assert active["uri"] in default_uris
+    assert expired["uri"] not in default_uris
+    assert expired["uri"] in include_expired_uris
+
+
+@pytest.mark.asyncio
+async def test_get_children_excludes_expired_memories_by_default(
+    tmp_path: Path,
+) -> None:
+    client = SQLiteClient(_sqlite_url(tmp_path / "bitemporal-children.db"))
+    await client.init_db()
+    active = await client.create_memory(
+        parent_path="",
+        content="active browse child",
+        priority=1,
+        title="active-child",
+        domain="core",
+    )
+    expired = await client.create_memory(
+        parent_path="",
+        content="expired browse child",
+        priority=1,
+        title="expired-child",
+        domain="core",
+    )
+    async with client.session() as session:
+        await session.execute(
+            text("UPDATE memories SET valid_until = :valid_until WHERE id = :memory_id"),
+            {
+                "valid_until": "2000-01-01 00:00:00.000000",
+                "memory_id": expired["id"],
+            },
+        )
+        await session.commit()
+
+    default_children = await client.get_children(None, domain="core")
+    historical_children = await client.get_children(
+        None, domain="core", include_expired=True
+    )
+    await client.close()
+
+    assert {child["path"] for child in default_children} == {"active-child"}
+    assert {child["path"] for child in historical_children} == {
+        "active-child",
+        "expired-child",
+    }
+    expired_child = next(
+        child for child in historical_children if child["path"] == "expired-child"
+    )
+    assert expired_child["valid_until"] is not None
+    assert active["uri"] == "core://active-child"
+
+
+@pytest.mark.asyncio
+async def test_search_advanced_excludes_future_valid_from_by_default(
+    tmp_path: Path,
+) -> None:
+    client = SQLiteClient(_sqlite_url(tmp_path / "bitemporal-future-search.db"))
+    await client.init_db()
+    active = await client.create_memory(
+        parent_path="",
+        content="future window policy currently active",
+        priority=1,
+        title="active-window",
+        domain="core",
+    )
+    future = await client.create_memory(
+        parent_path="",
+        content="future window policy starts later",
+        priority=1,
+        title="future-window",
+        domain="core",
+    )
+    async with client.session() as session:
+        await session.execute(
+            text("UPDATE memories SET valid_from = :valid_from WHERE id = :memory_id"),
+            {
+                "valid_from": "2999-01-01 00:00:00.000000",
+                "memory_id": future["id"],
+            },
+        )
+
+    default_payload = await client.search_advanced(
+        query="future window policy",
+        mode="keyword",
+        max_results=5,
+        candidate_multiplier=2,
+        filters={"domain": "core"},
+    )
+    include_expired_payload = await client.search_advanced(
+        query="future window policy",
+        mode="keyword",
+        max_results=5,
+        candidate_multiplier=2,
+        filters={"domain": "core"},
+        include_expired=True,
+    )
+    await client.close()
+
+    default_uris = {item["uri"] for item in default_payload["results"]}
+    include_expired_uris = {item["uri"] for item in include_expired_payload["results"]}
+    assert active["uri"] in default_uris
+    assert future["uri"] not in default_uris
+    assert future["uri"] in include_expired_uris
+
+
+@pytest.mark.asyncio
+async def test_search_advanced_include_expired_finds_superseded_versions(
+    tmp_path: Path,
+) -> None:
+    client = SQLiteClient(_sqlite_url(tmp_path / "bitemporal-history-search.db"))
+    await client.init_db()
+    original = await client.create_memory(
+        parent_path="",
+        content="legacy refund policy historical wording",
+        priority=1,
+        title="refund-policy",
+        domain="core",
+    )
+    await client.update_memory(
+        path="refund-policy",
+        content="current refund policy wording",
+        domain="core",
+        expected_old_id=original["id"],
+    )
+
+    default_payload = await client.search_advanced(
+        query="legacy refund policy historical",
+        mode="keyword",
+        max_results=5,
+        candidate_multiplier=2,
+        filters={"domain": "core"},
+    )
+    include_expired_payload = await client.search_advanced(
+        query="legacy refund policy historical",
+        mode="keyword",
+        max_results=5,
+        candidate_multiplier=2,
+        filters={"domain": "core"},
+        include_expired=True,
+    )
+    await client.close()
+
+    default_ids = {item["memory_id"] for item in default_payload["results"]}
+    include_expired_ids = {item["memory_id"] for item in include_expired_payload["results"]}
+    historical = next(
+        item
+        for item in include_expired_payload["results"]
+        if item["memory_id"] == original["id"]
+    )
+    assert original["id"] not in default_ids
+    assert original["id"] in include_expired_ids
+    assert historical["metadata"]["superseded_by"] == "core://refund-policy"
+    assert historical["metadata"]["search_provenance"]["recall_kind"] == "historical"
+
+
+@pytest.mark.asyncio
+async def test_search_and_read_surface_memory_provenance(tmp_path: Path) -> None:
+    client = SQLiteClient(_sqlite_url(tmp_path / "provenance-surface.db"))
+    await client.init_db()
+    memory = await client.create_memory(
+        parent_path="",
+        content="provenance visible audit marker",
+        priority=1,
+        title="provenance-marker",
+        domain="core",
+        created_by_agent="agent-a",
+        created_by_session="session-a",
+        source_operation="unit_test",
+    )
+
+    read_payload = await client.get_memory_by_path("provenance-marker", "core")
+    search_payload = await client.search_advanced(
+        query="provenance visible audit marker",
+        mode="keyword",
+        max_results=5,
+        candidate_multiplier=2,
+        filters={"domain": "core"},
+    )
+    await client.close()
+
+    assert read_payload is not None
+    assert read_payload["created_by_agent"] == "agent-a"
+    assert read_payload["created_by_session"] == "session-a"
+    assert read_payload["source_operation"] == "unit_test"
+    result = next(item for item in search_payload["results"] if item["memory_id"] == memory["id"])
+    assert result["metadata"]["created_by_agent"] == "agent-a"
+    assert result["metadata"]["created_by_session"] == "session-a"
+    assert result["metadata"]["source_operation"] == "unit_test"
 
 
 @pytest.mark.asyncio

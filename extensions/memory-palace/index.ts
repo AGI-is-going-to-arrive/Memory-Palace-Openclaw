@@ -1294,9 +1294,11 @@ const RECALL_PROMPT_METADATA_NOISE_PATTERNS = [
   /```json/iu,
   /\bopenclaw-control-ui\b/iu,
   /\buntrusted metadata\b/iu,
+  /#\s*Runtime Session Flush\b/iu,
   /\[meta\]\s*summary_version\b/iu,
   /\bsummary_version\s*:\s*v\d+(?:-[a-z0-9-]+)?\b/iu,
   /\b(?:session_id|session_key|agent_id|captured_at|requestersenderid)\b/iu,
+  /\b(?:flushed_at|gist_method|source_hash|compact_source_hash|compact_gist_method)\b/iu,
   /#\s*Auto Captured Memory/iu,
   /##\s*Content/iu,
 ] as const;
@@ -1967,6 +1969,12 @@ function unwrapStructuredRecallSnippet(text: string): string {
         "",
       )
       .trim();
+  }
+  if (/^#\s*Runtime Session Flush\b/iu.test(raw)) {
+    const gistMatch = raw.match(
+      /(?:^|\n)##\s*Gist\s*\n([\s\S]*?)(?=\n##\s+[A-Za-z\u3400-\u9fff]+|\s*$)/iu,
+    );
+    return (gistMatch?.[1] ?? "").trim();
   }
   return raw;
 }

@@ -39,11 +39,13 @@
 - 实验性多 Agent ACL 已进入当前产品边界，但后端 / 直连 API 这一层仍待继续硬化
 - `before_prompt_build` 已作为主 lifecycle hook；`before_agent_start` 只保留兼容 fallback，当前还补上了按 session 的去重标记，避免同一轮重复 recall
 - durable / reflection auto recall 当前会把本 session 一起纳入检索合并，不再那么容易出现“当前会话里的上下文没带回来”
+- search / browse 默认只返回 active 记忆；历史、未来生效或已被替代的记录需要显式 `include_expired=true`
 - `command:new` reflection 去重现在带 session 边界、TTL 和容量上限，不再容易在长会话里重复写入或把缓存越跑越大
 - `command:new` reflection 和 smart extraction 在找不到目标 session transcript 时，当前会直接跳过（fail-closed），不再偷读“最新但无关”的 transcript
 - smart extraction 现在会在前台 capture 返回后放到后台跑，同一个 agent/session 的任务会排队
 - `workflow` 相关的 profile / durable recall / host bridge prompt block 当前会先做净化；onboarding 文档路径、provider 诊断、confirmation code 这类噪声不会再被当成稳定 workflow 写回或注入 prompt
 - control-ui / 微信这类聊天面当前不会再把 `memory-palace-profile` / `memory-palace-recall` 这类原始 memory block 或 `openclaw-control-ui` metadata 噪声直接塞回可见回复里
+- compact-context recall 给可见聊天面只使用 gist 正文；`session_id` / `source_hash` / `gist_method` 这类内部 metadata 不应回显给用户
 - WAL 模式已默认启用（解决并发 FTS 锁冲突）
 - intent 分类支持中英文隐式模式匹配（causal/temporal/exploratory/factual 四类）
 - vitality 检索排序已集成时间衰减（stale 记忆自动降权）
@@ -70,6 +72,12 @@
 - Dashboard 全局增加了渲染错误兜底
 - 安全相关模块（prompt 过滤 / 视觉脱敏 / ACL 搜索 / 反思）新增 68 个专用单元测试
 - restart 端点增加 30 秒冷却，冷却期内返回 429
+- write guard 动作现在覆盖 `ADD / UPDATE / NOOP / DELETE / IGNORE`；`IGNORE` 表示不值得长期存储，和“已经存过”的 `NOOP` 不同
+- `Memory` schema 已加入 `valid_from` / `valid_until` / `superseded_by`
+- `memory_links` 已加入 typed directed link 表，用于 `related` / `supersedes` / `derived_from` / `contradicts` 这类关系
+- provenance 字段已入 schema；当前 `create_memory` 会写 `source_operation=create_memory`，`created_by_agent` / `created_by_session` 仍依赖上游 host context
+- hybrid retrieval 已支持 opt-in `RETRIEVAL_FUSION_METHOD=rrf`，默认仍是 `weighted_sum`
+- backend MCP / SQLite 层开始收口 typed exception，公开响应应优先引用结构化 code / reason，而不是原始内部异常文本
 
 ---
 
@@ -81,6 +89,9 @@
 - 这不等于替代宿主自己的文件记忆
 - 自动 recall / auto-capture / visual auto-harvest 依赖支持 hooks 的宿主
 - 当前自动链路的支持下限按代码和现有口径是 `OpenClaw >= 2026.3.2`
+- `include_expired=true` 是历史查询开关，不是普通 recall 默认值
+- `MemoryLink` 目前只能写成 schema / 模型能力，不能写成所有召回路径都会自动展开完整关系图
+- provenance 目前是部分接入，不能写成 agent/session 已由宿主自动填满
 - 新宿主里可能还会一起挂上 `memory-core` 这类 compat shim，但只要 `plugins.slots.memory` 还是 `memory-palace`，active memory slot 就没有变
 - visual context 可以自动 harvest
 - 长期 visual memory 仍然是显式 `memory_store_visual`

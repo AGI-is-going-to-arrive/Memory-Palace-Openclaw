@@ -96,10 +96,16 @@ def _normalize_search_filters(
     if not isinstance(filters, dict):
         raise ValueError(
             "filters must be an object with optional fields: "
-            "domain/path_prefix/max_priority/updated_after."
+            "domain/path_prefix/max_priority/updated_after/include_expired."
         )
 
-    allowed_keys = {"domain", "path_prefix", "max_priority", "updated_after"}
+    allowed_keys = {
+        "domain",
+        "path_prefix",
+        "max_priority",
+        "updated_after",
+        "include_expired",
+    }
     unknown = set(filters.keys()) - allowed_keys
     if unknown:
         raise ValueError(
@@ -144,7 +150,18 @@ def _normalize_search_filters(
         if parsed is not None:
             normalized["updated_after"] = parsed.isoformat()
 
+    if "include_expired" in filters:
+        normalized["include_expired"] = _coerce_false_flag(filters.get("include_expired"))
+
     return normalized
+
+
+def _coerce_false_flag(value: Optional[Any]) -> bool:
+    if value is None:
+        return False
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes", "on", "enabled"}
+    return bool(value)
 
 
 def _normalize_scope_hint(
@@ -617,6 +634,7 @@ async def _revalidate_search_results(
     *,
     client: Any,
     parse_uri: Callable[[str], Tuple[str, str]],
+    include_expired: bool = False,
 ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
     get_memory_by_path = getattr(client, "get_memory_by_path", None)
     if not callable(get_memory_by_path):
@@ -644,9 +662,19 @@ async def _revalidate_search_results(
         async with semaphore:
             try:
                 try:
-                    current = await get_memory_by_path(path, domain, reinforce_access=False)
+                    current = await get_memory_by_path(
+                        path,
+                        domain,
+                        reinforce_access=False,
+                        include_expired=include_expired,
+                    )
                 except TypeError:
-                    current = await get_memory_by_path(path, domain)
+                    try:
+                        current = await get_memory_by_path(
+                            path, domain, reinforce_access=False
+                        )
+                    except TypeError:
+                        current = await get_memory_by_path(path, domain)
             except Exception:
                 return item, "error", None
         return item, "ok", current
@@ -716,6 +744,7 @@ async def search_memory_impl(
     max_results: Optional[int] = None,
     candidate_multiplier: Optional[int] = None,
     include_session: Optional[bool] = None,
+    include_expired: Optional[bool] = None,
     filters: Optional[Dict[str, Any]] = None,
     scope_hint: Optional[str] = None,
     verbose: Optional[bool] = None,
@@ -786,6 +815,14 @@ async def search_memory_impl(
         )
 
         raw_filters = filters
+        filter_include_expired = (
+            raw_filters.get("include_expired")
+            if isinstance(raw_filters, dict)
+            else None
+        )
+        resolved_include_expired = _coerce_false_flag(
+            include_expired if include_expired is not None else filter_include_expired
+        )
         scope_hint_value: Optional[Any] = scope_hint
         if isinstance(raw_filters, dict):
             raw_filters = dict(raw_filters)
@@ -923,6 +960,15 @@ async def search_memory_impl(
                 "candidate_multiplier": resolved_candidate_multiplier,
                 "filters": normalized_filters,
                 "intent_profile": intent_for_search,
+                "include_expired": resolved_include_expired,
+            },
+            {
+                "query": query_effective,
+                "mode": mode_requested,
+                "max_results": resolved_max_results,
+                "candidate_multiplier": resolved_candidate_multiplier,
+                "filters": normalized_filters,
+                "intent_profile": intent_for_search,
             },
             {
                 "query": query_effective,
@@ -942,7 +988,22 @@ async def search_memory_impl(
                 "query": query_effective,
                 "mode": mode_requested,
                 "limit": candidate_pool_size,
+                "intent_profile": intent_for_search,
+                "include_expired": resolved_include_expired,
                 **normalized_filters,
+            },
+            {
+                "query": query_effective,
+                "limit": candidate_pool_size,
+                "domain": normalized_filters.get("domain"),
+                "intent_profile": intent_for_search,
+                "include_expired": resolved_include_expired,
+            },
+            {
+                "query": query_effective,
+                "limit": candidate_pool_size,
+                "domain": normalized_filters.get("domain"),
+                "intent_profile": intent_for_search,
             },
             {
                 "query": query_effective,
@@ -975,6 +1036,12 @@ async def search_memory_impl(
             and "intent_profile" not in kwargs_used
         ):
             degraded_reasons.append("intent_profile_not_supported_by_search_api")
+        if (
+            resolved_include_expired
+            and kwargs_used is not None
+            and "include_expired" not in kwargs_used
+        ):
+            degraded_reasons.append("include_expired_not_supported_by_search_api")
 
         raw_results, backend_metadata = _extract_search_payload(
             raw_result,
@@ -1054,6 +1121,7 @@ async def search_memory_impl(
             merged_results,
             client=client,
             parse_uri=parse_uri,
+            include_expired=resolved_include_expired,
         )
         sorted_results = _sort_search_results_for_response(revalidated_results)
         final_results = sorted_results[:resolved_max_results]
@@ -1112,6 +1180,7 @@ async def search_memory_impl(
             "candidate_multiplier": resolved_candidate_multiplier,
             "candidate_pool_size": candidate_pool_size,
             "session_first_enabled": include_session_queue,
+            "include_expired": resolved_include_expired,
             "session_queue_count": len(session_results),
             "global_queue_count": len(filtered_results),
             "session_first_metrics": session_first_metrics,
