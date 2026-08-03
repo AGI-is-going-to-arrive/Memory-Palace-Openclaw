@@ -14,7 +14,7 @@ def runtime_env_file_exists(value: Optional[str]) -> bool:
     if not rendered:
         return False
     try:
-        return Path(rendered).expanduser().is_file()
+        return Path(rendered).expanduser().resolve().is_file()
     except (OSError, ValueError):
         return False
 
